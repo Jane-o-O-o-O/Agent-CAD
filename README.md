@@ -24,6 +24,24 @@ Enjoy your own agent with AI Manus!
 
 <https://github.com/user-attachments/assets/765ea387-bb1c-4dc2-b03e-716698feef77>
 
+### Overall Design
+
+![Image](https://github.com/user-attachments/assets/6fc0652c-7108-4d02-aded-92c36d660cc4)
+
+**When a user initiates a conversation:**
+
+1. Web sends a request to create an Agent to the Server, which creates a Sandbox through `/var/run/docker.sock` and returns a session ID.
+2. The Sandbox is an Ubuntu Docker environment that starts Chrome browser and API services for tools like File/Shell.
+3. Web sends user messages to the session ID, and when the Server receives user messages, it forwards them to the PlanAct Agent for processing.
+4. During processing, the PlanAct Agent calls relevant tools to complete tasks.
+5. All events generated during Agent processing are sent back to Web via SSE.
+
+**When users browse tools:**
+
+- Browser:
+    1. The Sandbox's headless browser starts a VNC service through xvfb and x11vnc, and converts VNC to websocket through websockify.
+    2. Web's NoVNC component connects to the Sandbox through the Server's Websocket Forward, enabling browser viewing.
+- Other tools: Other tools work on similar principles.
 
 ## Environment Requirements
 
