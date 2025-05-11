@@ -102,7 +102,6 @@ async def vnc_websocket(websocket: WebSocket, agent_id: str):
                 try:
                     while True:
                         data = await sandbox_ws.recv()
-                        logger.info(f"Forwarding data from sandbox: {data}")
                         await websocket.send_bytes(data)
                 except websockets.exceptions.ConnectionClosed:
                     logger.info("VNC -> Web connection closed")
