@@ -346,4 +346,4 @@ class DockerSandbox:
     async def close(self):
         """Close HTTP client connection"""
         if self.client:
-            await self.client.aclose() 
+            await self.client.aclose()
