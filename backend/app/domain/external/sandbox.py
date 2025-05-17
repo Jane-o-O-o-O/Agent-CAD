@@ -229,7 +229,3 @@ class Sandbox(Protocol):
             Whether destroyed successfully
         """
         ...
-    
-    async def close(self):
-        """Close gateway connection"""
-        ... 

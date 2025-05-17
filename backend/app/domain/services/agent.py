@@ -260,7 +260,7 @@ class AgentDomainService:
         logger.info(f"Agent {agent_id} has been fully closed and resources cleared")
         return True
             
-    async def close_all(self) -> None:
+    async def shutdown(self) -> None:
         """Clean up all Agent's resources"""
         logger.info(f"Starting to close all Agents, currently {len(self._contexts)} in total")
         # Close resources of each agent one by one
@@ -274,3 +274,5 @@ class AgentDomainService:
         if not context:
             logger.warning(f"Attempted to get sandbox for non-existent Agent {agent_id}")
         return context.sandbox if context else None
+
+agent_domain_service = AgentDomainService()

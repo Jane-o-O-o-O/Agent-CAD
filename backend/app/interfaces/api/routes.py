@@ -5,12 +5,11 @@ from sse_starlette.event import ServerSentEvent
 import asyncio
 import websockets
 import logging
-from app.application.services.agent import AgentService
+from app.application.services.agent import agent_service
 from app.application.schemas.request import ChatRequest, FileViewRequest, ShellViewRequest
 from app.application.schemas.response import APIResponse, AgentResponse, ShellViewResponse, FileViewResponse
 
 router = APIRouter()
-agent_service = AgentService()
 logger = logging.getLogger(__name__)
 
 @router.post("/agents", response_model=APIResponse[AgentResponse])
@@ -90,7 +89,6 @@ async def vnc_websocket(websocket: WebSocket, agent_id: str):
                 try:
                     while True:
                         data = await websocket.receive_bytes()
-                        logger.info(f"Forwarding data to sandbox: {data}")
                         await sandbox_ws.send(data)
                 except WebSocketDisconnect:
                     logger.info("Web -> VNC connection closed")

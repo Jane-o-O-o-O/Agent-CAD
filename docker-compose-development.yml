@@ -47,7 +47,6 @@ services:
     build:
       context: ./sandbox
       dockerfile: Dockerfile
-    image: sandbox
     hostname: sandbox
     volumes:
       - ./sandbox:/app  # Mount source code directory
@@ -63,6 +62,21 @@ services:
       - UVI_ARGS="--reload"
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     restart: unless-stopped
+    networks:
+      - manus-network
+
+  mockserver:
+    build:
+      context: ./mockserver
+      dockerfile: Dockerfile
+    volumes:
+      - ./mockserver:/app  # Mount source code directory
+      - /app/__pycache__  # Avoid overwriting cache files
+      - /app/.venv  # Avoid overwriting virtual environment
+    restart: unless-stopped
+    environment:
+      - MOCK_DATA_FILE=default.yaml
+      - MOCK_DELAY=1
     networks:
       - manus-network
 
