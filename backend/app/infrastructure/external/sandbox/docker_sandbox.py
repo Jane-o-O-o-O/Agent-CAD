@@ -12,13 +12,14 @@ from app.domain.models.tool_result import ToolResult
 logger = logging.getLogger(__name__)
 
 class DockerSandbox:
-    def __init__(self, ip: str = None):
+    def __init__(self, ip: str = None, container_name: str = None):
         """Initialize Docker sandbox and API interaction client"""
         self.client = httpx.AsyncClient(timeout=600)
         self.ip = ip
         self.base_url = f"http://{self.ip}:8080"
         self.vnc_url = f"ws://{self.ip}:5901"
         self.cdp_url = f"http://{self.ip}:9222"
+        self.container_name = container_name
 
     @staticmethod
     def _create_task() -> 'DockerSandbox':
@@ -82,7 +83,8 @@ class DockerSandbox:
             
             # Create and return DockerSandbox instance
             return DockerSandbox(
-                ip=ip_address
+                ip=ip_address,
+                container_name=container_name
             )
             
         except Exception as e:
@@ -342,8 +344,16 @@ class DockerSandbox:
             # Log error and return None on failure
             logger.error(f"Failed to resolve hostname {hostname}: {str(e)}")
             return None
-
-    async def close(self):
-        """Close HTTP client connection"""
-        if self.client:
-            await self.client.aclose()
+    
+    async def destroy(self) -> bool:
+        """Destroy Docker sandbox"""
+        try:
+            if self.client:
+                await self.client.aclose()
+            if self.container_name:
+                docker_client = docker.from_env()
+                docker_client.containers.get(self.container_name).remove(force=True)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to destroy Docker sandbox: {str(e)}")
+            return False

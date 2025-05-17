@@ -5,12 +5,11 @@ from sse_starlette.event import ServerSentEvent
 import asyncio
 import websockets
 import logging
-from app.application.services.agent import AgentService
+from app.application.services.agent import agent_service
 from app.application.schemas.request import ChatRequest, FileViewRequest, ShellViewRequest
 from app.application.schemas.response import APIResponse, AgentResponse, ShellViewResponse, FileViewResponse
 
 router = APIRouter()
-agent_service = AgentService()
 logger = logging.getLogger(__name__)
 
 @router.post("/agents", response_model=APIResponse[AgentResponse])

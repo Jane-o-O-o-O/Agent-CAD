@@ -13,7 +13,7 @@ from app.application.schemas.event import (
 )
 from app.application.schemas.response import ShellViewResponse, FileViewResponse
 from app.domain.models.agent import Agent
-from app.domain.services.agent import AgentDomainService
+from app.domain.services.agent import agent_domain_service
 from app.domain.models.event import (
     PlanCreatedEvent,
     ToolCallingEvent,
@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 class AgentService:
     def __init__(self):
         logger.info("Initializing AgentService")
-        self.agent_domain_service = AgentDomainService()  # Single domain service instance
+        self.agent_domain_service = agent_domain_service  # Single domain service instance
         self.settings = get_settings()
         self.llm = OpenAILLM()
         self.search_engine: Optional[GoogleSearchEngine] = None
@@ -163,10 +163,10 @@ class AgentService:
             logger.error(f"Error destroying agent {agent_id}: {str(e)}")
             return False
 
-    async def close(self):
+    async def shutdown(self):
         logger.info("Closing all agents and cleaning up resources")
         # Clean up all Agents and their associated sandboxes
-        await self.agent_domain_service.close_all()
+        await self.agent_domain_service.shutdown()
         logger.info("All agents closed successfully")
 
     async def agent_exists(self, agent_id: str) -> bool:
@@ -262,3 +262,5 @@ class AgentService:
         result = await sandbox.file_read(path)
         logger.info(f"File read successfully: {path}")
         return FileViewResponse(**result.data)
+
+agent_service = AgentService()

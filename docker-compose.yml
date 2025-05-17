@@ -4,9 +4,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      platforms:
-        - linux/amd64
-        - linux/arm64
+      x-bake:
+        platforms:
+          - linux/amd64
+          - linux/arm64
     ports:
       - "5173:80"
     depends_on:
@@ -22,9 +23,10 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      platforms:
-        - linux/amd64
-        - linux/arm64
+      x-bake:
+        platforms:
+          - linux/amd64
+          - linux/arm64
     depends_on:
       - sandbox
     restart: unless-stopped
@@ -40,9 +42,10 @@ services:
     build:
       context: ./sandbox
       dockerfile: Dockerfile
-      platforms:
-        - linux/amd64
-        - linux/arm64
+      x-bake:
+        platforms:
+          - linux/amd64
+          - linux/arm64
     command: /bin/sh -c "exit 0"  # prevent sandbox from starting, ensure image is pulled
     restart: "no"
     networks:
