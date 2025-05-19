@@ -44,7 +44,7 @@ class OpenAILLM:
                     messages=messages,
                     response_format=response_format
                 )
-            return response.choices[0].message
+            return response.choices[0].message.model_dump()
         except Exception as e:
             logger.error(f"Error calling OpenAI API: {str(e)}")
             raise

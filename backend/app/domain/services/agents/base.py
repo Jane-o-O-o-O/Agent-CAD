@@ -4,36 +4,37 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional, AsyncGenerator
 from app.domain.external.llm import LLM
+from app.domain.models.agent import Agent
 from app.domain.models.memory import Memory
 from app.domain.services.tools.base import BaseTool
 from app.domain.models.tool_result import ToolResult
-from app.domain.models.event import (
+from app.domain.events.agent_events import (
     AgentEvent,
     ToolCallingEvent,
     ToolCalledEvent,
     ErrorEvent,
     MessageEvent,
 )
-
+from app.domain.repositories.agent_repository import AgentRepository
 
 class BaseAgent(ABC):
     """
     Base agent class, defining the basic behavior of the agent
     """
 
+    name: str = ""
     system_prompt: str = ""
     format: Optional[str] = None
     max_iterations: int = 30
     max_retries: int = 3
     retry_interval: float = 1.0
 
-    def __init__(self, memory: Memory, llm: LLM, tools: List[BaseTool] = []):
-        self.memory = memory
+    def __init__(self, agent_id: str, agent_repository: AgentRepository, llm: LLM, tools: List[BaseTool] = []):
+        self._agent_id = agent_id
+        self._repository = agent_repository
         self.llm = llm
-        self.memory.add_message({
-            "role": "system", "content": self.system_prompt,
-        })
         self.tools = tools
+        self.memory = None
     
     def get_available_tools(self) -> Optional[List[Dict[str, Any]]]:
         """Get all available tools list"""
@@ -69,13 +70,16 @@ class BaseAgent(ABC):
     async def execute(self, request: str) -> AsyncGenerator[AgentEvent, None]:
         message = await self.ask(request, self.format)
         for _ in range(self.max_iterations):
-            if not message.tool_calls:
+            if not message.get("tool_calls"):
                 break
             tool_responses = []
-            for tool_call in message.tool_calls:
-                function_name = tool_call.function.name
-                function_args = json.loads(tool_call.function.arguments)
-                tool_call_id = tool_call.id
+            for tool_call in message["tool_calls"]:
+                if not tool_call.get("function"):
+                    continue
+                
+                function_name = tool_call["function"]["name"]
+                function_args = json.loads(tool_call["function"]["arguments"])
+                tool_call_id = tool_call["id"]
                 
                 tool = self.get_tool(function_name)
 
@@ -107,10 +111,21 @@ class BaseAgent(ABC):
         else:
             yield ErrorEvent(error="Maximum iteration count reached, failed to complete the task")
         
-        yield MessageEvent(message=message.content)
+        yield MessageEvent(message=message["content"])
     
-    async def ask_with_messages(self, messages: List[Dict[str, Any]], format: Optional[str] = None) -> Dict[str, Any]:
+    async def _add_messages(self, messages: List[Dict[str, Any]]) -> None:
+        """Update memory and save to repository"""
+        if not self.memory:
+            self.memory = await self._repository.get_memory(self._agent_id, self.name)
+            if self.memory.empty:
+                self.memory.add_message({
+                    "role": "system", "content": self.system_prompt,
+                })
         self.memory.add_messages(messages)
+        await self._repository.update_memory(self._agent_id, self.name, self.memory)
+
+    async def ask_with_messages(self, messages: List[Dict[str, Any]], format: Optional[str] = None) -> Dict[str, Any]:
+        await self._add_messages(messages)
 
         response_format = None
         if format:
@@ -119,9 +134,9 @@ class BaseAgent(ABC):
         message = await self.llm.ask(self.memory.get_messages(), 
                                      tools=self.get_available_tools(), 
                                      response_format=response_format)
-        if message.tool_calls:
-            message.tool_calls = message.tool_calls[:1]
-        self.memory.add_message(message)
+        if message.get("tool_calls"):
+            message["tool_calls"] = message["tool_calls"][:1]
+        await self._add_messages([message])
         return message
 
     async def ask(self, request: str, format: Optional[str] = None) -> Dict[str, Any]:

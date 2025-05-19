@@ -1,21 +1,16 @@
 from pydantic import BaseModel
-from typing import List, Dict, Any, Union
-from openai.types.chat import ChatCompletionMessage
+from typing import List, Dict, Any
 
 class Memory(BaseModel):
     """
     Memory class, defining the basic behavior of memory
     """
 
-    messages: List[Union[Dict[str, Any], ChatCompletionMessage]] = []
+    messages: List[Dict[str, Any]] = []
 
-    def get_message_role(self, message: Union[Dict[str, Any], ChatCompletionMessage]) -> str:
+    def get_message_role(self, message: Dict[str, Any]) -> str:
         """Get the role of the message"""
-        if isinstance(message, dict):
-            return message.get("role")
-        elif isinstance(message, ChatCompletionMessage):
-            return message.role
-        return None
+        return message.get("role")
 
     def add_message(self, message: Dict[str, Any]) -> None:
         """Add message to memory"""
@@ -70,3 +65,8 @@ class Memory(BaseModel):
             self.messages.pop()
         elif len(self.messages) > 0 and self.get_message_role(self.messages[-1]) == "user":
             self.messages.pop()
+
+    @property
+    def empty(self) -> bool:
+        """Check if memory is empty"""
+        return len(self.messages) == 0

@@ -13,8 +13,8 @@ from app.application.schemas.event import (
 )
 from app.application.schemas.response import ShellViewResponse, FileViewResponse
 from app.domain.models.agent import Agent
-from app.domain.services.agent import agent_domain_service
-from app.domain.models.event import (
+from app.domain.services.agent_domain_service import AgentDomainService
+from app.domain.events.agent_events import (
     PlanCreatedEvent,
     ToolCallingEvent,
     ToolCalledEvent,
@@ -33,6 +33,7 @@ from app.infrastructure.external.sandbox.docker_sandbox import DockerSandbox
 from app.infrastructure.external.browser.playwright_browser import PlaywrightBrowser
 from app.infrastructure.external.search.google_search import GoogleSearchEngine
 from app.infrastructure.config import get_settings
+from app.infrastructure.repositories.mongo_agent_repository import MongoAgentRepository
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -40,7 +41,8 @@ logger = logging.getLogger(__name__)
 class AgentService:
     def __init__(self):
         logger.info("Initializing AgentService")
-        self.agent_domain_service = agent_domain_service  # Single domain service instance
+        self.agent_repository = MongoAgentRepository()
+        self.agent_domain_service = AgentDomainService(self.agent_repository)
         self.settings = get_settings()
         self.llm = OpenAILLM()
         self.search_engine: Optional[GoogleSearchEngine] = None
@@ -59,34 +61,34 @@ class AgentService:
         logger.info("Creating new agent")
         # Create a new Docker container as sandbox
         sandbox = await DockerSandbox.create()
-        cdp_url = sandbox.get_cdp_url()
-        logger.info(f"Created sandbox with CDP URL: {cdp_url}")
+        logger.info(f"Created sandbox with CDP URL: {sandbox.cdp_url}")
         
-        self.browser = PlaywrightBrowser(self.llm, cdp_url)
+        self.browser = PlaywrightBrowser(self.llm, sandbox.cdp_url)
         logger.info("Initialized Playwright browser")
         
-        # Create and initialize Agent and its resources
-        agent = self.agent_domain_service.create_agent(
+        # Create Agent instance
+        agent = Agent(
             model_name=self.settings.model_name,
+            temperature=self.settings.temperature,
+            max_tokens=self.settings.max_tokens,
+            sandbox_id=sandbox.id
+        )
+        logger.info(f"Created new Agent with ID: {agent.id}")
+        
+        # Save agent to repository
+        await self.agent_repository.save(agent)
+        logger.info(f"Saved agent {agent.id} to repository")
+        
+        # Initialize agent runtime in domain service
+        await self.agent_domain_service.create_agent_runtime(
+            agent_id=agent.id,
             llm=self.llm, 
             sandbox=sandbox, 
             browser=self.browser, 
-            search_engine=self.search_engine,
-            temperature=self.settings.temperature,  # Get temperature parameter from configuration
-            max_tokens=self.settings.max_tokens     # Get max tokens from configuration
+            search_engine=self.search_engine
         )
         
         logger.info(f"Agent created successfully with ID: {agent.id}")
-        return agent
-
-    async def get_agent(self, agent_id: str) -> Optional[Agent]:
-        logger.info(f"Retrieving agent with ID: {agent_id}")
-        # Use domain service method to get the Agent
-        agent = self.agent_domain_service.get_agent(agent_id)
-        if agent:
-            logger.info(f"Agent found: {agent_id}")
-        else:
-            logger.warning(f"Agent not found: {agent_id}")
         return agent
 
     def _to_sse_event(self, event: AgentEvent) -> Generator[SSEEvent, None, None]:
@@ -169,17 +171,33 @@ class AgentService:
         await self.agent_domain_service.shutdown()
         logger.info("All agents closed successfully")
 
-    async def agent_exists(self, agent_id: str) -> bool:
-        """Check if an Agent exists
+    async def _get_sandbox(self, agent_id: str) -> DockerSandbox:
+        """Get sandbox instance for the specified agent
         
         Args:
             agent_id: Agent ID
             
         Returns:
-            bool: Returns True if the Agent exists, False otherwise
+            DockerSandbox: Sandbox instance
+            
+        Raises:
+            NotFoundError: When Agent or Sandbox does not exist
         """
-        agent = self.agent_domain_service.get_agent(agent_id)
-        return agent is not None
+        agent = await self.agent_repository.find_by_id(agent_id)
+        if not agent:
+            logger.warning(f"Agent not found: {agent_id}")
+            raise NotFoundError(f"Agent not found: {agent_id}")
+        
+        if not agent.sandbox_id:
+            logger.warning(f"Sandbox ID not found for agent: {agent_id}")
+            raise NotFoundError(f"Sandbox not found: {agent_id}")
+            
+        sandbox = await DockerSandbox.get(agent.sandbox_id)
+        if not sandbox:
+            logger.warning(f"Sandbox not found: {agent_id}")
+            raise NotFoundError(f"Sandbox not found: {agent_id}")
+            
+        return sandbox
 
     async def shell_view(self, agent_id: str, session_id: str) -> ShellViewResponse:
         """View shell session output
@@ -197,15 +215,7 @@ class AgentService:
         """
         logger.info(f"Viewing shell output for agent {agent_id} in session {session_id}")
         
-        if not self.agent_exists(agent_id):
-            logger.warning(f"Agent not found: {agent_id}")
-            raise NotFoundError(f"Agent not found: {agent_id}")
-        
-        sandbox = self.agent_domain_service.get_sandbox(agent_id)
-        if not sandbox:
-            logger.warning(f"Sandbox not found: {agent_id}")
-            raise NotFoundError(f"Sandbox not found: {agent_id}")
-            
+        sandbox = await self._get_sandbox(agent_id)
         result = await sandbox.view_shell(session_id)
         return ShellViewResponse(**result.data)
 
@@ -223,16 +233,8 @@ class AgentService:
         """
         logger.info(f"Getting sandbox host for agent {agent_id}")
         
-        if not await self.agent_exists(agent_id):
-            logger.warning(f"Agent not found: {agent_id}")
-            raise NotFoundError(f"Agent not found: {agent_id}")
-        
-        sandbox = self.agent_domain_service.get_sandbox(agent_id)
-        if not sandbox:
-            logger.warning(f"Sandbox not found: {agent_id}")
-            raise NotFoundError(f"Sandbox not found: {agent_id}")
-        
-        return sandbox.get_vnc_url()
+        sandbox = await self._get_sandbox(agent_id)
+        return sandbox.vnc_url
 
     async def file_view(self, agent_id: str, path: str) -> FileViewResponse:
         """View file content
@@ -250,15 +252,7 @@ class AgentService:
         """
         logger.info(f"Viewing file content for agent {agent_id}, file path: {path}")
         
-        if not self.agent_exists(agent_id):
-            logger.warning(f"Agent not found: {agent_id}")
-            raise NotFoundError(f"Agent not found: {agent_id}")
-        
-        sandbox = self.agent_domain_service.get_sandbox(agent_id)
-        if not sandbox:
-            logger.warning(f"Sandbox not found: {agent_id}")
-            raise NotFoundError(f"Sandbox not found: {agent_id}")
-            
+        sandbox = await self._get_sandbox(agent_id)
         result = await sandbox.file_read(path)
         logger.info(f"File read successfully: {path}")
         return FileViewResponse(**result.data)

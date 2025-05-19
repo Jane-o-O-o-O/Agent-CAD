@@ -10,7 +10,7 @@ from app.domain.services.prompts.planner import (
     CREATE_PLAN_PROMPT, 
     UPDATE_PLAN_PROMPT
 )
-from app.domain.models.event import (
+from app.domain.events.agent_events import (
     AgentEvent,
     PlanCreatedEvent,
     PlanUpdatedEvent,
@@ -19,6 +19,7 @@ from app.domain.models.event import (
 from app.domain.external.sandbox import Sandbox
 from app.domain.services.tools.file import FileTool
 from app.domain.services.tools.shell import ShellTool
+from app.domain.repositories.agent_repository import AgentRepository
 
 logger = logging.getLogger(__name__)
 
@@ -27,15 +28,17 @@ class PlannerAgent(BaseAgent):
     Planner agent class, defining the basic behavior of planning
     """
 
+    name: str = "planner"
     system_prompt: str = PLANNER_SYSTEM_PROMPT
     format: Optional[str] = "json_object"
 
     def __init__(
         self,
-        memory: Memory,
+        agent_id: str,
+        agent_repository: AgentRepository,
         llm: LLM,
     ):
-        super().__init__(memory, llm)
+        super().__init__(agent_id, agent_repository, llm)
 
 
     async def create_plan(self, message: Optional[str] = None) -> AsyncGenerator[AgentEvent, None]:

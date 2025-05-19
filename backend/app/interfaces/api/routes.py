@@ -5,7 +5,7 @@ from sse_starlette.event import ServerSentEvent
 import asyncio
 import websockets
 import logging
-from app.application.services.agent import agent_service
+from app.application.services.agent_service import agent_service
 from app.application.schemas.request import ChatRequest, FileViewRequest, ShellViewRequest
 from app.application.schemas.response import APIResponse, AgentResponse, ShellViewResponse, FileViewResponse
 

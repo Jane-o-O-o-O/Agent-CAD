@@ -5,6 +5,7 @@ import docker
 import socket
 import logging
 import asyncio
+from async_lru import alru_cache
 from app.infrastructure.config import get_settings
 from urllib.parse import urlparse
 from app.domain.models.tool_result import ToolResult
@@ -17,9 +18,25 @@ class DockerSandbox:
         self.client = httpx.AsyncClient(timeout=600)
         self.ip = ip
         self.base_url = f"http://{self.ip}:8080"
-        self.vnc_url = f"ws://{self.ip}:5901"
-        self.cdp_url = f"http://{self.ip}:9222"
-        self.container_name = container_name
+        self._vnc_url = f"ws://{self.ip}:5901"
+        self._cdp_url = f"http://{self.ip}:9222"
+        self._container_name = container_name
+    
+    @property
+    def id(self) -> str:
+        """Sandbox ID"""
+        if not self._container_name:
+            return "dev-sandbox"
+        return self._container_name
+    
+    
+    @property
+    def cdp_url(self) -> str:
+        return self._cdp_url
+
+    @property
+    def vnc_url(self) -> str:
+        return self._vnc_url
 
     @staticmethod
     def _create_task() -> 'DockerSandbox':
@@ -101,11 +118,25 @@ class DockerSandbox:
     
         return await asyncio.to_thread(DockerSandbox._create_task)
     
-    def get_cdp_url(self) -> str:
-        return self.cdp_url
+    @staticmethod
+    @alru_cache(maxsize=128, typed=True)
+    async def get(id: str) -> 'DockerSandbox':
+        """Get sandbox by ID (static method)
+        
+        Args:
+            id: Sandbox ID
+            
+        Returns:
+            Sandbox instance
+        """
+        settings = get_settings()
+        if settings.sandbox_address:
+            ip = await DockerSandbox._resolve_hostname_to_ip(settings.sandbox_address)
+            return DockerSandbox(ip=ip, container_name=id)
 
-    def get_vnc_url(self) -> str:
-        return self.vnc_url
+        docker_client = docker.from_env()
+        container = docker_client.containers.get(id)
+        return DockerSandbox(ip=container.attrs['NetworkSettings']['IPAddress'], container_name=id)
 
     async def exec_command(self, session_id: str, exec_dir: str, command: str) -> ToolResult:
         response = await self.client.post(
@@ -315,6 +346,7 @@ class DockerSandbox:
         return ToolResult(**response.json())
     
     @staticmethod
+    @alru_cache(maxsize=128, typed=True)
     async def _resolve_hostname_to_ip(hostname: str) -> str:
         """Resolve hostname to IP address
         
@@ -323,6 +355,10 @@ class DockerSandbox:
             
         Returns:
             Resolved IP address, or None if resolution fails
+            
+        Note:
+            This method is cached using LRU cache with a maximum size of 128 entries.
+            The cache helps reduce repeated DNS lookups for the same hostname.
         """
         try:
             # First check if hostname is already in IP address format

@@ -7,8 +7,9 @@ from app.domain.external.llm import LLM
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.browser import Browser
 from app.domain.external.search import SearchEngine
+from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.services.prompts.execution import EXECUTION_SYSTEM_PROMPT, EXECUTION_PROMPT
-from app.domain.models.event import (
+from app.domain.events.agent_events import (
     AgentEvent,
     StepFailedEvent,
     StepCompletedEvent,
@@ -28,17 +29,19 @@ class ExecutionAgent(BaseAgent):
     Execution agent class, defining the basic behavior of execution
     """
 
+    name: str = "execution"
     system_prompt: str = EXECUTION_SYSTEM_PROMPT
 
     def __init__(
         self,
-        memory: Memory,
+        agent_id: str,
+        agent_repository: AgentRepository,
         llm: LLM,
         sandbox: Sandbox,
         browser: Browser,
         search_engine: Optional[SearchEngine] = None,
     ):
-        super().__init__(memory, llm, [   
+        super().__init__(agent_id, agent_repository, llm, [   
             ShellTool(sandbox),
             BrowserTool(browser),
             FileTool(sandbox),

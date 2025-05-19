@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     temperature: float = 0.7
     max_tokens: int = 2000
     
+    # MongoDB configuration
+    mongodb_uri: str = "mongodb://mongodb:27017"
+    mongodb_database: str = "manus"
+    
     # Sandbox configuration
     sandbox_address: str | None = None
     sandbox_image: str | None = None

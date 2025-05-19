@@ -35,6 +35,9 @@ services:
       sandbox: 
         condition: service_started
         required: false
+      mongodb:
+        condition: service_started
+        required: true
     restart: unless-stopped
     networks:
       - manus-network
@@ -79,6 +82,18 @@ services:
       - MOCK_DELAY=1
     networks:
       - manus-network
+
+  mongodb:
+    image: mongo:7.0
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+    networks:
+      - manus-network
+
+volumes:
+  mongodb_data:
+    name: manus-mongodb-data
 
 networks:
   manus-network:

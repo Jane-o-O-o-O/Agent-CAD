@@ -222,10 +222,37 @@ class Sandbox(Protocol):
         """
         ...
     
+    @staticmethod
+    async def get(id: str) -> 'Sandbox':
+        """Get sandbox by ID (static method)
+        
+        Args:
+            id: Sandbox ID
+            
+        Returns:
+            Sandbox instance
+        """
+        ...
+    
     async def destroy(self) -> bool:
         """Destroy current sandbox instance
         
         Returns:
             Whether destroyed successfully
         """
+        ...
+
+    @property
+    def id(self) -> str:
+        """Sandbox ID"""
+        ...
+
+    @property
+    def cdp_url(self) -> str:
+        """CDP URL"""
+        ...
+
+    @property
+    def vnc_url(self) -> str:
+        """VNC URL"""
         ...
