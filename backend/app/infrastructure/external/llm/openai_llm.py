@@ -14,10 +14,22 @@ class OpenAILLM:
             base_url=settings.api_base
         )
         
-        self.model_name = settings.model_name
-        self.temperature = settings.temperature
-        self.max_tokens = settings.max_tokens
-        logger.info(f"Initialized OpenAI LLM with model: {self.model_name}")
+        self._model_name = settings.model_name
+        self._temperature = settings.temperature
+        self._max_tokens = settings.max_tokens
+        logger.info(f"Initialized OpenAI LLM with model: {self._model_name}")
+    
+    @property
+    def model_name(self) -> str:
+        return self._model_name
+    
+    @property
+    def temperature(self) -> float:
+        return self._temperature
+    
+    @property
+    def max_tokens(self) -> int:
+        return self._max_tokens
     
     async def ask(self, messages: List[Dict[str, str]], 
                             tools: Optional[List[Dict[str, Any]]] = None,
@@ -26,21 +38,21 @@ class OpenAILLM:
         response = None
         try:
             if tools:
-                logger.debug(f"Sending request to OpenAI with tools, model: {self.model_name}")
+                logger.debug(f"Sending request to OpenAI with tools, model: {self._model_name}")
                 response = await self.client.chat.completions.create(
-                    model=self.model_name,
-                    temperature=self.temperature,
-                    max_tokens=self.max_tokens,
+                    model=self._model_name,
+                    temperature=self._temperature,
+                    max_tokens=self._max_tokens,
                     messages=messages,
                     tools=tools,
                     response_format=response_format,
                 )
             else:
-                logger.debug(f"Sending request to OpenAI without tools, model: {self.model_name}")
+                logger.debug(f"Sending request to OpenAI without tools, model: {self._model_name}")
                 response = await self.client.chat.completions.create(
-                    model=self.model_name,
-                    temperature=self.temperature,
-                    max_tokens=self.max_tokens,
+                    model=self._model_name,
+                    temperature=self._temperature,
+                    max_tokens=self._max_tokens,
                     messages=messages,
                     response_format=response_format
                 )

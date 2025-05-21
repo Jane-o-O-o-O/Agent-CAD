@@ -28,64 +28,64 @@ from app.domain.events.agent_events import (
     DoneEvent
 )
 from app.application.schemas.exceptions import NotFoundError
-from app.infrastructure.external.llm.openai_llm import OpenAILLM
-from app.infrastructure.external.sandbox.docker_sandbox import DockerSandbox
-from app.infrastructure.external.browser.playwright_browser import PlaywrightBrowser
-from app.infrastructure.external.search.google_search import GoogleSearchEngine
-from app.infrastructure.config import get_settings
-from app.infrastructure.repositories.mongo_agent_repository import MongoAgentRepository
+from typing import Type
+from app.domain.models.agent import Agent
+from app.domain.external.sandbox import Sandbox
+from app.domain.external.browser import Browser
+from app.domain.external.search import SearchEngine
+from app.domain.external.llm import LLM
+from app.domain.repositories.agent_repository import AgentRepository
+from app.domain.external.sandbox import SandboxFactory
+from app.domain.external.browser import BrowserFactory
+
 
 # Set up logger
 logger = logging.getLogger(__name__)
 
 class AgentService:
-    def __init__(self):
+    def __init__(self,
+                 llm: LLM,
+                 agent_repository: AgentRepository,
+                 sandbox_factory: SandboxFactory,
+                 browser_factory: BrowserFactory, 
+                 search_engine: Optional[SearchEngine] = None):
         logger.info("Initializing AgentService")
-        self.agent_repository = MongoAgentRepository()
-        self.agent_domain_service = AgentDomainService(self.agent_repository)
-        self.settings = get_settings()
-        self.llm = OpenAILLM()
-        self.search_engine: Optional[GoogleSearchEngine] = None
-        
-        # Initialize search engine only if both API key and engine ID are set
-        if self.settings.google_search_api_key and self.settings.google_search_engine_id:
-            logger.info("Initializing Google Search Engine")
-            self.search_engine = GoogleSearchEngine(
-                api_key=self.settings.google_search_api_key, 
-                cx=self.settings.google_search_engine_id
-            )
-        else:
-            logger.warning("Google Search Engine not initialized: missing API key or engine ID")
+        self._agent_repository = agent_repository
+        self._agent_domain_service = AgentDomainService(self._agent_repository)
+        self._llm = llm
+        self._browser_factory = browser_factory
+        self._search_engine = search_engine
+        self._sandbox_factory = sandbox_factory
 
     async def create_agent(self) -> Agent:
         logger.info("Creating new agent")
         # Create a new Docker container as sandbox
-        sandbox = await DockerSandbox.create()
+        sandbox = await self._sandbox_factory.create()
         logger.info(f"Created sandbox with CDP URL: {sandbox.cdp_url}")
         
-        self.browser = PlaywrightBrowser(self.llm, sandbox.cdp_url)
+        browser = await self._browser_factory.create(self._llm, sandbox.cdp_url)
         logger.info("Initialized Playwright browser")
         
         # Create Agent instance
         agent = Agent(
-            model_name=self.settings.model_name,
-            temperature=self.settings.temperature,
-            max_tokens=self.settings.max_tokens,
+            model_name=self._llm.model_name,
+            temperature=self._llm.temperature,
+            max_tokens=self._llm.max_tokens,
             sandbox_id=sandbox.id
         )
         logger.info(f"Created new Agent with ID: {agent.id}")
         
         # Save agent to repository
-        await self.agent_repository.save(agent)
+        await self._agent_repository.save(agent)
         logger.info(f"Saved agent {agent.id} to repository")
         
         # Initialize agent runtime in domain service
-        await self.agent_domain_service.create_agent_runtime(
+        await self._agent_domain_service.create_agent_runtime(
             agent_id=agent.id,
-            llm=self.llm, 
+            llm=self._llm, 
             sandbox=sandbox, 
-            browser=self.browser, 
-            search_engine=self.search_engine
+            browser=browser, 
+            search_engine=self._search_engine
         )
         
         logger.info(f"Agent created successfully with ID: {agent.id}")
@@ -138,7 +138,7 @@ class AgentService:
     async def chat(self, agent_id: str, message: str, timestamp: int) -> AsyncGenerator[SSEEvent, None]:
         logger.info(f"Starting chat with agent {agent_id}: {message[:50]}...")
         # Directly use the domain service's chat method, which will check if the agent exists
-        async for event in self.agent_domain_service.chat(agent_id, message, timestamp):
+        async for event in self._agent_domain_service.chat(agent_id, message, timestamp):
             logger.debug(f"Received event: {event}")
             for sse_event in self._to_sse_event(event):
                 yield sse_event
@@ -155,7 +155,7 @@ class AgentService:
         logger.info(f"Attempting to destroy agent: {agent_id}")
         try:
             # Destroy Agent resources through the domain service
-            result = await self.agent_domain_service.close_agent(agent_id)
+            result = await self._agent_domain_service.close_agent(agent_id)
             if result:
                 logger.info(f"Agent destroyed successfully: {agent_id}")
             else:
@@ -168,22 +168,22 @@ class AgentService:
     async def shutdown(self):
         logger.info("Closing all agents and cleaning up resources")
         # Clean up all Agents and their associated sandboxes
-        await self.agent_domain_service.shutdown()
+        await self._agent_domain_service.shutdown()
         logger.info("All agents closed successfully")
 
-    async def _get_sandbox(self, agent_id: str) -> DockerSandbox:
+    async def _get_sandbox(self, agent_id: str) -> Sandbox:
         """Get sandbox instance for the specified agent
         
         Args:
             agent_id: Agent ID
             
         Returns:
-            DockerSandbox: Sandbox instance
+            Sandbox: Sandbox instance
             
         Raises:
             NotFoundError: When Agent or Sandbox does not exist
         """
-        agent = await self.agent_repository.find_by_id(agent_id)
+        agent = await self._agent_repository.find_by_id(agent_id)
         if not agent:
             logger.warning(f"Agent not found: {agent_id}")
             raise NotFoundError(f"Agent not found: {agent_id}")
@@ -192,7 +192,7 @@ class AgentService:
             logger.warning(f"Sandbox ID not found for agent: {agent_id}")
             raise NotFoundError(f"Sandbox not found: {agent_id}")
             
-        sandbox = await DockerSandbox.get(agent.sandbox_id)
+        sandbox = await self._sandbox_factory.get(agent.sandbox_id)
         if not sandbox:
             logger.warning(f"Sandbox not found: {agent_id}")
             raise NotFoundError(f"Sandbox not found: {agent_id}")
@@ -256,5 +256,3 @@ class AgentService:
         result = await sandbox.file_read(path)
         logger.info(f"File read successfully: {path}")
         return FileViewResponse(**result.data)
-
-agent_service = AgentService()

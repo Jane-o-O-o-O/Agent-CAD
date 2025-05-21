@@ -1,11 +1,12 @@
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 class Memory(BaseModel):
     """
     Memory class, defining the basic behavior of memory
     """
 
+    id: Optional[str] = None
     messages: List[Dict[str, Any]] = []
 
     def get_message_role(self, message: Dict[str, Any]) -> str:

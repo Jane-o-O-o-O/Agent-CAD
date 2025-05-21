@@ -50,8 +50,8 @@ class BaseAgent(ABC):
                 return tool
         raise ValueError(f"Unknown tool: {function_name}")
 
-    async def execute_tool(self, tool: BaseTool, function_name: str, arguments: Dict[str, Any]) -> ToolResult:
-        """Execute specified tool, with retry mechanism"""
+    async def invoke_tool(self, tool: BaseTool, function_name: str, arguments: Dict[str, Any]) -> ToolResult:
+        """Invoke specified tool, with retry mechanism"""
 
         retries = 0
         while retries <= self.max_retries:
@@ -90,7 +90,7 @@ class BaseAgent(ABC):
                     function_args=function_args
                 )
 
-                result = await self.execute_tool(tool, function_name, function_args)
+                result = await self.invoke_tool(tool, function_name, function_args)
                 
                 # Generate event after tool call
                 yield ToolCalledEvent(
@@ -113,7 +113,7 @@ class BaseAgent(ABC):
         
         yield MessageEvent(message=message["content"])
     
-    async def _add_messages(self, messages: List[Dict[str, Any]]) -> None:
+    async def _add_to_memory(self, messages: List[Dict[str, Any]]) -> None:
         """Update memory and save to repository"""
         if not self.memory:
             self.memory = await self._repository.get_memory(self._agent_id, self.name)
@@ -122,10 +122,10 @@ class BaseAgent(ABC):
                     "role": "system", "content": self.system_prompt,
                 })
         self.memory.add_messages(messages)
-        await self._repository.update_memory(self._agent_id, self.name, self.memory)
+        await self._repository.save_memory(self.memory)
 
     async def ask_with_messages(self, messages: List[Dict[str, Any]], format: Optional[str] = None) -> Dict[str, Any]:
-        await self._add_messages(messages)
+        await self._add_to_memory(messages)
 
         response_format = None
         if format:
@@ -136,7 +136,7 @@ class BaseAgent(ABC):
                                      response_format=response_format)
         if message.get("tool_calls"):
             message["tool_calls"] = message["tool_calls"][:1]
-        await self._add_messages([message])
+        await self._add_to_memory([message])
         return message
 
     async def ask(self, request: str, format: Optional[str] = None) -> Dict[str, Any]:

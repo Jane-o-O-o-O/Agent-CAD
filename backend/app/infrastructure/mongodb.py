@@ -1,10 +1,11 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import ConnectionFailure
-from typing import Optional, List, Type
+from typing import Optional
 import logging
-from beanie import init_beanie, Document
+from beanie import init_beanie
 from functools import lru_cache
-
+from app.infrastructure.models.mongo_agent import MongoAgent
+from app.infrastructure.models.mongo_memory import MongoMemory
 from .config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ class MongoDB:
         self._client: Optional[AsyncIOMotorClient] = None
         self._settings = get_settings()
     
-    async def initialize(self, document_models: List[Type[Document]]) -> None:
+    async def initialize(self) -> None:
         """Initialize MongoDB connection and Beanie ODM."""
         if self._client is not None:
             return
@@ -31,7 +32,7 @@ class MongoDB:
             # Initialize Beanie
             await init_beanie(
                 database=self._client[self._settings.mongodb_database],
-                document_models=document_models
+                document_models=[MongoAgent, MongoMemory]
             )
             logger.info("Successfully initialized Beanie")
         except ConnectionFailure as e:
@@ -50,7 +51,7 @@ class MongoDB:
         get_mongodb.cache_clear()
             
 
-@lru_cache()
+@lru_cache
 def get_mongodb() -> MongoDB:
     """Get the MongoDB instance."""
     return MongoDB()

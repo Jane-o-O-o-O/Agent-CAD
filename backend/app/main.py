@@ -7,12 +7,17 @@ import asyncio
 import sys
 
 from app.interfaces.api.routes import router
-from app.application.services.agent_service import agent_service
+from app.application.services.agent_service import AgentService
 from app.infrastructure.config import get_settings
 from app.infrastructure.logging import setup_logging
 from app.interfaces.api.errors.exception_handlers import register_exception_handlers
 from app.infrastructure.mongodb import get_mongodb
-from app.infrastructure.models.mongo_agent import MongoAgent, MongoAgentMemories
+from app.infrastructure.external.search import GoogleSearchEngine
+from app.infrastructure.external.llm.openai_llm import OpenAILLM
+from app.infrastructure.external.sandbox.docker_sandbox import DockerSandboxFactory
+from app.infrastructure.external.browser.playwright_browser import PlaywrightBrowserFactory
+from app.infrastructure.repositories.mongo_agent_repository import MongoAgentRepository
+from app.interfaces.api.routes import get_agent_service
 
 # Initialize logging system
 setup_logging()
@@ -21,26 +26,34 @@ logger = logging.getLogger(__name__)
 # Load configuration
 settings = get_settings()
 
-# Global shutdown event
-shutdown_event = asyncio.Event()
 
-async def init_mongodb():
-    """Initialize MongoDB connection and Beanie ODM"""
-    try:
-        await get_mongodb().initialize([MongoAgent])
-        logger.info("Successfully initialized MongoDB and Beanie")
-    except Exception as e:
-        logger.error(f"Failed to initialize MongoDB and Beanie: {str(e)}")
-        sys.exit(1)
+def create_agent_service():
+    search_engine = None
+    # Initialize search engine only if both API key and engine ID are set
+    if settings.google_search_api_key and settings.google_search_engine_id:
+        logger.info("Initializing Google Search Engine")
+        search_engine = GoogleSearchEngine(
+            api_key=settings.google_search_api_key, 
+            cx=settings.google_search_engine_id
+        )
+    else:
+        logger.warning("Google Search Engine not initialized: missing API key or engine ID")
+
+    return AgentService(
+        llm=OpenAILLM(),
+        agent_repository=MongoAgentRepository(),
+        sandbox_factory=DockerSandboxFactory(),
+        browser_factory=PlaywrightBrowserFactory(),
+        search_engine=search_engine
+    )
+
+agent_service = create_agent_service()
 
 async def shutdown(signal_name=None):
     """Cleanup function that will be called when the application is shutting down"""
     if signal_name:
         logger.info(f"Received exit signal {signal_name}")
-    
-    # Set shutdown event
-    shutdown_event.set()
-    
+
     logger.info("Graceful shutdown...")
     
     try:
@@ -59,8 +72,8 @@ def handle_exit_signals():
     """Set up handlers for exit signals"""
     loop = asyncio.get_event_loop()
     
-    # Handle SIGTERM and SIGINT
-    for sig in (signal.SIGTERM, signal.SIGINT):
+    # Handle SIGTERM
+    for sig in (signal.SIGTERM,):
         loop.add_signal_handler(
             sig,
             lambda s=sig: asyncio.create_task(
@@ -75,11 +88,10 @@ async def lifespan(app: FastAPI):
     logger.info("Application startup - Manus AI Agent initializing")
     
     if "--reload" not in sys.argv:
-        # Set up signal handlers
         handle_exit_signals()
     
     # Initialize MongoDB and Beanie
-    await init_mongodb()
+    await get_mongodb().initialize()
     
     try:
         yield
@@ -91,6 +103,7 @@ async def lifespan(app: FastAPI):
         await shutdown()
 
 app = FastAPI(title="Manus AI Agent", lifespan=lifespan)
+app.dependency_overrides[get_agent_service] = lambda: agent_service
 
 # Configure CORS
 app.add_middleware(
@@ -104,5 +117,5 @@ app.add_middleware(
 # Register exception handlers
 register_exception_handlers(app)
 
-# Register routes
+# Register routes with dependency injection
 app.include_router(router, prefix="/api/v1")

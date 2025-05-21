@@ -1,9 +1,11 @@
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, UTC
 from app.domain.models.agent import Agent
 from app.domain.models.memory import Memory
 from app.domain.repositories.agent_repository import AgentRepository
-from app.infrastructure.models.mongo_agent import MongoAgent, MongoAgentMemories
+from app.infrastructure.models.mongo_agent import MongoAgent
+from app.infrastructure.models.mongo_memory import MongoMemory
+from bson import ObjectId
 import logging
 
 
@@ -12,6 +14,22 @@ logger = logging.getLogger(__name__)
 class MongoAgentRepository(AgentRepository):
     """MongoDB implementation of AgentRepository"""
 
+    def _create_mongo_agent(self, agent: Agent) -> MongoAgent:
+        """Create a new MongoDB agent from domain agent"""
+        return MongoAgent(
+            agent_id=agent.id,
+            model_name=agent.model_name,
+            temperature=agent.temperature,
+            max_tokens=agent.max_tokens,
+            sandbox_id=agent.sandbox_id,
+            created_at=agent.created_at,
+            updated_at=agent.updated_at,
+            memories={
+                name: MongoMemory(messages=memory.messages)
+                for name, memory in agent.memories.items()
+            }
+        )
+
     async def save(self, agent: Agent) -> None:
         """Save or update an agent"""
         mongo_agent = await MongoAgent.find_one(
@@ -19,24 +37,16 @@ class MongoAgentRepository(AgentRepository):
         )
         
         if not mongo_agent:
-            mongo_agent = MongoAgent(
-                agent_id=agent.id,
-                model_name=agent.model_name,
-                temperature=agent.temperature,
-                max_tokens=agent.max_tokens,
-                sandbox_id=agent.sandbox_id,
-                memories=agent.memories,
-                created_at=agent.created_at,
-                updated_at=agent.updated_at,
-            )
+            mongo_agent = self._create_mongo_agent(agent)
+            await mongo_agent.save()
+            return
         
         # Update fields
         mongo_agent.model_name = agent.model_name
         mongo_agent.temperature = agent.temperature
         mongo_agent.max_tokens = agent.max_tokens
         mongo_agent.sandbox_id = agent.sandbox_id
-        mongo_agent.memories = agent.memories
-        mongo_agent.updated_at = agent.updated_at
+        mongo_agent.updated_at = datetime.now(UTC)
         
         await mongo_agent.save()
 
@@ -45,24 +55,29 @@ class MongoAgentRepository(AgentRepository):
         mongo_agent = await MongoAgent.find_one(
             MongoAgent.agent_id == agent_id
         )
-        return self._to_domain_model(mongo_agent) if mongo_agent else None
+        return self._to_domain_agent(mongo_agent) if mongo_agent else None
 
-    async def update_memory(self, agent_id: str,
-                          agent_name: str,
+    async def add_memory(self, agent_id: str,
+                          name: str,
                           memory: Memory) -> Optional[Agent]:
-        """Update the memory of an agent"""
+        """Add or update a memory for an agent"""
         mongo_agent = await MongoAgent.find_one(
             MongoAgent.agent_id == agent_id
         )
         if not mongo_agent:
             return None
 
-        mongo_agent.memories[agent_name] = MongoAgentMemories(messages=memory.messages)
-            
-        mongo_agent.updated_at = datetime.utcnow()
+        # Create and save MongoMemory object
+        mongo_memory = MongoMemory(messages=memory.messages)
+        await mongo_memory.save()
+        
+        # Update agent's memories
+        mongo_agent.memories[name] = mongo_memory
+        mongo_agent.updated_at = datetime.now(UTC)
         await mongo_agent.save()
         
-        return self._to_domain_model(mongo_agent)
+        return self._to_domain_agent(mongo_agent)
+    
 
     async def get_memory(self, agent_id: str, name: str) -> Memory:
         """Get memory by name from agent, create if not exists"""
@@ -71,16 +86,37 @@ class MongoAgentRepository(AgentRepository):
         )
         if not mongo_agent:
             raise ValueError(f"Agent {agent_id} not found")
-            
-        agent = self._to_domain_model(mongo_agent)
-        memory = agent.memories.get(name)
-        if not memory:
-            memory = Memory()
-            agent.memories[name] = memory
-            await self.save(agent)
-        return memory
+        mongo_memory = mongo_agent.memories.get(name)
+        if not mongo_memory:
+            # Create a new memory
+            mongo_memory = MongoMemory(messages=[])
+            await mongo_memory.save()
+            # Update agent's memories
+            mongo_agent.memories[name] = mongo_memory
+            mongo_agent.updated_at = datetime.now(UTC)
+            await mongo_agent.save()
+        else:
+            mongo_memory = await mongo_memory.fetch()
+        
+        return self._to_domain_memory(mongo_memory)
+    
+    async def save_memory(self, memory: Memory) -> None:
+        """Update the messages of a memory"""
+        mongo_memory = await MongoMemory.find_one(
+            MongoMemory.id == ObjectId(memory.id)
+        )
+        if not mongo_memory:
+            raise ValueError(f"Memory {memory.id} not found")
+        
+        mongo_memory.messages = memory.messages
+        await mongo_memory.save()
 
-    def _to_domain_model(self, mongo_agent: MongoAgent) -> Agent:
+
+    def _to_domain_memory(self, mongo_memory: MongoMemory) -> Memory:
+        """Convert MongoDB document to domain model"""
+        return Memory(id=str(mongo_memory.id), messages=mongo_memory.messages)
+
+    def _to_domain_agent(self, mongo_agent: MongoAgent) -> Agent:
         """Convert MongoDB document to domain model"""
 
         return Agent(
@@ -92,7 +128,7 @@ class MongoAgentRepository(AgentRepository):
             created_at=mongo_agent.created_at,
             updated_at=mongo_agent.updated_at,
             memories={
-                name: Memory(messages=mongo_memory.messages)
+                name: self._to_domain_memory(mongo_memory)
                 for name, mongo_memory in mongo_agent.memories.items()
             }
         ) 

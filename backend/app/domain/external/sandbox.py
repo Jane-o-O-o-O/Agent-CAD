@@ -209,31 +209,6 @@ class Sandbox(Protocol):
         """
         ...
     
-    @staticmethod
-    async def create() -> 'Sandbox':
-        """Create a new sandbox instance (static method)
-        
-        Args:
-            image: Sandbox image name
-            name_prefix: Sandbox name prefix
-            
-        Returns:
-            Sandbox instance
-        """
-        ...
-    
-    @staticmethod
-    async def get(id: str) -> 'Sandbox':
-        """Get sandbox by ID (static method)
-        
-        Args:
-            id: Sandbox ID
-            
-        Returns:
-            Sandbox instance
-        """
-        ...
-    
     async def destroy(self) -> bool:
         """Destroy current sandbox instance
         
@@ -255,4 +230,22 @@ class Sandbox(Protocol):
     @property
     def vnc_url(self) -> str:
         """VNC URL"""
+        ...
+
+class SandboxFactory(Protocol):
+    """Sandbox factory interface"""
+    
+    async def create(self) -> Sandbox:
+        """Create a new sandbox instance"""
+        ...
+        
+    async def get(self, id: str) -> Sandbox:
+        """Get sandbox by ID
+        
+        Args:
+            id: Sandbox ID
+            
+        Returns:
+            Sandbox instance
+        """
         ...

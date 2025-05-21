@@ -29,7 +29,15 @@ class AgentStatus(str, Enum):
     UPDATING = "updating"
 
 class PlanActFlow(BaseFlow):
-    def __init__(self, agent_id: str, agent_repository: AgentRepository, llm: LLM, sandbox: Sandbox, browser: Browser, search_engine: SearchEngine):
+    def __init__(
+        self,
+        agent_id: str,
+        agent_repository: AgentRepository,
+        llm: LLM,
+        sandbox: Sandbox,
+        browser: Browser,
+        search_engine: SearchEngine
+    ):
         super().__init__(agent_id, agent_repository)
         self.status = AgentStatus.IDLE
         self.plan = None

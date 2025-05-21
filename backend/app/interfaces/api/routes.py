@@ -1,19 +1,28 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Request
 from sse_starlette.sse import EventSourceResponse
 from typing import AsyncGenerator, Dict, Any
 from sse_starlette.event import ServerSentEvent
 import asyncio
 import websockets
 import logging
-from app.application.services.agent_service import agent_service
+from app.application.services.agent_service import AgentService
 from app.application.schemas.request import ChatRequest, FileViewRequest, ShellViewRequest
 from app.application.schemas.response import APIResponse, AgentResponse, ShellViewResponse, FileViewResponse
+from typing import Optional
+
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+
+def get_agent_service() -> AgentService:
+    # Placeholder for dependency injection
+    return None
+
 @router.post("/agents", response_model=APIResponse[AgentResponse])
-async def create_agent() -> APIResponse[AgentResponse]:
+async def create_agent(
+    agent_service: AgentService = Depends(get_agent_service)
+) -> APIResponse[AgentResponse]:
     agent = await agent_service.create_agent()
     return APIResponse.success(
         AgentResponse(
@@ -24,7 +33,11 @@ async def create_agent() -> APIResponse[AgentResponse]:
     )
 
 @router.post("/agents/{agent_id}/chat")
-async def chat(agent_id: str, request: ChatRequest) -> EventSourceResponse:
+async def chat(
+    agent_id: str,
+    request: ChatRequest,
+    agent_service: AgentService = Depends(get_agent_service)
+) -> EventSourceResponse:
     async def event_generator() -> AsyncGenerator[ServerSentEvent, None]:
         async for event in agent_service.chat(agent_id, request.message, request.timestamp):
             yield ServerSentEvent(
@@ -36,7 +49,11 @@ async def chat(agent_id: str, request: ChatRequest) -> EventSourceResponse:
 
 
 @router.post("/agents/{agent_id}/shell", response_model=APIResponse[ShellViewResponse])
-async def view_shell(agent_id: str, request: ShellViewRequest) -> APIResponse[ShellViewResponse]:
+async def view_shell(
+    agent_id: str,
+    request: ShellViewRequest,
+    agent_service: AgentService = Depends(get_agent_service)
+) -> APIResponse[ShellViewResponse]:
     """View shell session output
     
     If the agent does not exist or fails to get shell output, an appropriate exception will be thrown and handled by the global exception handler
@@ -46,7 +63,11 @@ async def view_shell(agent_id: str, request: ShellViewRequest) -> APIResponse[Sh
 
 
 @router.post("/agents/{agent_id}/file", response_model=APIResponse[FileViewResponse])
-async def view_file(agent_id: str, request: FileViewRequest) -> APIResponse[FileViewResponse]:
+async def view_file(
+    agent_id: str,
+    request: FileViewRequest,
+    agent_service: AgentService = Depends(get_agent_service)
+) -> APIResponse[FileViewResponse]:
     """View file content
     
     If the agent does not exist or fails to get file content, an appropriate exception will be thrown and handled by the global exception handler
@@ -63,7 +84,11 @@ async def view_file(agent_id: str, request: FileViewRequest) -> APIResponse[File
 
 
 @router.websocket("/agents/{agent_id}/vnc")
-async def vnc_websocket(websocket: WebSocket, agent_id: str):
+async def vnc_websocket(
+    websocket: WebSocket,
+    agent_id: str,
+    agent_service: AgentService = Depends(get_agent_service)
+):
     """VNC WebSocket endpoint (binary mode)
     
     Establishes a connection with the VNC WebSocket service in the sandbox environment and forwards data bidirectionally
@@ -72,6 +97,7 @@ async def vnc_websocket(websocket: WebSocket, agent_id: str):
         websocket: WebSocket connection
         agent_id: Agent ID
     """
+    
     await websocket.accept(subprotocol="binary")
     
     try:
@@ -129,5 +155,3 @@ async def vnc_websocket(websocket: WebSocket, agent_id: str):
     except Exception as e:
         logger.error(f"WebSocket error: {str(e)}")
         await websocket.close(code=1011, reason=f"WebSocket error: {str(e)}")
-
-

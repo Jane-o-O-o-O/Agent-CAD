@@ -5,6 +5,7 @@ from markdownify import markdownify
 from app.domain.external.llm import LLM
 from app.infrastructure.config import get_settings
 from app.domain.models.tool_result import ToolResult
+from app.domain.external.browser import BrowserFactory
 import logging
 
 # Set up logger for this module
@@ -103,7 +104,7 @@ class PlaywrightBrowser:
             self.page = None
             self.browser = None
             self.playwright = None
-
+    
     async def _ensure_browser(self):
         """Ensure the browser is started"""
         if not self.browser or not self.page:
@@ -605,10 +606,26 @@ class PlaywrightBrowser:
             logs = logs[-max_lines:]
         return ToolResult(success=True, data={"logs": logs})
 
+class PlaywrightBrowserFactory(BrowserFactory):
+    """Factory for creating Playwright browser instances"""
+    
+    async def create(self, llm: LLM, cdp_url: str) -> PlaywrightBrowser:
+        """Create a new Playwright browser instance
+        
+        Args:
+            llm: LLM instance
+            cdp_url: Chrome DevTools Protocol URL
+            
+        Returns:
+            PlaywrightBrowser instance
+        """
+        return PlaywrightBrowser(llm, cdp_url)
+
 async def main():
     """Main function demonstrating the use of PlaywrightClient"""
     # Create PlaywrightBrowser instance with custom Chrome CDP URL
-    client = PlaywrightBrowser(llm=OpenAILLM(), cdp_url="http://localhost:9222")
+    factory = PlaywrightBrowserFactory()
+    client = await factory.create(llm=OpenAILLM(), cdp_url="http://localhost:9222")
     
     try:
         # Initialize the client
