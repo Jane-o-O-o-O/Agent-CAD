@@ -8,7 +8,6 @@ import logging
 from app.application.services.agent_service import AgentService
 from app.application.schemas.request import ChatRequest, FileViewRequest, ShellViewRequest
 from app.application.schemas.response import APIResponse, AgentResponse, ShellViewResponse, FileViewResponse
-from typing import Optional
 
 
 router = APIRouter()
@@ -88,7 +87,7 @@ async def vnc_websocket(
     websocket: WebSocket,
     agent_id: str,
     agent_service: AgentService = Depends(get_agent_service)
-):
+) -> None:
     """VNC WebSocket endpoint (binary mode)
     
     Establishes a connection with the VNC WebSocket service in the sandbox environment and forwards data bidirectionally

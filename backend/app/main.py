@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-def create_agent_service():
+def create_agent_service() -> AgentService:
     search_engine = None
     # Initialize search engine only if both API key and engine ID are set
     if settings.google_search_api_key and settings.google_search_engine_id:
@@ -49,7 +49,7 @@ def create_agent_service():
 
 agent_service = create_agent_service()
 
-async def shutdown(signal_name=None):
+async def shutdown(signal_name=None) -> None:
     """Cleanup function that will be called when the application is shutting down"""
     if signal_name:
         logger.info(f"Received exit signal {signal_name}")
@@ -68,27 +68,11 @@ async def shutdown(signal_name=None):
     except Exception as e:
         logger.error(f"Error during shutdown: {str(e)}")
 
-def handle_exit_signals():
-    """Set up handlers for exit signals"""
-    loop = asyncio.get_event_loop()
-    
-    # Handle SIGTERM
-    for sig in (signal.SIGTERM,):
-        loop.add_signal_handler(
-            sig,
-            lambda s=sig: asyncio.create_task(
-                shutdown(signal.Signals(s).name)
-            )
-        )
-
 # Create lifespan context manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Code executed on startup
     logger.info("Application startup - Manus AI Agent initializing")
-    
-    if "--reload" not in sys.argv:
-        handle_exit_signals()
     
     # Initialize MongoDB and Beanie
     await get_mongodb().initialize()
