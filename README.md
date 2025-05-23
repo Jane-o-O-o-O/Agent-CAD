@@ -26,7 +26,7 @@ Enjoy your own agent with AI Manus!
 
 ### Overall Design
 
-![Image](https://github.com/user-attachments/assets/6fc0652c-7108-4d02-aded-92c36d660cc4)
+![Image](https://github.com/user-attachments/assets/69775011-1eb7-452f-adaf-cd6603a4dde5)
 
 **When a user initiates a conversation:**
 
