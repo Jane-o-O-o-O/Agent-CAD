@@ -1,7 +1,9 @@
 from typing import AsyncGenerator, Dict, Any, Optional, Generator
 import logging
+from app.domain.models.session import Session
+from app.domain.repositories.session_repository import SessionRepository
 
-from app.application.schemas.event import (
+from app.application.models.event import (
     SSEEvent, DoneSSEEvent,
     MessageData, MessageSSEEvent,
     ToolData, ToolSSEEvent,
@@ -11,23 +13,22 @@ from app.application.schemas.event import (
     StepData, ErrorData,
     PlanData, PlanSSEEvent
 )
-from app.application.schemas.response import ShellViewResponse, FileViewResponse
+from app.application.models.response import ShellViewResponse, FileViewResponse
 from app.domain.models.agent import Agent
 from app.domain.services.agent_domain_service import AgentDomainService
 from app.domain.events.agent_events import (
-    PlanCreatedEvent,
-    ToolCallingEvent,
-    ToolCalledEvent,
-    StepStartedEvent,
-    StepFailedEvent,
-    StepCompletedEvent,
-    PlanCompletedEvent,
-    PlanUpdatedEvent,
-    ErrorEvent,
     AgentEvent,
-    DoneEvent
+    PlanEvent,
+    PlanStatus,
+    ToolEvent,
+    ToolStatus,
+    StepEvent,
+    StepStatus,
+    ErrorEvent,
+    MessageEvent,
+    DoneEvent,
 )
-from app.application.schemas.exceptions import NotFoundError
+from app.application.models.exceptions import NotFoundError
 from typing import Type
 from app.domain.models.agent import Agent
 from app.domain.external.sandbox import Sandbox
@@ -35,43 +36,52 @@ from app.domain.external.browser import Browser
 from app.domain.external.search import SearchEngine
 from app.domain.external.llm import LLM
 from app.domain.repositories.agent_repository import AgentRepository
-from app.domain.external.sandbox import SandboxFactory
-from app.domain.external.browser import BrowserFactory
-
+from app.domain.external.task import Task
 
 # Set up logger
 logger = logging.getLogger(__name__)
 
 class AgentService:
-    def __init__(self,
-                 llm: LLM,
-                 agent_repository: AgentRepository,
-                 sandbox_factory: SandboxFactory,
-                 browser_factory: BrowserFactory, 
-                 search_engine: Optional[SearchEngine] = None):
+    def __init__(
+        self,
+        llm: LLM,
+        agent_repository: AgentRepository,
+        session_repository: SessionRepository,
+        sandbox_cls: Type[Sandbox],
+        task_cls: Type[Task],
+        search_engine: Optional[SearchEngine] = None
+    ):
         logger.info("Initializing AgentService")
         self._agent_repository = agent_repository
-        self._agent_domain_service = AgentDomainService(self._agent_repository)
+        self._session_repository = session_repository
+        self._agent_domain_service = AgentDomainService(
+            self._agent_repository,
+            self._session_repository,
+            llm,
+            sandbox_cls,
+            task_cls,
+            search_engine
+        )
         self._llm = llm
-        self._browser_factory = browser_factory
         self._search_engine = search_engine
-        self._sandbox_factory = sandbox_factory
+        self._sandbox_cls = sandbox_cls
+    
+    async def create_session(self) -> Session:
+        logger.info("Creating new session")
+        agent = await self._create_agent()
+        session = Session(agent_id=agent.id)
+        logger.info(f"Created new Session with ID: {session.id}")
+        await self._session_repository.save(session)
+        return session
 
-    async def create_agent(self) -> Agent:
+    async def _create_agent(self) -> Agent:
         logger.info("Creating new agent")
-        # Create a new Docker container as sandbox
-        sandbox = await self._sandbox_factory.create()
-        logger.info(f"Created sandbox with CDP URL: {sandbox.cdp_url}")
-        
-        browser = await self._browser_factory.create(self._llm, sandbox.cdp_url)
-        logger.info("Initialized Playwright browser")
         
         # Create Agent instance
         agent = Agent(
             model_name=self._llm.model_name,
             temperature=self._llm.temperature,
             max_tokens=self._llm.max_tokens,
-            sandbox_id=sandbox.id
         )
         logger.info(f"Created new Agent with ID: {agent.id}")
         
@@ -79,48 +89,38 @@ class AgentService:
         await self._agent_repository.save(agent)
         logger.info(f"Saved agent {agent.id} to repository")
         
-        # Initialize agent runtime in domain service
-        await self._agent_domain_service.create_agent_runtime(
-            agent_id=agent.id,
-            llm=self._llm, 
-            sandbox=sandbox, 
-            browser=browser, 
-            search_engine=self._search_engine
-        )
-        
         logger.info(f"Agent created successfully with ID: {agent.id}")
         return agent
 
     def _to_sse_event(self, event: AgentEvent) -> Generator[SSEEvent, None, None]:
-        if isinstance(event, (PlanCreatedEvent, PlanUpdatedEvent, PlanCompletedEvent)):
-            if isinstance(event, PlanCreatedEvent):
+        if isinstance(event, PlanEvent):
+            if event.status == PlanStatus.CREATED:
                 if event.plan.title:
                     yield TitleSSEEvent(data=TitleData(title=event.plan.title))
-                yield MessageSSEEvent(data=MessageData(content=event.plan.message))
+                    yield MessageSSEEvent(data=MessageData(content=event.plan.message))
             if len(event.plan.steps) > 0:
                 yield PlanSSEEvent(data=PlanData(steps=[StepData(
                     status=step.status,
                     id=step.id, 
                     description=step.description
                 ) for step in event.plan.steps]))
-        elif isinstance(event, ToolCallingEvent):
-            if event.tool_name in ["browser", "file", "shell", "message"]:
+        elif isinstance(event, ToolEvent):
+            if event.status == ToolStatus.CALLING and event.tool_name in ["browser", "file", "shell", "message"]:
                 yield ToolSSEEvent(data=ToolData(
                     name=event.tool_name,
-                    status="calling",
+                    status=event.status,
                     function=event.function_name,
                     args=event.function_args
                 ))
-        elif isinstance(event, ToolCalledEvent):
-            if event.tool_name in ["search"]:
+            elif event.status == ToolStatus.CALLED and event.tool_name in ["search"]:
                 yield ToolSSEEvent(data=ToolData(
                     name=event.tool_name,
                     function=event.function_name,
                     args=event.function_args,
-                    status="called",
+                    status=event.status,
                     result=event.function_result
                 ))
-        elif isinstance(event, (StepStartedEvent, StepCompletedEvent, StepFailedEvent)):
+        elif isinstance(event, StepEvent):
             yield StepSSEEvent(data=StepData(
                 status=event.step.status,
                 id=event.step.id,
@@ -135,35 +135,19 @@ class AgentService:
         elif isinstance(event, ErrorEvent):
             yield ErrorSSEEvent(data=ErrorData(error=event.error))
 
-    async def chat(self, agent_id: str, message: str, timestamp: int) -> AsyncGenerator[SSEEvent, None]:
-        logger.info(f"Starting chat with agent {agent_id}: {message[:50]}...")
-        # Directly use the domain service's chat method, which will check if the agent exists
-        async for event in self._agent_domain_service.chat(agent_id, message, timestamp):
+    async def chat(
+        self,
+        session_id: str,
+        message: str,
+        timestamp: int
+    ) -> AsyncGenerator[SSEEvent, None]:
+        logger.info(f"Starting chat with session {session_id}: {message[:50]}...")
+        # Directly use the domain service's chat method, which will check if the session exists
+        async for event in self._agent_domain_service.chat(session_id, message, timestamp):
             logger.debug(f"Received event: {event}")
             for sse_event in self._to_sse_event(event):
                 yield sse_event
-
-    async def destroy_agent(self, agent_id: str) -> bool:
-        """Destroy the specified Agent and its associated sandbox
-        
-        Args:
-            agent_id: Agent ID
-            
-        Returns:
-            Whether the destruction was successful
-        """
-        logger.info(f"Attempting to destroy agent: {agent_id}")
-        try:
-            # Destroy Agent resources through the domain service
-            result = await self._agent_domain_service.close_agent(agent_id)
-            if result:
-                logger.info(f"Agent destroyed successfully: {agent_id}")
-            else:
-                logger.warning(f"Failed to destroy agent: {agent_id}")
-            return result
-        except Exception as e:
-            logger.error(f"Error destroying agent {agent_id}: {str(e)}")
-            return False
+        logger.info(f"Chat with session {session_id} completed")
 
     async def shutdown(self):
         logger.info("Closing all agents and cleaning up resources")
@@ -171,11 +155,11 @@ class AgentService:
         await self._agent_domain_service.shutdown()
         logger.info("All agents closed successfully")
 
-    async def _get_sandbox(self, agent_id: str) -> Sandbox:
+    async def _get_sandbox(self, session_id: str) -> Sandbox:
         """Get sandbox instance for the specified agent
         
         Args:
-            agent_id: Agent ID
+            session_id: Session ID
             
         Returns:
             Sandbox: Sandbox instance
@@ -183,28 +167,28 @@ class AgentService:
         Raises:
             NotFoundError: When Agent or Sandbox does not exist
         """
-        agent = await self._agent_repository.find_by_id(agent_id)
-        if not agent:
-            logger.warning(f"Agent not found: {agent_id}")
-            raise NotFoundError(f"Agent not found: {agent_id}")
+        session = await self._session_repository.find_by_id(session_id)
+        if not session:
+            logger.warning(f"Session not found: {session_id}")
+            raise NotFoundError(f"Session not found: {session_id}")
         
-        if not agent.sandbox_id:
-            logger.warning(f"Sandbox ID not found for agent: {agent_id}")
-            raise NotFoundError(f"Sandbox not found: {agent_id}")
+        if not session.sandbox_id:
+            logger.warning(f"Sandbox ID not found for session: {session_id}")
+            raise NotFoundError(f"Sandbox not found: {session_id}")
             
-        sandbox = await self._sandbox_factory.get(agent.sandbox_id)
+        sandbox = await self._sandbox_cls.get(session.sandbox_id)
         if not sandbox:
-            logger.warning(f"Sandbox not found: {agent_id}")
-            raise NotFoundError(f"Sandbox not found: {agent_id}")
+            logger.warning(f"Sandbox not found: {session_id}")
+            raise NotFoundError(f"Sandbox not found: {session_id}")
             
         return sandbox
 
-    async def shell_view(self, agent_id: str, session_id: str) -> ShellViewResponse:
+    async def shell_view(self, session_id: str, shell_session_id: str) -> ShellViewResponse:
         """View shell session output
         
         Args:
-            agent_id: Agent ID
-            session_id: Shell session ID
+            session_id: Session ID
+            shell_session_id: Shell session ID
             
         Returns:
             APIResponse: Response entity containing shell output
@@ -213,17 +197,17 @@ class AgentService:
             ResourceNotFoundError: When Agent or Sandbox does not exist
             OperationError: When a server error occurs during execution
         """
-        logger.info(f"Viewing shell output for agent {agent_id} in session {session_id}")
+        logger.info(f"Viewing shell output for session {session_id}")
         
-        sandbox = await self._get_sandbox(agent_id)
-        result = await sandbox.view_shell(session_id)
+        sandbox = await self._get_sandbox(session_id)
+        result = await sandbox.view_shell(shell_session_id)
         return ShellViewResponse(**result.data)
 
-    async def get_vnc_url(self, agent_id: str) -> str:
+    async def get_vnc_url(self, session_id: str) -> str:
         """Get the VNC URL for the Agent sandbox
         
         Args:
-            agent_id: Agent ID
+            session_id: Session ID
             
         Returns:
             str: Sandbox host address
@@ -231,16 +215,16 @@ class AgentService:
         Raises:
             NotFoundError: When Agent or Sandbox does not exist
         """
-        logger.info(f"Getting sandbox host for agent {agent_id}")
+        logger.info(f"Getting sandbox host for session {session_id}")
         
-        sandbox = await self._get_sandbox(agent_id)
+        sandbox = await self._get_sandbox(session_id)
         return sandbox.vnc_url
 
-    async def file_view(self, agent_id: str, path: str) -> FileViewResponse:
+    async def file_view(self, session_id: str, path: str) -> FileViewResponse:
         """View file content
         
         Args:
-            agent_id: Agent ID
+            session_id: Session ID
             path: File path
             
         Returns:
@@ -250,9 +234,9 @@ class AgentService:
             ResourceNotFoundError: When Agent or Sandbox does not exist
             OperationError: When a server error occurs during execution
         """
-        logger.info(f"Viewing file content for agent {agent_id}, file path: {path}")
+        logger.info(f"Viewing file content for session {session_id}, file path: {path}")
         
-        sandbox = await self._get_sandbox(agent_id)
+        sandbox = await self._get_sandbox(session_id)
         result = await sandbox.file_read(path)
         logger.info(f"File read successfully: {path}")
         return FileViewResponse(**result.data)

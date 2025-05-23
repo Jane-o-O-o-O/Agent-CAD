@@ -16,7 +16,7 @@ const router = createRouter({
   routes: [
     { path: '/', component: HomePage },
     { path: '/chat', component: ChatPage },
-    { path: '/chat/:agentId', component: ChatPage }
+    { path: '/chat/:sessionId', component: ChatPage }
   ]
 })
 

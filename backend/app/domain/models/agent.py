@@ -16,7 +16,6 @@ class Agent(BaseModel):
     max_tokens: int = Field(default=2000)
     
     # Context related fields
-    sandbox_id: Optional[str] = Field(default=None)  # Identifier for the sandbox environment
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))  # Creation timestamp
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))  # Last update timestamp
 

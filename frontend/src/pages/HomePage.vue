@@ -44,7 +44,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import ChatBox from '../components/ChatBox.vue';
-import { createAgent } from '../api/agent';
+import { createSession } from '../api/agent';
 import { showErrorToast } from '../utils/toast';
 import { Bot } from 'lucide-vue-next';
 import ManusLogoTextIcon from '../components/icons/ManusLogoTextIcon.vue';
@@ -60,17 +60,17 @@ const handleSubmit = async () => {
 
     try {
       // Create new Agent
-      const agent = await createAgent();
-      const agentId = agent.agent_id;
+      const session = await createSession();
+      const sessionId = session.session_id;
 
-      // Navigate to new route with agent_id, passing initial message via state
+      // Navigate to new route with session_id, passing initial message via state
       router.push({
-        path: `/chat/${agentId}`,
+        path: `/chat/${sessionId}`,
         state: { message: message.value }
       });
     } catch (error) {
-      console.error('Failed to create Agent:', error);
-      showErrorToast(t('Failed to create agent, please try again later'));
+      console.error('Failed to create session:', error);
+      showErrorToast(t('Failed to create session, please try again later'));
       isSubmitting.value = false;
     }
   }

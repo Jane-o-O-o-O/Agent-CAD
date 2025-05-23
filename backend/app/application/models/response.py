@@ -19,10 +19,10 @@ class APIResponse(BaseModel, Generic[T]):
         return APIResponse(code=code, msg=msg, data=None)
 
 
-class AgentResponse(BaseModel):
-    agent_id: str
+class SessionResponse(BaseModel):
+    session_id: str
     status: str = "created"
-    message: str = "Agent created successfully" 
+    message: str = "Session created successfully" 
 
 
 class ConsoleRecord(BaseModel):

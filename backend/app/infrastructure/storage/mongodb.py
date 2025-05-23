@@ -5,8 +5,8 @@ import logging
 from beanie import init_beanie
 from functools import lru_cache
 from app.infrastructure.models.mongo_agent import MongoAgent
-from app.infrastructure.models.mongo_memory import MongoMemory
-from .config import get_settings
+from app.infrastructure.models.mongo_session import MongoSession
+from app.infrastructure.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -22,19 +22,21 @@ class MongoDB:
             
         try:
             # Connect to MongoDB
-            self._client = AsyncIOMotorClient(
-                self._settings.mongodb_uri,
-            )
+            if self._settings.mongodb_username and self._settings.mongodb_password:
+                # Use authenticated connection if username and password are configured
+                self._client = AsyncIOMotorClient(
+                    self._settings.mongodb_uri,
+                    username=self._settings.mongodb_username,
+                    password=self._settings.mongodb_password,
+                )
+            else:
+                # Use unauthenticated connection if no credentials are provided
+                self._client = AsyncIOMotorClient(
+                    self._settings.mongodb_uri,
+                )
             # Verify the connection
             await self._client.admin.command('ping')
             logger.info("Successfully connected to MongoDB")
-            
-            # Initialize Beanie
-            await init_beanie(
-                database=self._client[self._settings.mongodb_database],
-                document_models=[MongoAgent, MongoMemory]
-            )
-            logger.info("Successfully initialized Beanie")
         except ConnectionFailure as e:
             logger.error(f"Failed to connect to MongoDB: {str(e)}")
             raise
@@ -49,6 +51,11 @@ class MongoDB:
             self._client = None
             logger.info("Disconnected from MongoDB")
         get_mongodb.cache_clear()
+    
+    @property
+    def client(self) -> AsyncIOMotorClient:
+        """Get the MongoDB client."""
+        return self._client
             
 
 @lru_cache

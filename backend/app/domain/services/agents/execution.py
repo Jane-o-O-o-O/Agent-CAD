@@ -11,11 +11,11 @@ from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.services.prompts.execution import EXECUTION_SYSTEM_PROMPT, EXECUTION_PROMPT
 from app.domain.events.agent_events import (
     AgentEvent,
-    StepFailedEvent,
-    StepCompletedEvent,
-    MessageEvent,
+    StepEvent,
+    StepStatus,
     ErrorEvent,
-    StepStartedEvent
+    MessageEvent,
+    DoneEvent,
 )
 from app.domain.services.tools.shell import ShellTool
 from app.domain.services.tools.browser import BrowserTool
@@ -55,18 +55,18 @@ class ExecutionAgent(BaseAgent):
     async def execute_step(self, plan: Plan, step: Step) -> AsyncGenerator[AgentEvent, None]:
         message = EXECUTION_PROMPT.format(goal=plan.goal, step=step.description)
         step.status = ExecutionStatus.RUNNING
-        yield StepStartedEvent(step=step, plan=plan)
+        yield StepEvent(status=StepStatus.STARTED, step=step)
         async for event in self.execute(message):
             if isinstance(event, ErrorEvent):
                 step.status = ExecutionStatus.FAILED
                 step.error = event.error
-                yield StepFailedEvent(step=step, plan=plan)
+                yield StepEvent(status=StepStatus.FAILED, step=step)
                 return
             
             if isinstance(event, MessageEvent):
                 step.status = ExecutionStatus.COMPLETED
                 step.result = event.message
-                yield StepCompletedEvent(step=step, plan=plan)
+                yield StepEvent(status=StepStatus.COMPLETED, step=step)
             yield event
         step.status = ExecutionStatus.COMPLETED
 

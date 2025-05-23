@@ -1,7 +1,5 @@
 from typing import Optional, Protocol
 from app.domain.models.tool_result import ToolResult
-from app.domain.external.llm import LLM
-from app.domain.external.sandbox import Sandbox
 
 class Browser(Protocol):
     """Browser service gateway interface"""
@@ -79,18 +77,3 @@ class Browser(Protocol):
     async def console_view(self, max_lines: Optional[int] = None) -> ToolResult:
         """View console output"""
         ...
-
-class BrowserFactory(Protocol):
-    """Browser factory interface"""
-    
-    async def create(self, llm: LLM, cdp_url: str) -> Browser:
-        """Create a new browser instance
-        
-        Args:
-            llm: LLM instance
-            cdp_url: Chrome DevTools Protocol URL
-            
-        Returns:
-            Browser instance
-        """
-        ... 

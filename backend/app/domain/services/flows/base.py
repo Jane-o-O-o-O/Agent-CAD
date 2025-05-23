@@ -5,9 +5,6 @@ from abc import ABC, abstractmethod
 from app.domain.repositories.agent_repository import AgentRepository
 
 class BaseFlow(ABC):
-    def __init__(self, agent_id: str, agent_repository: AgentRepository):
-        self._agent_id = agent_id
-        self._repository = agent_repository
 
     @abstractmethod
     def run(self) -> AsyncGenerator[AgentEvent, None]:

@@ -1,12 +1,13 @@
 from typing import List, Dict, Any, Optional
 from openai import AsyncOpenAI
+from app.domain.external.llm import LLM
 from app.infrastructure.config import get_settings
 import logging
 
-# 设置模块级别的日志记录器
+
 logger = logging.getLogger(__name__)
 
-class OpenAILLM:
+class OpenAILLM(LLM):
     def __init__(self):
         settings = get_settings()
         self.client = AsyncOpenAI(

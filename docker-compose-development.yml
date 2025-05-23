@@ -88,6 +88,14 @@ services:
     volumes:
       - mongodb_data:/data/db
     restart: unless-stopped
+    ports:
+      - "27017:27017"
+    networks:
+      - manus-network
+
+  redis:
+    image: redis:7.0
+    restart: unless-stopped
     networks:
       - manus-network
 

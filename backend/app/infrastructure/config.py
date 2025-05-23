@@ -16,6 +16,14 @@ class Settings(BaseSettings):
     # MongoDB configuration
     mongodb_uri: str = "mongodb://mongodb:27017"
     mongodb_database: str = "manus"
+    mongodb_username: str | None = None
+    mongodb_password: str | None = None
+    
+    # Redis configuration
+    redis_host: str = "redis"
+    redis_port: int = 6379
+    redis_db: int = 0
+    redis_password: str | None = None
     
     # Sandbox configuration
     sandbox_address: str | None = None

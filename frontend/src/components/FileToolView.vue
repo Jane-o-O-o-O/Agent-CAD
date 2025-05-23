@@ -61,7 +61,7 @@ import "monaco-editor/esm/vs/basic-languages/markdown/markdown.contribution";
 const { t } = useI18n();
 
 const props = defineProps<{
-  agentId: string;
+  sessionId: string;
   toolContent: ToolContent;
 }>();
 
@@ -146,7 +146,7 @@ const initMonacoEditor = () => {
 // Load file content
 const loadFileContent = () => {
   if (!filePath.value) return;
-  viewFile(props.agentId, filePath.value)
+  viewFile(props.sessionId, filePath.value)
     .then((response) => {
       if (fileContent.value !== response.content) {
         fileContent.value = response.content;

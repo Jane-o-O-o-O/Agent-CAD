@@ -8,10 +8,14 @@ import asyncio
 from async_lru import alru_cache
 from app.infrastructure.config import get_settings
 from app.domain.models.tool_result import ToolResult
+from app.domain.external.sandbox import Sandbox
+from app.infrastructure.external.browser.playwright_browser import PlaywrightBrowser
+from app.domain.external.browser import Browser
+from app.domain.external.llm import LLM
 
 logger = logging.getLogger(__name__)
 
-class DockerSandbox:
+class DockerSandbox(Sandbox):
     def __init__(self, ip: str = None, container_name: str = None):
         """Initialize Docker sandbox and API interaction client"""
         self.client = httpx.AsyncClient(timeout=600)
@@ -361,10 +365,19 @@ class DockerSandbox:
         except Exception as e:
             logger.error(f"Failed to destroy Docker sandbox: {str(e)}")
             return False
-
-class DockerSandboxFactory:
-    """Factory for creating and managing Docker sandbox instances"""
     
+    async def get_browser(self, llm: LLM) -> Browser:
+        """Get browser instance
+        
+        Args:
+            llm: LLM instance used for browser automation
+            
+        Returns:
+            Browser: Returns a configured PlaywrightBrowser instance
+                    connected using the sandbox's CDP URL
+        """
+        return PlaywrightBrowser(llm, self.cdp_url)
+
     @staticmethod
     @alru_cache(maxsize=128, typed=True)
     async def _resolve_hostname_to_ip(hostname: str) -> str:
@@ -401,7 +414,8 @@ class DockerSandboxFactory:
             logger.error(f"Failed to resolve hostname {hostname}: {str(e)}")
             return None
 
-    async def create(self) -> DockerSandbox:
+    @classmethod
+    async def create(cls) -> Sandbox:
         """Create a new sandbox instance
         
         Returns:
@@ -411,13 +425,14 @@ class DockerSandboxFactory:
 
         if settings.sandbox_address:
             # Chrome CDP needs IP address
-            ip = await self._resolve_hostname_to_ip(settings.sandbox_address)
+            ip = await cls._resolve_hostname_to_ip(settings.sandbox_address)
             return DockerSandbox(ip=ip)
     
         return await asyncio.to_thread(DockerSandbox._create_task)
     
+    @classmethod
     @alru_cache(maxsize=128, typed=True)
-    async def get(self, id: str) -> DockerSandbox:
+    async def get(cls, id: str) -> Sandbox:
         """Get sandbox by ID
         
         Args:
@@ -428,7 +443,7 @@ class DockerSandboxFactory:
         """
         settings = get_settings()
         if settings.sandbox_address:
-            ip = await self._resolve_hostname_to_ip(settings.sandbox_address)
+            ip = await cls._resolve_hostname_to_ip(settings.sandbox_address)
             return DockerSandbox(ip=ip, container_name=id)
 
         docker_client = docker.from_env()

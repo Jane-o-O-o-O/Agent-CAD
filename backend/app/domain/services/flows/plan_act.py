@@ -5,10 +5,12 @@ from app.domain.events.agent_events import AgentEvent
 from typing import AsyncGenerator
 from enum import Enum
 from app.domain.events.agent_events import (
-    AgentEvent, 
-    PlanCreatedEvent, 
-    PlanCompletedEvent,
-    DoneEvent
+    AgentEvent,
+    PlanEvent,
+    PlanStatus,
+    ErrorEvent,
+    MessageEvent,
+    DoneEvent,
 )
 from app.domain.models.plan import ExecutionStatus
 from app.domain.services.agents.planner import PlannerAgent
@@ -38,7 +40,8 @@ class PlanActFlow(BaseFlow):
         browser: Browser,
         search_engine: SearchEngine
     ):
-        super().__init__(agent_id, agent_repository)
+        self._agent_id = agent_id
+        self._repository = agent_repository
         self.status = AgentStatus.IDLE
         self.plan = None
         # Create planner and execution agents
@@ -76,7 +79,7 @@ class PlanActFlow(BaseFlow):
                 # Create plan
                 logger.info(f"Agent {self._agent_id} started creating plan")
                 async for event in self.planner.create_plan(message):
-                    if isinstance(event, PlanCreatedEvent):
+                    if isinstance(event, PlanEvent) and event.status == PlanStatus.CREATED:
                         self.plan = event.plan
                         logger.info(f"Agent {self._agent_id} created plan successfully with {len(event.plan.steps)} steps")
                     yield event
@@ -107,7 +110,7 @@ class PlanActFlow(BaseFlow):
             elif self.status == AgentStatus.COMPLETED:
                 self.plan.status = ExecutionStatus.COMPLETED
                 logger.info(f"Agent {self._agent_id} plan has been completed")
-                yield PlanCompletedEvent(plan=self.plan) 
+                yield PlanEvent(status=PlanStatus.COMPLETED, plan=self.plan)
                 self.status = AgentStatus.IDLE
                 break
         yield DoneEvent()

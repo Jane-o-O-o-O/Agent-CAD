@@ -6,8 +6,8 @@ import asyncio
 import websockets
 import logging
 from app.application.services.agent_service import AgentService
-from app.application.schemas.request import ChatRequest, FileViewRequest, ShellViewRequest
-from app.application.schemas.response import APIResponse, AgentResponse, ShellViewResponse, FileViewResponse
+from app.application.models.request import ChatRequest, FileViewRequest, ShellViewRequest
+from app.application.models.response import APIResponse, SessionResponse, ShellViewResponse, FileViewResponse
 
 
 router = APIRouter()
@@ -18,27 +18,27 @@ def get_agent_service() -> AgentService:
     # Placeholder for dependency injection
     return None
 
-@router.post("/agents", response_model=APIResponse[AgentResponse])
-async def create_agent(
+@router.post("/sessions", response_model=APIResponse[SessionResponse])
+async def create_session(
     agent_service: AgentService = Depends(get_agent_service)
-) -> APIResponse[AgentResponse]:
-    agent = await agent_service.create_agent()
+) -> APIResponse[SessionResponse]:
+    session = await agent_service.create_session()
     return APIResponse.success(
-        AgentResponse(
-            agent_id=agent.id,
+        SessionResponse(
+            session_id=session.id,
             status="created",
-            message="Agent created successfully"
+            message="Session created successfully"
         )
     )
 
-@router.post("/agents/{agent_id}/chat")
+@router.post("/sessions/{session_id}/chat")
 async def chat(
-    agent_id: str,
+    session_id: str,
     request: ChatRequest,
     agent_service: AgentService = Depends(get_agent_service)
 ) -> EventSourceResponse:
     async def event_generator() -> AsyncGenerator[ServerSentEvent, None]:
-        async for event in agent_service.chat(agent_id, request.message, request.timestamp):
+        async for event in agent_service.chat(session_id, request.message, request.timestamp):
             yield ServerSentEvent(
                 event=event.event,
                 data=event.data.model_dump_json() if event.data else None
@@ -47,9 +47,9 @@ async def chat(
     return EventSourceResponse(event_generator()) 
 
 
-@router.post("/agents/{agent_id}/shell", response_model=APIResponse[ShellViewResponse])
+@router.post("/sessions/{session_id}/shell", response_model=APIResponse[ShellViewResponse])
 async def view_shell(
-    agent_id: str,
+    session_id: str,
     request: ShellViewRequest,
     agent_service: AgentService = Depends(get_agent_service)
 ) -> APIResponse[ShellViewResponse]:
@@ -57,13 +57,13 @@ async def view_shell(
     
     If the agent does not exist or fails to get shell output, an appropriate exception will be thrown and handled by the global exception handler
     """
-    result = await agent_service.shell_view(agent_id, request.session_id)
+    result = await agent_service.shell_view(session_id, request.session_id)
     return APIResponse.success(result)
 
 
-@router.post("/agents/{agent_id}/file", response_model=APIResponse[FileViewResponse])
+@router.post("/sessions/{session_id}/file", response_model=APIResponse[FileViewResponse])
 async def view_file(
-    agent_id: str,
+    session_id: str,
     request: FileViewRequest,
     agent_service: AgentService = Depends(get_agent_service)
 ) -> APIResponse[FileViewResponse]:
@@ -78,14 +78,14 @@ async def view_file(
     Returns:
         APIResponse containing file content
     """
-    result = await agent_service.file_view(agent_id, request.file)
+    result = await agent_service.file_view(session_id, request.file)
     return APIResponse.success(result)
 
 
-@router.websocket("/agents/{agent_id}/vnc")
+@router.websocket("/sessions/{session_id}/vnc")
 async def vnc_websocket(
     websocket: WebSocket,
-    agent_id: str,
+    session_id: str,
     agent_service: AgentService = Depends(get_agent_service)
 ) -> None:
     """VNC WebSocket endpoint (binary mode)
@@ -94,7 +94,7 @@ async def vnc_websocket(
     
     Args:
         websocket: WebSocket connection
-        agent_id: Agent ID
+        session_id: Session ID
     """
     
     await websocket.accept(subprotocol="binary")
@@ -102,7 +102,7 @@ async def vnc_websocket(
     try:
     
         # Get sandbox environment address
-        sandbox_ws_url = await agent_service.get_vnc_url(agent_id)
+        sandbox_ws_url = await agent_service.get_vnc_url(session_id)
 
         logger.info(f"Connecting to VNC WebSocket at {sandbox_ws_url}")
     

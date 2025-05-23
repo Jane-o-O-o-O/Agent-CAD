@@ -5,17 +5,18 @@ import { SSEEvent } from '../types/sseEvent';
 
 
 // Agent related interfaces
-export interface Agent {
-  agent_id: string;
+export interface Session {
+  session_id: string;
   status: string;
   message: string;
 }
 
 /**
- * Create Agent
+ * Create Session
+ * @returns Session
  */
-export async function createAgent(): Promise<Agent> {
-  const response = await apiClient.post<ApiResponse<Agent>>('/agents');
+export async function createSession(): Promise<Session> {
+  const response = await apiClient.post<ApiResponse<Session>>('/sessions');
   // Error handling
   if (response.data.code !== 0) {
     throw new Error(response.data.msg);
@@ -23,23 +24,23 @@ export async function createAgent(): Promise<Agent> {
   return response.data.data;
 }
 
-export const getVNCUrl = (agentId: string): string => {
+export const getVNCUrl = (sessionId: string): string => {
   // Convert http to ws, https to wss
   const wsBaseUrl = BASE_URL.replace(/^http/, 'ws');
-  return `${wsBaseUrl}/agents/${agentId}/vnc`;
+  return `${wsBaseUrl}/sessions/${sessionId}/vnc`;
 }
 
 /**
- * Chat with Agent (using SSE to receive streaming responses)
+ * Chat with Session (using SSE to receive streaming responses)
  */
-export const chatWithAgent = async (
-  agentId: string, 
+export const chatWithSession = async (
+  sessionId: string, 
   message: string = '', 
   onMessage: (event: SSEEvent) => void,
   onError?: (error: Error) => void
 ) => {
   try {
-    const apiUrl = `${BASE_URL}/agents/${agentId}/chat`;
+    const apiUrl = `${BASE_URL}/sessions/${sessionId}/chat`;
     
     await fetchEventSource(apiUrl, {
       method: 'POST',
@@ -56,7 +57,7 @@ export const chatWithAgent = async (
           });
         }
       },
-      onerror(err) {
+      onerror(err: Error | string | unknown) {
         console.error('EventSource error:', err);
         if (onError) {
           onError(err instanceof Error ? err : new Error(String(err)));
@@ -87,12 +88,12 @@ export interface ShellViewResponse {
 
 /**
  * View Shell session output
- * @param agentId Agent ID
- * @param sessionId Shell session ID
+ * @param sessionId Session ID
+ * @param shellSessionId Shell session ID
  * @returns Shell session output content
  */
-export async function viewShellSession(agentId: string, sessionId: string): Promise<ShellViewResponse> {
-  const response = await apiClient.post<ApiResponse<ShellViewResponse>>(`/agents/${agentId}/shell`, { session_id: sessionId });
+export async function viewShellSession(sessionId: string, shellSessionId: string): Promise<ShellViewResponse> {
+  const response = await apiClient.post<ApiResponse<ShellViewResponse>>(`/sessions/${sessionId}/shell`, { session_id: shellSessionId });
   // Error handling
   if (response.data.code !== 0) {
     throw new Error(response.data.msg);
@@ -107,12 +108,12 @@ export interface FileViewResponse {
 
 /**
  * View file content
- * @param agentId Agent ID
+ * @param sessionId Session ID
  * @param file File path
  * @returns File content
  */
-export async function viewFile(agentId: string, file: string): Promise<FileViewResponse> {
-  const response = await apiClient.post<ApiResponse<FileViewResponse>>(`/agents/${agentId}/file`, { file });
+export async function viewFile(sessionId: string, file: string): Promise<FileViewResponse> {
+  const response = await apiClient.post<ApiResponse<FileViewResponse>>(`/sessions/${sessionId}/file`, { file });
   // Error handling
   if (response.data.code !== 0) {
     throw new Error(response.data.msg);

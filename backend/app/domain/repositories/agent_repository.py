@@ -16,7 +16,7 @@ class AgentRepository(Protocol):
     
     async def add_memory(self, agent_id: str,
                         name: str,
-                        memory: Memory) -> Optional[Agent]:
+                        memory: Memory) -> None:
         """Add or update a memory for an agent"""
         ...
 
@@ -24,6 +24,6 @@ class AgentRepository(Protocol):
         """Get memory by name from agent, create if not exists"""
         ...
 
-    async def save_memory(self, memory: Memory) -> None:
+    async def save_memory(self, agent_id: str, name: str, memory: Memory) -> None:
         """Update the messages of a memory"""
         ... 

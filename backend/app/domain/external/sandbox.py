@@ -1,5 +1,7 @@
-from typing import Any, Optional, Protocol, Dict
+from typing import Any, Optional, Protocol
 from app.domain.models.tool_result import ToolResult
+from app.domain.external.browser import Browser
+from app.domain.external.llm import LLM
 
 class Sandbox(Protocol):
     """Sandbox service gateway interface"""
@@ -216,6 +218,17 @@ class Sandbox(Protocol):
             Whether destroyed successfully
         """
         ...
+    
+    async def get_browser(self, llm: LLM) -> Browser:
+        """Get browser instance
+        
+        Args:
+            llm: LLM instance used for browser automation
+            
+        Returns:
+            Browser: Returns a configured browser instance for web automation
+        """
+        ...
 
     @property
     def id(self) -> str:
@@ -231,15 +244,14 @@ class Sandbox(Protocol):
     def vnc_url(self) -> str:
         """VNC URL"""
         ...
-
-class SandboxFactory(Protocol):
-    """Sandbox factory interface"""
     
-    async def create(self) -> Sandbox:
+    @classmethod
+    async def create(cls) -> 'Sandbox':
         """Create a new sandbox instance"""
         ...
-        
-    async def get(self, id: str) -> Sandbox:
+    
+    @classmethod
+    async def get(cls, id: str) -> 'Sandbox':
         """Get sandbox by ID
         
         Args:

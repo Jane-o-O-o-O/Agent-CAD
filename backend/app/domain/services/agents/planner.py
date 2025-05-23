@@ -12,9 +12,11 @@ from app.domain.services.prompts.planner import (
 )
 from app.domain.events.agent_events import (
     AgentEvent,
-    PlanCreatedEvent,
-    PlanUpdatedEvent,
-    MessageEvent
+    PlanEvent,
+    PlanStatus,
+    ErrorEvent,
+    MessageEvent,
+    DoneEvent,
 )
 from app.domain.external.sandbox import Sandbox
 from app.domain.services.tools.file import FileTool
@@ -49,7 +51,7 @@ class PlannerAgent(BaseAgent):
                 parsed_response = json.loads(event.message)
                 steps = [Step(id=step["id"], description=step["description"]) for step in parsed_response["steps"]]
                 plan = Plan(id=f"plan_{len(steps)}", goal=parsed_response["goal"], title=parsed_response["title"], steps=steps, message=parsed_response["message"], todo=parsed_response.get("todo", ""))
-                yield PlanCreatedEvent(plan=plan)
+                yield PlanEvent(status=PlanStatus.CREATED, plan=plan)
             else:
                 yield event
 
@@ -76,6 +78,6 @@ class PlannerAgent(BaseAgent):
                     # Update steps in plan
                     plan.steps = updated_steps
                 
-                yield PlanUpdatedEvent(plan=plan)
+                yield PlanEvent(status=PlanStatus.UPDATED, plan=plan)
             else:
                 yield event

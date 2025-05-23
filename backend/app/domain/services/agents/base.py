@@ -10,10 +10,11 @@ from app.domain.services.tools.base import BaseTool
 from app.domain.models.tool_result import ToolResult
 from app.domain.events.agent_events import (
     AgentEvent,
-    ToolCallingEvent,
-    ToolCalledEvent,
+    ToolEvent,
+    ToolStatus,
     ErrorEvent,
     MessageEvent,
+    DoneEvent,
 )
 from app.domain.repositories.agent_repository import AgentRepository
 
@@ -84,7 +85,8 @@ class BaseAgent(ABC):
                 tool = self.get_tool(function_name)
 
                 # Generate event before tool call
-                yield ToolCallingEvent(
+                yield ToolEvent(
+                    status=ToolStatus.CALLING,
                     tool_name=tool.name,
                     function_name=function_name,
                     function_args=function_args
@@ -93,7 +95,8 @@ class BaseAgent(ABC):
                 result = await self.invoke_tool(tool, function_name, function_args)
                 
                 # Generate event after tool call
-                yield ToolCalledEvent(
+                yield ToolEvent(
+                    status=ToolStatus.CALLED,
                     tool_name=tool.name,
                     function_name=function_name,
                     function_args=function_args,
@@ -122,7 +125,7 @@ class BaseAgent(ABC):
                     "role": "system", "content": self.system_prompt,
                 })
         self.memory.add_messages(messages)
-        await self._repository.save_memory(self.memory)
+        await self._repository.save_memory(self._agent_id, self.name, self.memory)
 
     async def ask_with_messages(self, messages: List[Dict[str, Any]], format: Optional[str] = None) -> Dict[str, Any]:
         await self._add_to_memory(messages)

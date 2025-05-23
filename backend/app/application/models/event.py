@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field
 from typing import Any, Union, Literal, Dict, Optional, List
 import time
-import logging
 from app.domain.models.plan import ExecutionStatus
+from app.domain.events.agent_events import ToolStatus
 
 
 class BaseData(BaseModel):
@@ -13,10 +13,10 @@ class MessageData(BaseData):
 
 class ToolData(BaseData):
     name: str
+    status: ToolStatus
     function: str
     args: Dict[str, Any]
     result: Optional[Any] = None
-    status: Literal["calling", "called"]
 
 class StepData(BaseData):
     status: ExecutionStatus

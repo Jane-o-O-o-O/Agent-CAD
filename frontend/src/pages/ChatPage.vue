@@ -107,7 +107,7 @@
         <ChatBox v-model="inputMessage" :rows="1" @submit="sendMessage(inputMessage)" />
       </div>
     </div>
-    <ToolPanel ref="toolPanel" :agentId="agentId" :realTime="realTime" @jumpToRealTime="jumpToRealTime" />
+    <ToolPanel ref="toolPanel" :sessionId="sessionId" :realTime="realTime" @jumpToRealTime="jumpToRealTime" />
   </SimpleBar>
 </template>
 
@@ -118,7 +118,7 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import ChatBox from '../components/ChatBox.vue';
 import ChatMessage from '../components/ChatMessage.vue';
-import { chatWithAgent } from '../api/agent';
+import { chatWithSession } from '../api/agent';
 import { Message, MessageContent, ToolContent, StepContent } from '../types/message';
 import { StepEventData, ToolEventData, MessageEventData, ErrorEventData, TitleEventData, PlanEventData } from '../types/sseEvent';
 import ToolPanel from '../components/ToolPanel.vue';
@@ -129,7 +129,7 @@ const router = useRouter();
 const { t } = useI18n();
 const inputMessage = ref('');
 const isLoading = ref(false);
-const agentId = ref<string>();
+const sessionId = ref<string>();
 const messages = ref<Message[]>([]);
 const toolPanel = ref();
 const realTime = ref(true);
@@ -264,7 +264,7 @@ const handleEvent = (event: any) => {
 }
 
 const sendMessage = async (message: string = '') => {
-  if (!agentId.value) return;
+  if (!sessionId.value) return;
 
   if (message.trim()) {
   // Add user message to conversation list
@@ -286,7 +286,7 @@ const sendMessage = async (message: string = '') => {
 
   try {
     // Use the split event handler function
-    await chatWithAgent(agentId.value, message, handleEvent, (error) => {
+    await chatWithSession(sessionId.value, message, handleEvent, (error) => {
       console.error('Chat error:', error);
       isLoading.value = false;
     });
@@ -299,9 +299,9 @@ const sendMessage = async (message: string = '') => {
 // Initialize active conversation
 onMounted(() => {
   const routeParams = router.currentRoute.value.params;
-  if (routeParams.agentId) {
-    // If agentId is included in URL, use it directly
-    agentId.value = String(routeParams.agentId) as string;
+  if (routeParams.sessionId) {
+    // If sessionId is included in URL, use it directly
+    sessionId.value = String(routeParams.sessionId) as string;
     // Get initial message from history.state
     const message = history.state?.message;
     history.replaceState({}, document.title);
@@ -316,7 +316,7 @@ onMounted(() => {
 
 const handleToolClick = (tool: ToolContent) => {
   realTime.value = false;
-  if (toolPanel.value && agentId.value) {
+  if (toolPanel.value && sessionId.value) {
     toolPanel.value.show(tool);
   }
 }

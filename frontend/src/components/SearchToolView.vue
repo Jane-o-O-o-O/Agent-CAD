@@ -26,7 +26,7 @@
 import { ToolContent } from '../types/message';
 
 defineProps<{
-  agentId: string;
+  sessionId: string;
   toolContent: ToolContent;
 }>();
 

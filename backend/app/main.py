@@ -2,22 +2,25 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
-import signal
 import asyncio
-import sys
 
 from app.interfaces.api.routes import router
 from app.application.services.agent_service import AgentService
 from app.infrastructure.config import get_settings
 from app.infrastructure.logging import setup_logging
 from app.interfaces.api.errors.exception_handlers import register_exception_handlers
-from app.infrastructure.mongodb import get_mongodb
-from app.infrastructure.external.search import GoogleSearchEngine
+from app.infrastructure.storage.mongodb import get_mongodb
+from app.infrastructure.storage.redis import get_redis
+from app.infrastructure.external.search.google_search import GoogleSearchEngine
 from app.infrastructure.external.llm.openai_llm import OpenAILLM
-from app.infrastructure.external.sandbox.docker_sandbox import DockerSandboxFactory
-from app.infrastructure.external.browser.playwright_browser import PlaywrightBrowserFactory
+from app.infrastructure.external.sandbox.docker_sandbox import DockerSandbox
 from app.infrastructure.repositories.mongo_agent_repository import MongoAgentRepository
+from app.infrastructure.repositories.mongo_session_repository import MongoSessionRepository
+from app.infrastructure.external.task.redis_task import RedisStreamTask
 from app.interfaces.api.routes import get_agent_service
+from app.infrastructure.models.mongo_agent import MongoAgent
+from app.infrastructure.models.mongo_session import MongoSession
+from beanie import init_beanie
 
 # Initialize logging system
 setup_logging()
@@ -42,11 +45,13 @@ def create_agent_service() -> AgentService:
     return AgentService(
         llm=OpenAILLM(),
         agent_repository=MongoAgentRepository(),
-        sandbox_factory=DockerSandboxFactory(),
-        browser_factory=PlaywrightBrowserFactory(),
+        session_repository=MongoSessionRepository(),
+        sandbox_cls=DockerSandbox,
+        task_cls=RedisStreamTask,
         search_engine=search_engine
     )
 
+# Create agent service instance
 agent_service = create_agent_service()
 
 async def shutdown(signal_name=None) -> None:
@@ -76,6 +81,16 @@ async def lifespan(app: FastAPI):
     
     # Initialize MongoDB and Beanie
     await get_mongodb().initialize()
+
+    # Initialize Beanie
+    await init_beanie(
+        database=get_mongodb().client[settings.mongodb_database],
+        document_models=[MongoAgent, MongoSession]
+    )
+    logger.info("Successfully initialized Beanie")
+    
+    # Initialize Redis
+    await get_redis().initialize()
     
     try:
         yield
@@ -84,9 +99,11 @@ async def lifespan(app: FastAPI):
         logger.info("Application shutdown - Manus AI Agent terminating")
         # Disconnect from MongoDB
         await get_mongodb().shutdown()
+        # Disconnect from Redis
+        await get_redis().shutdown()
         await shutdown()
 
-app = FastAPI(title="Manus AI Agent", lifespan=lifespan)
+app = FastAPI(title="Manus AI Agent", lifespan=lifespan, timeout_graceful_shutdown=5)
 app.dependency_overrides[get_agent_service] = lambda: agent_service
 
 # Configure CORS

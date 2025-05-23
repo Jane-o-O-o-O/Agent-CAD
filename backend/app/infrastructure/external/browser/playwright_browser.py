@@ -5,7 +5,6 @@ from markdownify import markdownify
 from app.domain.external.llm import LLM
 from app.infrastructure.config import get_settings
 from app.domain.models.tool_result import ToolResult
-from app.domain.external.browser import BrowserFactory
 import logging
 
 # Set up logger for this module
@@ -605,93 +604,3 @@ class PlaywrightBrowser:
         if max_lines is not None:
             logs = logs[-max_lines:]
         return ToolResult(success=True, data={"logs": logs})
-
-class PlaywrightBrowserFactory(BrowserFactory):
-    """Factory for creating Playwright browser instances"""
-    
-    async def create(self, llm: LLM, cdp_url: str) -> PlaywrightBrowser:
-        """Create a new Playwright browser instance
-        
-        Args:
-            llm: LLM instance
-            cdp_url: Chrome DevTools Protocol URL
-            
-        Returns:
-            PlaywrightBrowser instance
-        """
-        return PlaywrightBrowser(llm, cdp_url)
-
-async def main():
-    """Main function demonstrating the use of PlaywrightClient"""
-    # Create PlaywrightBrowser instance with custom Chrome CDP URL
-    factory = PlaywrightBrowserFactory()
-    client = await factory.create(llm=OpenAILLM(), cdp_url="http://localhost:9222")
-    
-    try:
-        # Initialize the client
-        if not await client.initialize():
-            print("Initialization failed, program exits")
-            return
-            
-        print("\nTesting navigate function...")
-        # Navigate to Baidu homepage
-        print("Navigating to baidu.com...")
-        result = await client.navigate("https://www.baidu.com/s?wd=manus")
-        print(f"Navigation result: {result.success}")
-        
-        # Wait for page to load
-        print("Waiting for page to load...")
-        await asyncio.sleep(2)  # Increase waiting time
-
-        
-        # Get search results page content
-        print("\nGet search results page content:")
-        result = await client.view_page()
-        if result.success and result.data:
-            print(result.data["content"][:10000] + "...")  # Only print the first 10000 characters
-            print(result.data["interactive_elements"])
-        # Clean up Playwright resources, but keep browser window open
-
-        print("\nTest navigate function completed")
-        
-        # Test restart function
-        print("\nTesting restart function...")
-        print("Restarting browser and navigating to Baidu...")
-        restart_result = await client.restart("https://www.baidu.com")
-        print(f"Restart result: {restart_result.success}")
-        
-        # Wait for page to load
-        print("Waiting for page to load after restart...")
-        await asyncio.sleep(2)
-        
-        # Get search results page content
-        print("\nGet page content after restart:")
-        result = await client.view_page()
-        if result.success and result.data:
-            print(result.data["content"][:1000] + "...")  # Only print the first 1000 characters
-        
-        # Display interactive elements
-        print("\nInteractive elements:")
-        if result.success and result.data:
-            for element in result.data["interactive_elements"]:
-                print(element)
-        
-        # Test complete
-        print("\nTest restart function completed")
-
-        await client.cleanup()
-
-        
-        
-    except Exception as e:
-        print(f"Error occurred: {e}")
-
-if __name__ == "__main__":
-
-    from app.infrastructure.external.llm.openai_llm import OpenAILLM
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("\nProgram interrupted by user")
-    except Exception as e:
-        print(f"Program execution error: {e}")
