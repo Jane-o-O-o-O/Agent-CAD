@@ -1,4 +1,4 @@
-export type SSEEvent = {
+export type AgentSSEEvent = {
   event: 'tool' | 'step' | 'message' | 'error' | 'done' | 'title';
   data: ToolEventData | StepEventData | MessageEventData | ErrorEventData | DoneEventData | TitleEventData;
 }

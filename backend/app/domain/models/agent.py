@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict
 from datetime import datetime, UTC
 from pydantic import BaseModel, Field, field_validator
 from app.domain.models.memory import Memory

@@ -1,26 +1,20 @@
 // Backend API service
 import { apiClient, BASE_URL, ApiResponse } from './client';
 import { fetchEventSource, EventSourceMessage } from '@microsoft/fetch-event-source';
-import { SSEEvent } from '../types/sseEvent';
-
-
-// Agent related interfaces
-export interface Session {
-  session_id: string;
-  status: string;
-  message: string;
-}
+import { AgentSSEEvent } from '../types/event';
+import { CreateSessionResponse, GetSessionResponse, ShellViewResponse, FileViewResponse } from '../types/response';
 
 /**
  * Create Session
  * @returns Session
  */
-export async function createSession(): Promise<Session> {
-  const response = await apiClient.put<ApiResponse<Session>>('/sessions');
-  // Error handling
-  if (response.data.code !== 0) {
-    throw new Error(response.data.msg);
-  }
+export async function createSession(): Promise<CreateSessionResponse> {
+  const response = await apiClient.put<ApiResponse<CreateSessionResponse>>('/sessions');
+  return response.data.data;
+}
+
+export async function getSession(sessionId: string): Promise<GetSessionResponse> {
+  const response = await apiClient.get<ApiResponse<GetSessionResponse>>(`/sessions/${sessionId}`);
   return response.data.data;
 }
 
@@ -30,15 +24,23 @@ export const getVNCUrl = (sessionId: string): string => {
   return `${wsBaseUrl}/sessions/${sessionId}/vnc`;
 }
 
+interface ChatCallbacks {
+  onOpen: () => void;
+  onMessage: (event: AgentSSEEvent) => void;
+  onClose: () => void;
+  onError?: (error: Error) => void;
+}
+
 /**
  * Chat with Session (using SSE to receive streaming responses)
  */
 export const chatWithSession = async (
   sessionId: string, 
-  message: string = '', 
-  onMessage: (event: SSEEvent) => void,
-  onError?: (error: Error) => void
+  message: string = '',
+  callbacks: ChatCallbacks
 ) => {
+  const { onOpen, onMessage, onClose, onError } = callbacks;
+  
   try {
     const apiUrl = `${BASE_URL}/sessions/${sessionId}/chat`;
     
@@ -49,15 +51,21 @@ export const chatWithSession = async (
       },
       openWhenHidden: true,
       body: JSON.stringify({ message, timestamp: Math.floor(Date.now() / 1000) }),
+      async onopen() {
+        onOpen();
+      },
       onmessage(event: EventSourceMessage) {
         if (event.event && event.event.trim() !== '') {
           onMessage({
-            event: event.event as SSEEvent['event'],
-            data: JSON.parse(event.data) as SSEEvent['data']
+            event: event.event as AgentSSEEvent['event'],
+            data: JSON.parse(event.data) as AgentSSEEvent['data']
           });
         }
       },
-      onerror(err: Error | string | unknown) {
+      onclose() {
+        onClose();
+      },
+      onerror(err: any) {
         console.error('EventSource error:', err);
         if (onError) {
           onError(err instanceof Error ? err : new Error(String(err)));
@@ -74,18 +82,6 @@ export const chatWithSession = async (
   }
 };
 
-export interface ConsoleRecord {
-  ps1: string;
-  command: string;
-  output: string;
-}
-
-export interface ShellViewResponse {
-  output: string;
-  session_id: string;
-  console: ConsoleRecord[];
-}
-
 /**
  * View Shell session output
  * @param sessionId Session ID
@@ -94,16 +90,7 @@ export interface ShellViewResponse {
  */
 export async function viewShellSession(sessionId: string, shellSessionId: string): Promise<ShellViewResponse> {
   const response = await apiClient.post<ApiResponse<ShellViewResponse>>(`/sessions/${sessionId}/shell`, { session_id: shellSessionId });
-  // Error handling
-  if (response.data.code !== 0) {
-    throw new Error(response.data.msg);
-  }
   return response.data.data;
-}
-
-export interface FileViewResponse {
-  content: string;
-  file: string;
 }
 
 /**
@@ -114,9 +101,5 @@ export interface FileViewResponse {
  */
 export async function viewFile(sessionId: string, file: string): Promise<FileViewResponse> {
   const response = await apiClient.post<ApiResponse<FileViewResponse>>(`/sessions/${sessionId}/file`, { file });
-  // Error handling
-  if (response.data.code !== 0) {
-    throw new Error(response.data.msg);
-  }
   return response.data.data;
 }

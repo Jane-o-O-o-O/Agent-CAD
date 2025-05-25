@@ -104,7 +104,7 @@
             </div>
           </div>
         </template>
-        <ChatBox v-model="inputMessage" :rows="1" @submit="sendMessage(inputMessage)" />
+        <ChatBox v-model="inputMessage" :rows="1" @submit="chat(inputMessage)" />
       </div>
     </div>
     <ToolPanel ref="toolPanel" :sessionId="sessionId" :realTime="realTime" @jumpToRealTime="jumpToRealTime" />
@@ -118,12 +118,21 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import ChatBox from '../components/ChatBox.vue';
 import ChatMessage from '../components/ChatMessage.vue';
-import { chatWithSession } from '../api/agent';
+import * as agentApi from '../api/agent';
 import { Message, MessageContent, ToolContent, StepContent } from '../types/message';
-import { StepEventData, ToolEventData, MessageEventData, ErrorEventData, TitleEventData, PlanEventData } from '../types/sseEvent';
+import { 
+  StepEventData, 
+  ToolEventData, 
+  MessageEventData, 
+  ErrorEventData, 
+  TitleEventData, 
+  PlanEventData, 
+  AgentSSEEvent 
+} from '../types/event';
 import ToolPanel from '../components/ToolPanel.vue';
 import { ArrowDown, Bot, Clock, ChevronUp, ChevronDown } from 'lucide-vue-next';
 import StepSuccessIcon from '../components/icons/StepSuccessIcon.vue';
+import { showErrorToast } from '../utils/toast';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -245,7 +254,7 @@ const handlePlanEvent = (planData: PlanEventData) => {
 }
 
 // Main event handler function
-const handleEvent = (event: any) => {
+const handleEvent = (event: AgentSSEEvent) => {
   if (event.event === 'message') {
     handleMessageEvent(event.data as MessageEventData);
   } else if (event.event === 'tool') {
@@ -263,7 +272,7 @@ const handleEvent = (event: any) => {
   }
 }
 
-const sendMessage = async (message: string = '') => {
+const chat = async (message: string = '') => {
   if (!sessionId.value) return;
 
   if (message.trim()) {
@@ -286,14 +295,45 @@ const sendMessage = async (message: string = '') => {
 
   try {
     // Use the split event handler function
-    await chatWithSession(sessionId.value, message, handleEvent, (error) => {
-      console.error('Chat error:', error);
-      isLoading.value = false;
-    });
+    await agentApi.chatWithSession(
+      sessionId.value,
+      message,
+      {
+        onOpen: () => {
+          console.log('Chat opened');
+          isLoading.value = true;
+        },
+        onMessage: (event) => {
+          handleEvent(event);
+        },
+        onClose: () => {
+          console.log('Chat closed');
+          isLoading.value = false;
+        },
+        onError: (error) => {
+          console.error('Chat error:', error);
+          isLoading.value = false;
+        }
+      }
+    );
   } catch (error) {
     console.error('Chat error:', error);
     isLoading.value = false;
   }
+}
+
+const restoreSession = async () => {
+  if (!sessionId.value) {
+    showErrorToast(t('Session not found'));
+    return;
+  }
+  const session = await agentApi.getSession(sessionId.value);
+  realTime.value = false;
+  for (const event of session.events) {
+    handleEvent(event);
+  }
+  realTime.value = true;
+  return session;
 }
 
 // Initialize active conversation
@@ -306,9 +346,11 @@ onMounted(() => {
     const message = history.state?.message;
     history.replaceState({}, document.title);
     if (message) {
-      sendMessage(message);
+      chat(message);
     } else {
-      sendMessage();
+      restoreSession().then(() => {
+        chat();
+      });
     }
   }
 });
@@ -369,4 +411,4 @@ const handleGoHome = () => {
 .\[\&\:not\(\:empty\)\]\:pb-2:not(:empty) {
   padding-bottom: .5rem;
 }
-</style>
+</style>../types/event

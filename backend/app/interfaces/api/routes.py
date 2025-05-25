@@ -6,8 +6,9 @@ import asyncio
 import websockets
 import logging
 from app.application.services.agent_service import AgentService
-from app.application.schemas.request import ChatRequest, FileViewRequest, ShellViewRequest
-from app.application.schemas.response import APIResponse, CreateSessionResponse, GetSessionResponse, ShellViewResponse, FileViewResponse
+from app.interfaces.schemas.request import ChatRequest, FileViewRequest, ShellViewRequest
+from app.interfaces.schemas.response import APIResponse, CreateSessionResponse, GetSessionResponse, ShellViewResponse, FileViewResponse
+from app.interfaces.schemas.event import SSEEventFactory
 
 
 router = APIRouter()
@@ -26,21 +27,20 @@ async def create_session(
     return APIResponse.success(
         CreateSessionResponse(
             session_id=session.id,
-            status="created",
-            message="Session created successfully"
         )
     )
 
-@router.get("/sessions/{session_id}", response_model=APIResponse[CreateSessionResponse])
-async def create_session(
+@router.get("/sessions/{session_id}", response_model=APIResponse[GetSessionResponse])
+async def get_session(
+    session_id: str,
     agent_service: AgentService = Depends(get_agent_service)
-) -> APIResponse[CreateSessionResponse]:
+) -> APIResponse[GetSessionResponse]:
     session = await agent_service.get_session(session_id)
-    return APIResponse.success(
-        GetSessionResponse(
-            events=session.events
-        )
-    )
+    return APIResponse.success(GetSessionResponse(
+        session_id=session.id,
+        title=session.title,
+        events=SSEEventFactory.from_events(session.events)
+    ))
 
 @router.post("/sessions/{session_id}/chat")
 async def chat(
@@ -50,10 +50,13 @@ async def chat(
 ) -> EventSourceResponse:
     async def event_generator() -> AsyncGenerator[ServerSentEvent, None]:
         async for event in agent_service.chat(session_id, request.message, request.timestamp):
-            yield ServerSentEvent(
-                event=event.event,
-                data=event.data.model_dump_json() if event.data else None
-            )
+            sse_event = SSEEventFactory.from_event(event)
+            logger.debug(f"Received event: {sse_event}")
+            if sse_event:
+                yield ServerSentEvent(
+                    event=sse_event.event,
+                    data=sse_event.data.model_dump_json() if sse_event.data else None
+                )
 
     return EventSourceResponse(event_generator()) 
 

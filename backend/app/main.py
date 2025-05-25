@@ -8,7 +8,7 @@ from app.interfaces.api.routes import router
 from app.application.services.agent_service import AgentService
 from app.infrastructure.config import get_settings
 from app.infrastructure.logging import setup_logging
-from app.interfaces.api.errors.exception_handlers import register_exception_handlers
+from app.interfaces.errors.exception_handlers import register_exception_handlers
 from app.infrastructure.storage.mongodb import get_mongodb
 from app.infrastructure.storage.redis import get_redis
 from app.infrastructure.external.search.google_search import GoogleSearchEngine

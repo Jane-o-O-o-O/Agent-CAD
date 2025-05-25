@@ -1,35 +1,31 @@
-from fastapi import HTTPException
-from typing import Any, Dict, Optional
-
-
-class APIException(HTTPException):
+class AppException(RuntimeError):
     def __init__(
         self,
         code: int,
         msg: str,
         status_code: int = 400,
-        headers: Optional[Dict[str, Any]] = None,
     ):
+        super().__init__(msg)
         self.code = code
         self.msg = msg
-        super().__init__(status_code=status_code, detail=msg, headers=headers)
+        self.status_code = status_code
 
 
-class NotFoundError(APIException):
+class NotFoundError(AppException):
     def __init__(self, msg: str = "Resource not found"):
         super().__init__(code=404, msg=msg, status_code=404)
 
 
-class BadRequestError(APIException):
+class BadRequestError(AppException):
     def __init__(self, msg: str = "Bad request parameters"):
         super().__init__(code=400, msg=msg, status_code=400)
 
 
-class ServerError(APIException):
+class ServerError(AppException):
     def __init__(self, msg: str = "Internal server error"):
         super().__init__(code=500, msg=msg, status_code=500)
 
 
-class UnauthorizedError(APIException):
+class UnauthorizedError(AppException):
     def __init__(self, msg: str = "Unauthorized"):
         super().__init__(code=401, msg=msg, status_code=401) 

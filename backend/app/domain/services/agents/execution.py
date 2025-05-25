@@ -59,7 +59,6 @@ class ExecutionAgent(BaseAgent):
                 step.status = ExecutionStatus.FAILED
                 step.error = event.error
                 yield StepEvent(status=StepStatus.FAILED, step=step)
-                return
             
             if isinstance(event, MessageEvent):
                 step.status = ExecutionStatus.COMPLETED

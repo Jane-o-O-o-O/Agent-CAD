@@ -45,8 +45,8 @@ import { onMounted, ref, computed, watch, onBeforeUnmount, onUnmounted } from "v
 import { ToolContent } from "../types/message";
 import { viewFile } from "../api/agent";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
-import { showErrorToast } from "../utils/toast";
-import { useI18n } from "vue-i18n";
+//import { showErrorToast } from "../utils/toast";
+//import { useI18n } from "vue-i18n";
 
 import "monaco-editor/esm/vs/language/json/monaco.contribution";
 import "monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution";
@@ -58,7 +58,7 @@ import "monaco-editor/esm/vs/basic-languages/java/java.contribution";
 import "monaco-editor/esm/vs/basic-languages/go/go.contribution";
 import "monaco-editor/esm/vs/basic-languages/markdown/markdown.contribution";
 
-const { t } = useI18n();
+//const { t } = useI18n();
 
 const props = defineProps<{
   sessionId: string;
@@ -164,7 +164,7 @@ const loadFileContent = () => {
     })
     .catch((error) => {
       console.error("Failed to load file content:", error);
-      showErrorToast(t("Failed to load file content"));
+      //showErrorToast(t("Failed to load file content"));
     });
 };
 

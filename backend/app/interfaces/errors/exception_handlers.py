@@ -3,8 +3,8 @@ from fastapi.responses import JSONResponse
 import logging
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.application.schemas.exceptions import APIException
-from app.application.schemas.response import APIResponse
+from app.application.errors.exceptions import AppException
+from app.interfaces.schemas.response import APIResponse
 
 logger = logging.getLogger(__name__)
 
@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 def register_exception_handlers(app: FastAPI) -> None:
     """Register all exception handlers"""
     
-    @app.exception_handler(APIException)
-    async def api_exception_handler(request: Request, exc: APIException) -> JSONResponse:
+    @app.exception_handler(AppException)
+    async def api_exception_handler(request: Request, exc: AppException) -> JSONResponse:
         """Handle custom API exceptions"""
         logger.warning(f"APIException: {exc.msg}")
         return JSONResponse(

@@ -23,7 +23,7 @@
 import { onMounted, ref, computed, watch, onUnmounted } from 'vue';
 import { viewShellSession } from '../api/agent';
 import { ToolContent } from '../types/message';
-import { showErrorToast } from '../utils/toast';
+//import { showErrorToast } from '../utils/toast';
 
 const props = defineProps<{
   sessionId: string;
@@ -62,7 +62,7 @@ const loadShellContent = () => {
     }
   }).catch((error) => {
     console.error('Failed to load Shell session content:', error);
-    showErrorToast('加载Shell会话内容失败');
+    //showErrorToast('加载Shell会话内容失败');
   });
 };
 

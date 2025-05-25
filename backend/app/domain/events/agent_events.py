@@ -31,27 +31,6 @@ class BaseEvent(BaseModel):
     type: str
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: int = Field(default_factory=lambda: int(time.time()))
-    
-    @staticmethod
-    def create_from_dict(data: Dict[str, Any]) -> 'AgentEvent':
-        """Create an event from dictionary data"""
-        event_type = data.get('type')
-        if event_type == 'error':
-            return ErrorEvent(**data)
-        elif event_type == 'plan':
-            return PlanEvent(**data)
-        elif event_type == 'tool':
-            return ToolEvent(**data)
-        elif event_type == 'step':
-            return StepEvent(**data)
-        elif event_type == 'message':
-            return MessageEvent(**data)
-        elif event_type == 'done':
-            return DoneEvent(**data)
-        elif event_type == 'title':
-            return TitleEvent(**data)
-        else:
-            return BaseEvent(**data)
 
 class ErrorEvent(BaseEvent):
     """Error event"""
