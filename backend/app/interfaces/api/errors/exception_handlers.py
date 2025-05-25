@@ -3,8 +3,8 @@ from fastapi.responses import JSONResponse
 import logging
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.application.models.exceptions import APIException
-from app.application.models.response import APIResponse
+from app.application.schemas.exceptions import APIException
+from app.application.schemas.response import APIResponse
 
 logger = logging.getLogger(__name__)
 

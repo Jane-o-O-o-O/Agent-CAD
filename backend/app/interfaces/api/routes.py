@@ -6,8 +6,8 @@ import asyncio
 import websockets
 import logging
 from app.application.services.agent_service import AgentService
-from app.application.models.request import ChatRequest, FileViewRequest, ShellViewRequest
-from app.application.models.response import APIResponse, SessionResponse, ShellViewResponse, FileViewResponse
+from app.application.schemas.request import ChatRequest, FileViewRequest, ShellViewRequest
+from app.application.schemas.response import APIResponse, CreateSessionResponse, GetSessionResponse, ShellViewResponse, FileViewResponse
 
 
 router = APIRouter()
@@ -18,16 +18,27 @@ def get_agent_service() -> AgentService:
     # Placeholder for dependency injection
     return None
 
-@router.post("/sessions", response_model=APIResponse[SessionResponse])
+@router.put("/sessions", response_model=APIResponse[CreateSessionResponse])
 async def create_session(
     agent_service: AgentService = Depends(get_agent_service)
-) -> APIResponse[SessionResponse]:
+) -> APIResponse[CreateSessionResponse]:
     session = await agent_service.create_session()
     return APIResponse.success(
-        SessionResponse(
+        CreateSessionResponse(
             session_id=session.id,
             status="created",
             message="Session created successfully"
+        )
+    )
+
+@router.get("/sessions/{session_id}", response_model=APIResponse[CreateSessionResponse])
+async def create_session(
+    agent_service: AgentService = Depends(get_agent_service)
+) -> APIResponse[CreateSessionResponse]:
+    session = await agent_service.get_session(session_id)
+    return APIResponse.success(
+        GetSessionResponse(
+            events=session.events
         )
     )
 

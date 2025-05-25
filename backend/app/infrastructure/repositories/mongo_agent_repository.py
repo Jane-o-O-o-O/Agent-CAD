@@ -3,8 +3,7 @@ from datetime import datetime, UTC
 from app.domain.models.agent import Agent
 from app.domain.models.memory import Memory
 from app.domain.repositories.agent_repository import AgentRepository
-from app.infrastructure.models.mongo_agent import MongoAgent
-from bson import ObjectId
+from app.infrastructure.models.documents import AgentDocument
 import logging
 
 
@@ -15,8 +14,8 @@ class MongoAgentRepository(AgentRepository):
 
     async def save(self, agent: Agent) -> None:
         """Save or update an agent"""
-        mongo_agent = await MongoAgent.find_one(
-            MongoAgent.agent_id == agent.id
+        mongo_agent = await AgentDocument.find_one(
+            AgentDocument.agent_id == agent.id
         )
         
         if not mongo_agent:
@@ -34,8 +33,8 @@ class MongoAgentRepository(AgentRepository):
 
     async def find_by_id(self, agent_id: str) -> Optional[Agent]:
         """Find an agent by its ID"""
-        mongo_agent = await MongoAgent.find_one(
-            MongoAgent.agent_id == agent_id
+        mongo_agent = await AgentDocument.find_one(
+            AgentDocument.agent_id == agent_id
         )
         return self._to_domain_agent(mongo_agent) if mongo_agent else None
 
@@ -43,8 +42,8 @@ class MongoAgentRepository(AgentRepository):
                           name: str,
                           memory: Memory) -> None:
         """Add or update a memory for an agent"""
-        mongo_agent = await MongoAgent.find_one(
-            MongoAgent.agent_id == agent_id
+        mongo_agent = await AgentDocument.find_one(
+            AgentDocument.agent_id == agent_id
         )
         if not mongo_agent:
             raise ValueError(f"Agent {agent_id} not found")
@@ -55,8 +54,8 @@ class MongoAgentRepository(AgentRepository):
 
     async def get_memory(self, agent_id: str, name: str) -> Memory:
         """Get memory by name from agent, create if not exists"""
-        mongo_agent = await MongoAgent.find_one(
-            MongoAgent.agent_id == agent_id
+        mongo_agent = await AgentDocument.find_one(
+            AgentDocument.agent_id == agent_id
         )
         if not mongo_agent:
             raise ValueError(f"Agent {agent_id} not found")
@@ -64,8 +63,8 @@ class MongoAgentRepository(AgentRepository):
     
     async def save_memory(self, agent_id: str, name: str, memory: Memory) -> None:
         """Update the messages of a memory"""
-        mongo_agent = await MongoAgent.find_one(
-            MongoAgent.agent_id == agent_id
+        mongo_agent = await AgentDocument.find_one(
+            AgentDocument.agent_id == agent_id
         )
         if not mongo_agent:
             raise ValueError(f"Agent {agent_id} not found")
@@ -74,7 +73,7 @@ class MongoAgentRepository(AgentRepository):
         mongo_agent.updated_at = datetime.now(UTC)
         await mongo_agent.save()
 
-    def _to_domain_agent(self, mongo_agent: MongoAgent) -> Agent:
+    def _to_domain_agent(self, mongo_agent: AgentDocument) -> Agent:
         """Convert MongoDB document to domain model"""
 
         return Agent(
@@ -88,9 +87,9 @@ class MongoAgentRepository(AgentRepository):
         )
     
 
-    def _to_mongo_agent(self, agent: Agent) -> MongoAgent:
+    def _to_mongo_agent(self, agent: Agent) -> AgentDocument:
         """Create a new MongoDB agent from domain agent"""
-        return MongoAgent(
+        return AgentDocument(
             agent_id=agent.id,
             model_name=agent.model_name,
             temperature=agent.temperature,

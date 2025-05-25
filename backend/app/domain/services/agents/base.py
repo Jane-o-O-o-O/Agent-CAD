@@ -9,7 +9,7 @@ from app.domain.models.memory import Memory
 from app.domain.services.tools.base import BaseTool
 from app.domain.models.tool_result import ToolResult
 from app.domain.events.agent_events import (
-    AgentEvent,
+    BaseEvent,
     ToolEvent,
     ToolStatus,
     ErrorEvent,
@@ -68,7 +68,7 @@ class BaseAgent(ABC):
         
         raise ValueError(f"Tool execution failed, retried {self.max_retries} times: {last_error}")
     
-    async def execute(self, request: str) -> AsyncGenerator[AgentEvent, None]:
+    async def execute(self, request: str) -> AsyncGenerator[BaseEvent, None]:
         message = await self.ask(request, self.format)
         for _ in range(self.max_iterations):
             if not message.get("tool_calls"):

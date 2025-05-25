@@ -1,8 +1,6 @@
 from typing import AsyncGenerator, Optional
-import json
 from app.domain.models.plan import Plan, Step, ExecutionStatus
 from app.domain.services.agents.base import BaseAgent
-from app.domain.models.memory import Memory
 from app.domain.external.llm import LLM
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.browser import Browser
@@ -10,7 +8,7 @@ from app.domain.external.search import SearchEngine
 from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.services.prompts.execution import EXECUTION_SYSTEM_PROMPT, EXECUTION_PROMPT
 from app.domain.events.agent_events import (
-    AgentEvent,
+    BaseEvent,
     StepEvent,
     StepStatus,
     ErrorEvent,
@@ -52,7 +50,7 @@ class ExecutionAgent(BaseAgent):
         if search_engine:
             self.tools.append(SearchTool(search_engine))
     
-    async def execute_step(self, plan: Plan, step: Step) -> AsyncGenerator[AgentEvent, None]:
+    async def execute_step(self, plan: Plan, step: Step) -> AsyncGenerator[BaseEvent, None]:
         message = EXECUTION_PROMPT.format(goal=plan.goal, step=step.description)
         step.status = ExecutionStatus.RUNNING
         yield StepEvent(status=StepStatus.STARTED, step=step)

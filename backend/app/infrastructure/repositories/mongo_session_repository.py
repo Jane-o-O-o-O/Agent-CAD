@@ -2,7 +2,8 @@ from typing import Optional
 from datetime import datetime, UTC
 from app.domain.models.session import Session
 from app.domain.repositories.session_repository import SessionRepository
-from app.infrastructure.models.mongo_session import MongoSession
+from app.domain.events.agent_events import BaseEvent
+from app.infrastructure.models.documents import SessionDocument
 import logging
 
 logger = logging.getLogger(__name__)
@@ -12,8 +13,8 @@ class MongoSessionRepository(SessionRepository):
     
     async def save(self, session: Session) -> None:
         """Save or update a session"""
-        mongo_session = await MongoSession.find_one(
-            MongoSession.session_id == session.id
+        mongo_session = await SessionDocument.find_one(
+            SessionDocument.session_id == session.id
         )
         
         if not mongo_session:
@@ -36,20 +37,44 @@ class MongoSessionRepository(SessionRepository):
 
     async def find_by_id(self, session_id: str) -> Optional[Session]:
         """Find a session by its ID"""
-        mongo_session = await MongoSession.find_one(
-            MongoSession.session_id == session_id
+        mongo_session = await SessionDocument.find_one(
+            SessionDocument.session_id == session_id
         )
         return self._to_domain_session(mongo_session) if mongo_session else None
+    
+    async def update_title(self, session_id: str, title: str) -> None:
+        """Update the title of a session"""
+        mongo_session = await SessionDocument.find_one(
+            SessionDocument.session_id == session_id
+        )
+        if not mongo_session:
+            raise ValueError(f"Session {session_id} not found")
+        
+        mongo_session.title = title
+        mongo_session.updated_at = datetime.now(UTC)
+        await mongo_session.save()
+
+    async def add_event(self, session_id: str, event: BaseEvent) -> None:
+        """Add an event to a session"""
+        mongo_session = await SessionDocument.find_one(
+            SessionDocument.session_id == session_id
+        )
+        if not mongo_session:
+            raise ValueError(f"Session {session_id} not found")
+        
+        mongo_session.events.append(event)
+        mongo_session.updated_at = datetime.now(UTC)
+        await mongo_session.save()
 
     async def delete(self, session_id: str) -> None:
         """Delete a session"""
-        mongo_session = await MongoSession.find_one(
-            MongoSession.session_id == session_id
+        mongo_session = await SessionDocument.find_one(
+            SessionDocument.session_id == session_id
         )
         if mongo_session:
             await mongo_session.delete()
 
-    def _to_domain_session(self, mongo_session: MongoSession) -> Session:
+    def _to_domain_session(self, mongo_session: SessionDocument) -> Session:
         """Convert MongoDB document to domain model"""
         return Session(
             id=mongo_session.session_id,
@@ -65,9 +90,9 @@ class MongoSessionRepository(SessionRepository):
             status=mongo_session.status
         )
     
-    def _to_mongo_session(self, session: Session) -> MongoSession:
+    def _to_mongo_session(self, session: Session) -> SessionDocument:
         """Convert domain session to MongoDB document"""
-        return MongoSession(
+        return SessionDocument(
             session_id=session.id,
             sandbox_id=session.sandbox_id,
             agent_id=session.agent_id,

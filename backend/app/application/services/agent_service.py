@@ -3,7 +3,7 @@ import logging
 from app.domain.models.session import Session
 from app.domain.repositories.session_repository import SessionRepository
 
-from app.application.models.event import (
+from app.application.schemas.event import (
     SSEEvent, DoneSSEEvent,
     MessageData, MessageSSEEvent,
     ToolData, ToolSSEEvent,
@@ -13,11 +13,11 @@ from app.application.models.event import (
     StepData, ErrorData,
     PlanData, PlanSSEEvent
 )
-from app.application.models.response import ShellViewResponse, FileViewResponse
+from app.application.schemas.response import ShellViewResponse, FileViewResponse
 from app.domain.models.agent import Agent
 from app.domain.services.agent_domain_service import AgentDomainService
 from app.domain.events.agent_events import (
-    AgentEvent,
+    BaseEvent,
     PlanEvent,
     PlanStatus,
     ToolEvent,
@@ -27,8 +27,9 @@ from app.domain.events.agent_events import (
     ErrorEvent,
     MessageEvent,
     DoneEvent,
+    TitleEvent,
 )
-from app.application.models.exceptions import NotFoundError
+from app.application.schemas.exceptions import NotFoundError
 from typing import Type
 from app.domain.models.agent import Agent
 from app.domain.external.sandbox import Sandbox
@@ -74,6 +75,14 @@ class AgentService:
         await self._session_repository.save(session)
         return session
 
+    async def get_session(self, session_id: str) -> Session:
+        logger.info(f"Getting session {session_id}")
+        session = await self._session_repository.find_by_id(session_id)
+        if not session:
+            logger.warning(f"Session not found: {session_id}")
+            raise NotFoundError(f"Session not found: {session_id}")
+        return session
+
     async def _create_agent(self) -> Agent:
         logger.info("Creating new agent")
         
@@ -92,18 +101,17 @@ class AgentService:
         logger.info(f"Agent created successfully with ID: {agent.id}")
         return agent
 
-    def _to_sse_event(self, event: AgentEvent) -> Generator[SSEEvent, None, None]:
+    def _to_sse_event(self, event: BaseEvent) -> Generator[SSEEvent, None, None]:
         if isinstance(event, PlanEvent):
-            if event.status == PlanStatus.CREATED:
-                if event.plan.title:
-                    yield TitleSSEEvent(data=TitleData(title=event.plan.title))
-                    yield MessageSSEEvent(data=MessageData(content=event.plan.message))
-            if len(event.plan.steps) > 0:
-                yield PlanSSEEvent(data=PlanData(steps=[StepData(
-                    status=step.status,
-                    id=step.id, 
-                    description=step.description
-                ) for step in event.plan.steps]))
+            yield PlanSSEEvent(data=PlanData(steps=[StepData(
+                status=step.status,
+                id=step.id, 
+                description=step.description
+            ) for step in event.plan.steps]))
+        elif isinstance(event, MessageEvent):
+            yield MessageSSEEvent(data=MessageData(content=event.message))
+        elif isinstance(event, TitleEvent):
+            yield TitleSSEEvent(data=TitleData(title=event.title))
         elif isinstance(event, ToolEvent):
             if event.status == ToolStatus.CALLING and event.tool_name in ["browser", "file", "shell", "message"]:
                 yield ToolSSEEvent(data=ToolData(

@@ -1,4 +1,4 @@
-from app.domain.events.agent_events import AgentEvent
+from app.domain.events.agent_events import BaseEvent
 from app.domain.models.agent import Agent
 from typing import AsyncGenerator
 from abc import ABC, abstractmethod
@@ -7,7 +7,7 @@ from app.domain.repositories.agent_repository import AgentRepository
 class BaseFlow(ABC):
 
     @abstractmethod
-    def run(self) -> AsyncGenerator[AgentEvent, None]:
+    def run(self) -> AsyncGenerator[BaseEvent, None]:
         pass
 
     @abstractmethod

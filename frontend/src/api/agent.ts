@@ -16,7 +16,7 @@ export interface Session {
  * @returns Session
  */
 export async function createSession(): Promise<Session> {
-  const response = await apiClient.post<ApiResponse<Session>>('/sessions');
+  const response = await apiClient.put<ApiResponse<Session>>('/sessions');
   // Error handling
   if (response.data.code !== 0) {
     throw new Error(response.data.msg);

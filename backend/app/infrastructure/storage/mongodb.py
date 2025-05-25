@@ -2,10 +2,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import ConnectionFailure
 from typing import Optional
 import logging
-from beanie import init_beanie
 from functools import lru_cache
-from app.infrastructure.models.mongo_agent import MongoAgent
-from app.infrastructure.models.mongo_session import MongoSession
 from app.infrastructure.config import get_settings
 
 logger = logging.getLogger(__name__)

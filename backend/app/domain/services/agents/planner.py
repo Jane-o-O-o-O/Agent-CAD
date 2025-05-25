@@ -11,7 +11,7 @@ from app.domain.services.prompts.planner import (
     UPDATE_PLAN_PROMPT
 )
 from app.domain.events.agent_events import (
-    AgentEvent,
+    BaseEvent,
     PlanEvent,
     PlanStatus,
     ErrorEvent,
@@ -43,7 +43,7 @@ class PlannerAgent(BaseAgent):
         super().__init__(agent_id, agent_repository, llm)
 
 
-    async def create_plan(self, message: Optional[str] = None) -> AsyncGenerator[AgentEvent, None]:
+    async def create_plan(self, message: Optional[str] = None) -> AsyncGenerator[BaseEvent, None]:
         message = CREATE_PLAN_PROMPT.format(user_message=message) if message else None
         async for event in self.execute(message):
             if isinstance(event, MessageEvent):
@@ -55,7 +55,7 @@ class PlannerAgent(BaseAgent):
             else:
                 yield event
 
-    async def update_plan(self, plan: Plan) -> AsyncGenerator[AgentEvent, None]:
+    async def update_plan(self, plan: Plan) -> AsyncGenerator[BaseEvent, None]:
         message = UPDATE_PLAN_PROMPT.format(plan=plan.model_dump_json(include={"steps"}), goal=plan.goal)
         async for event in self.execute(message):
             if isinstance(event, MessageEvent):

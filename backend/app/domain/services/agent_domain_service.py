@@ -4,7 +4,7 @@ from app.domain.models.session import Session
 from app.domain.external.llm import LLM
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.search import SearchEngine
-from app.domain.events.agent_events import AgentEvent, ErrorEvent, DoneEvent, PlanEvent, StepEvent, ToolEvent, MessageEvent
+from app.domain.events.agent_events import BaseEvent, ErrorEvent, DoneEvent, PlanEvent, StepEvent, ToolEvent, MessageEvent, AgentEventFactory
 from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.repositories.session_repository import SessionRepository
 from app.domain.services.agent_task_runner import AgentTaskRunner
@@ -60,11 +60,13 @@ class AgentDomainService:
         await self._session_repository.save(session)
 
         task_runner = AgentTaskRunner(
+            session_id=session.id,
             agent_id=session.agent_id,
             llm=self._llm,
             sandbox=sandbox,
             browser=browser,
             search_engine=self._search_engine,
+            session_repository=self._session_repository,
             agent_repository=self._repository
         )
 
@@ -89,7 +91,7 @@ class AgentDomainService:
         message: Optional[str] = None,
         timestamp: Optional[int] = None,
         last_event_id: Optional[str] = None
-    ) -> AsyncGenerator[AgentEvent, None]:
+    ) -> AsyncGenerator[BaseEvent, None]:
         """
         Chat with an agent
         """
@@ -128,7 +130,7 @@ class AgentDomainService:
                 if event_str is None:
                     logger.debug(f"No event found in Session {session_id}'s event queue")
                     continue
-                event = self._to_event(event_str)
+                event = AgentEventFactory.from_json(event_str)
                 logger.debug(f"Got event from Session {session_id}'s event queue: {type(event).__name__}")
                 yield event
                 if isinstance(event, (DoneEvent, ErrorEvent)):
@@ -139,22 +141,3 @@ class AgentDomainService:
         except Exception as e:
             logger.exception(f"Error in Session {session_id}")  
             yield ErrorEvent(error=str(e))
-
-    def _to_event(self, event_str: str) -> AgentEvent:
-        """Get an event from a JSON string"""
-        event = AgentEvent.model_validate_json(event_str)
-        if (event.type == "plan"):
-            return PlanEvent.model_validate_json(event_str)
-        elif (event.type == "step"): 
-            return StepEvent.model_validate_json(event_str)
-        elif (event.type == "tool"):
-            return ToolEvent.model_validate_json(event_str)
-        elif (event.type == "message"):
-            return MessageEvent.model_validate_json(event_str)
-        elif (event.type == "error"):
-            return ErrorEvent.model_validate_json(event_str)
-        elif (event.type == "done"):
-            return DoneEvent.model_validate_json(event_str)
-        else:
-            return event
-    

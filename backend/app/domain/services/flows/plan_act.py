@@ -1,16 +1,15 @@
 import logging
 from app.domain.services.flows.base import BaseFlow
 from app.domain.models.agent import Agent
-from app.domain.events.agent_events import AgentEvent
 from typing import AsyncGenerator
 from enum import Enum
 from app.domain.events.agent_events import (
-    AgentEvent,
+    BaseEvent,
     PlanEvent,
     PlanStatus,
-    ErrorEvent,
     MessageEvent,
     DoneEvent,
+    TitleEvent,
 )
 from app.domain.models.plan import ExecutionStatus
 from app.domain.services.agents.planner import PlannerAgent
@@ -62,7 +61,7 @@ class PlanActFlow(BaseFlow):
         )
         logger.debug(f"Created execution agent for Agent {self._agent_id}")
 
-    async def run(self, message: str) -> AsyncGenerator[AgentEvent, None]:
+    async def run(self, message: str) -> AsyncGenerator[BaseEvent, None]:
         if not self.is_done():
             # interrupt the current flow
             self.status = AgentStatus.PLANNING
@@ -82,6 +81,8 @@ class PlanActFlow(BaseFlow):
                     if isinstance(event, PlanEvent) and event.status == PlanStatus.CREATED:
                         self.plan = event.plan
                         logger.info(f"Agent {self._agent_id} created plan successfully with {len(event.plan.steps)} steps")
+                        yield TitleEvent(title=event.plan.title)
+                        yield MessageEvent(role="assistant", message=event.plan.message)
                     yield event
                 logger.info(f"Agent {self._agent_id} state changed from {AgentStatus.PLANNING} to {AgentStatus.EXECUTING}")
                 self.status = AgentStatus.EXECUTING

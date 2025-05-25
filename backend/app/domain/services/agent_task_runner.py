@@ -1,7 +1,7 @@
-from typing import Optional, Dict, AsyncGenerator, Callable, Tuple, Any
+from typing import Optional, AsyncGenerator
 import asyncio
 import logging
-from app.domain.events.agent_events import AgentEvent, ErrorEvent, DoneEvent
+from app.domain.events.agent_events import BaseEvent, ErrorEvent, TitleEvent
 from app.domain.services.flows.plan_act import PlanActFlow
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.browser import Browser
@@ -9,6 +9,7 @@ from app.domain.external.search import SearchEngine
 from app.domain.external.llm import LLM
 from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.external.task import TaskRunner, Task
+from app.domain.repositories.session_repository import SessionRepository
 
 logger = logging.getLogger(__name__)
 
@@ -16,19 +17,23 @@ class AgentTaskRunner(TaskRunner):
     """Agent task that can be cancelled"""
     def __init__(
         self,
+        session_id: str,
         agent_id: str,
         llm: LLM,
         sandbox: Sandbox,
         browser: Browser,
         agent_repository: AgentRepository,
+        session_repository: SessionRepository,
         search_engine: Optional[SearchEngine] = None
     ):
+        self._session_id = session_id
         self._agent_id = agent_id
         self._llm = llm
         self._sandbox = sandbox
         self._browser = browser
         self._search_engine = search_engine
         self._repository = agent_repository
+        self._session_repository = session_repository
         self._flow = PlanActFlow(
             self._agent_id,
             self._repository,
@@ -42,7 +47,7 @@ class AgentTaskRunner(TaskRunner):
         """Process agent's message queue and run the agent's flow"""
         try:
             logger.info(f"Agent {self._agent_id} message processing task started")
-            message_id, message = await task.input_stream.pop()
+            _, message = await task.input_stream.pop()
             if message is None:
                 logger.warning(f"Agent {self._agent_id} received empty message")
                 return
@@ -50,7 +55,11 @@ class AgentTaskRunner(TaskRunner):
             logger.info(f"Agent {self._agent_id} received new message: {message[:50]}...")
             
             async for event in self._run_flow(message):
-                await task.output_stream.put(event.model_dump_json())
+                event_id = await task.output_stream.put(event.model_dump_json())
+                event.id = event_id
+                await self._session_repository.add_event(self._session_id, event)
+                if isinstance(event, TitleEvent):
+                    await self._session_repository.update_title(self._session_id, event.title)
                 
         except asyncio.CancelledError:
             logger.info(f"Agent {self._agent_id} task cancelled")
@@ -58,7 +67,7 @@ class AgentTaskRunner(TaskRunner):
             logger.exception(f"Agent {self._agent_id} task encountered exception: {str(e)}")
             await task.output_stream.put(ErrorEvent(error=f"Task error: {str(e)}"))
     
-    async def _run_flow(self, message: str) -> AsyncGenerator[AgentEvent, None]:
+    async def _run_flow(self, message: str) -> AsyncGenerator[BaseEvent, None]:
         """Process a single message through the agent's flow and yield events"""
         if not message:
             logger.warning(f"Agent {self._agent_id} received empty message")

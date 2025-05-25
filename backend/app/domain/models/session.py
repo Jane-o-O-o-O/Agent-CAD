@@ -3,7 +3,7 @@ from datetime import datetime, UTC
 from typing import List, Optional
 from enum import Enum
 import uuid
-from app.domain.events.agent_events import AgentEvent
+from app.domain.events.agent_events import BaseEvent
 
 
 class SessionStatus(str, Enum):
@@ -23,5 +23,5 @@ class Session(BaseModel):
     last_message_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    events: List[AgentEvent] = []
+    events: List[BaseEvent] = []
     status: SessionStatus = SessionStatus.ACTIVE

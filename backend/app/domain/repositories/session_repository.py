@@ -1,6 +1,6 @@
-from typing import Optional, List, Protocol
-from app.domain.models.session import Session, SessionStatus
-from datetime import datetime
+from typing import Optional, Protocol
+from app.domain.models.session import Session
+from app.domain.events.agent_events import BaseEvent
 
 class SessionRepository(Protocol):
     """Repository interface for Session aggregate"""
@@ -13,20 +13,12 @@ class SessionRepository(Protocol):
         """Find a session by its ID"""
         ...
     
-    async def find_by_agent_id(self, agent_id: str) -> List[Session]:
-        """Find all sessions for a specific agent"""
+    async def update_title(self, session_id: str, title: str) -> None:
+        """Update the title of a session"""
         ...
-    
-    async def find_active_sessions(self, agent_id: str) -> List[Session]:
-        """Find all active sessions for a specific agent"""
-        ...
-    
-    async def update_status(self, session_id: str, status: SessionStatus) -> None:
-        """Update the status of a session"""
-        ...
-    
-    async def update_last_message(self, session_id: str, message: str) -> None:
-        """Update the last message and timestamp of a session"""
+
+    async def add_event(self, session_id: str, event: BaseEvent) -> None:
+        """Add an event to a session"""
         ...
     
     async def delete(self, session_id: str) -> None:
