@@ -148,6 +148,7 @@ const title = ref(t('New Chat'));
 const isShowPlanPanel = ref(false)
 const plan = ref<PlanEventData>();
 const lastNoMessageTool = ref<ToolContent>();
+const lastEventId = ref<string>();
 
 // Watch message changes and automatically scroll to bottom
 watch(messages, async () => {
@@ -182,7 +183,7 @@ const getLastStep = (): StepContent | undefined => {
 // Handle message event
 const handleMessageEvent = (messageData: MessageEventData) => {
   messages.value.push({
-    type: 'assistant',
+    type: messageData.role,
     content: {
       ...messageData
     } as MessageContent,
@@ -262,7 +263,7 @@ const handleEvent = (event: AgentSSEEvent) => {
   } else if (event.event === 'step') {
     handleStepEvent(event.data as StepEventData);
   } else if (event.event === 'done') {
-    isLoading.value = false;
+    //isLoading.value = false;
   } else if (event.event === 'error') {
     handleErrorEvent(event.data as ErrorEventData);
   } else if (event.event === 'title') {
@@ -270,6 +271,7 @@ const handleEvent = (event: AgentSSEEvent) => {
   } else if (event.event === 'plan') {
     handlePlanEvent(event.data as PlanEventData);
   }
+  lastEventId.value = event.data.event_id;
 }
 
 const chat = async (message: string = '') => {
@@ -298,6 +300,7 @@ const chat = async (message: string = '') => {
     await agentApi.chatWithSession(
       sessionId.value,
       message,
+      lastEventId.value,
       {
         onOpen: () => {
           console.log('Chat opened');
@@ -333,7 +336,7 @@ const restoreSession = async () => {
     handleEvent(event);
   }
   realTime.value = true;
-  return session;
+  await chat();
 }
 
 // Initialize active conversation
@@ -348,9 +351,7 @@ onMounted(() => {
     if (message) {
       chat(message);
     } else {
-      restoreSession().then(() => {
-        chat();
-      });
+      restoreSession();
     }
   }
 });

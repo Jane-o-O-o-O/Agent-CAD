@@ -117,8 +117,7 @@ class AgentDomainService:
                 
                 message_id = await task.input_stream.put(message)
                 message_event = MessageEvent(message=message, role="user", id=message_id)
-                session.events.append(message_event)
-                await self._session_repository.save(session)
+                await self._session_repository.add_event(session_id, message_event)
                 await task.run()
                 logger.debug(f"Put message into Session {session_id}'s event queue: {message[:50]}...")
             

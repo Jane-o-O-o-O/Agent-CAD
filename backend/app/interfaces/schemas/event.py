@@ -20,6 +20,7 @@ class BaseEventData(BaseModel):
     timestamp: int = Field(default_factory=lambda: int(time.time()))
 
 class MessageEventData(BaseEventData):
+    role: Literal["user", "assistant"]
     content: str
 
 class ToolEventData(BaseEventData):
@@ -109,7 +110,7 @@ class SSEEventFactory:
             )
         elif isinstance(event, MessageEvent):
             return MessageSSEEvent(
-                data=MessageEventData(event_id=event.id, content=event.message)
+                data=MessageEventData(event_id=event.id, content=event.message, role=event.role)
             )
         elif isinstance(event, TitleEvent):
             return TitleSSEEvent(

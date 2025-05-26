@@ -37,9 +37,10 @@ interface ChatCallbacks {
 export const chatWithSession = async (
   sessionId: string, 
   message: string = '',
-  callbacks: ChatCallbacks
+  eventId?: string,
+  callbacks?: ChatCallbacks
 ) => {
-  const { onOpen, onMessage, onClose, onError } = callbacks;
+  const { onOpen, onMessage, onClose, onError } = callbacks || {};
   
   try {
     const apiUrl = `${BASE_URL}/sessions/${sessionId}/chat`;
@@ -50,20 +51,26 @@ export const chatWithSession = async (
         'Content-Type': 'application/json',
       },
       openWhenHidden: true,
-      body: JSON.stringify({ message, timestamp: Math.floor(Date.now() / 1000) }),
+      body: JSON.stringify({ message, timestamp: Math.floor(Date.now() / 1000), event_id: eventId }),
       async onopen() {
-        onOpen();
+        if (onOpen) {
+          onOpen();
+        }
       },
       onmessage(event: EventSourceMessage) {
         if (event.event && event.event.trim() !== '') {
+          if (onMessage) {
           onMessage({
-            event: event.event as AgentSSEEvent['event'],
-            data: JSON.parse(event.data) as AgentSSEEvent['data']
-          });
+              event: event.event as AgentSSEEvent['event'],
+              data: JSON.parse(event.data) as AgentSSEEvent['data']
+            });
+          }
         }
       },
       onclose() {
-        onClose();
+        if (onClose) {
+          onClose();
+        }
       },
       onerror(err: any) {
         console.error('EventSource error:', err);

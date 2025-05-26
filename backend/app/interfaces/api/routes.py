@@ -49,7 +49,7 @@ async def chat(
     agent_service: AgentService = Depends(get_agent_service)
 ) -> EventSourceResponse:
     async def event_generator() -> AsyncGenerator[ServerSentEvent, None]:
-        async for event in agent_service.chat(session_id, request.message, request.timestamp):
+        async for event in agent_service.chat(session_id, request.message, request.timestamp, request.event_id):
             sse_event = SSEEventFactory.from_event(event)
             logger.debug(f"Received event: {sse_event}")
             if sse_event:

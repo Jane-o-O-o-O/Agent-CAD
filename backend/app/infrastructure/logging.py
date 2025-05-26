@@ -35,5 +35,9 @@ def setup_logging():
     # Add handlers to root logger
     root_logger.addHandler(console_handler)
 
+    # Disable verbose logging for pymongo
+    logging.getLogger("pymongo").setLevel(logging.WARNING)
+    logging.getLogger("websockets").setLevel(logging.WARNING)
+    
     # Log initialization complete
     root_logger.info("Logging system initialized - Console and file logging active") 
