@@ -2,16 +2,12 @@
   <SimpleBar>
     <div
       class="flex flex-col h-full flex-1 min-w-0 mx-auto w-full sm:min-w-[390px] px-5 justify-center items-start gap-2 relative max-w-full sm:max-w-full">
-      <div class="absolute top-4 left-5 ps-7">
+      <div class="absolute top-4 start-5">
         <div class="flex">
-          <Bot :size="38"/>
+          <Bot :size="30"/>
           <ManusLogoTextIcon />
         </div>
       </div>
-
-    <div className="fixed top-4 right-4">
-      <LanguageSwitcher />
-    </div>
       <div class="w-full max-w-full sm:max-w-[768px] sm:min-w-[390px] mx-auto mt-[180px] mb-auto">
         <div class="w-full flex pl-4 items-center justify-start pb-4">
           <span class="text-[var(--text-primary)] text-start font-serif text-[32px] leading-[40px]" :style="{
@@ -38,7 +34,6 @@
 </template>
 
 <script setup lang="ts">
-import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 import SimpleBar from '../components/SimpleBar.vue';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';

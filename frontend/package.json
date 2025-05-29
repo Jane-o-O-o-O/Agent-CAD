@@ -18,7 +18,7 @@
     "clsx": "^2.0.0",
     "dompurify": "^3.2.5",
     "framer-motion": "^10.12.16",
-    "lucide-vue-next": "^0.279.0",
+    "lucide-vue-next": "^0.511.0",
     "marked": "^15.0.8",
     "monaco-editor": "^0.52.2",
     "tailwind-merge": "^1.13.1",

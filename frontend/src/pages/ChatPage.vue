@@ -3,14 +3,11 @@
     <div
       class="relative flex flex-col h-full flex-1 min-w-0 mx-auto w-full max-w-full sm:max-w-[768px] sm:min-w-[390px] px-5">
       <div
-        class="sticky top-0 z-10 bg-[var(--background-gray-main)] flex-shrink-0 flex flex-row items-center justify-between pt-3 pb-1">
+        ref="observerRef"
+        class="sticky top-0 z-10 bg-[var(--background-gray-main)] flex-shrink-0 flex flex-row items-center justify-between pt-4 pb-1">
         <div class="flex w-full flex-col gap-[4px]">
           <div
-            class="text-[var(--text-primary)] text-lg font-medium w-full flex flex-row items-center justify-between flex-1 min-w-0">
-            <div @click="handleGoHome"
-              class="flex h-8 w-8 items-center justify-center cursor-pointer hover:bg-[var(--fill-tsp-gray-main)] rounded-md">
-              <Bot class="h-6 w-6 text-[var(--icon-secondary)]" :size="24" />
-            </div>
+            :class="['text-[var(--text-primary)] text-lg font-medium w-full flex flex-row items-center justify-between flex-1 min-w-0 gap-2', { 'ps-7': shouldAddPaddingClass }]">
             <div class="flex flex-row items-center gap-2 flex-1 min-w-0">
               <span class="whitespace-nowrap text-ellipsis overflow-hidden">
                 {{ title }}
@@ -113,7 +110,7 @@
 
 <script setup lang="ts">
 import SimpleBar from '../components/SimpleBar.vue';
-import { ref, onMounted, watch, nextTick } from 'vue';
+import { ref, onMounted, watch, nextTick, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import ChatBox from '../components/ChatBox.vue';
@@ -149,6 +146,8 @@ const isShowPlanPanel = ref(false)
 const plan = ref<PlanEventData>();
 const lastNoMessageTool = ref<ToolContent>();
 const lastEventId = ref<string>();
+const observerRef = ref<HTMLDivElement>();
+const shouldAddPaddingClass = ref(false);
 
 // Watch message changes and automatically scroll to bottom
 watch(messages, async () => {
@@ -339,6 +338,15 @@ const restoreSession = async () => {
   await chat();
 }
 
+// Position monitoring function
+const checkElementPosition = () => {
+  const element = observerRef.value;
+  if (element) {
+    const rect = element.getBoundingClientRect();
+    shouldAddPaddingClass.value = rect.left <= 40;
+  }
+};
+
 // Initialize active conversation
 onMounted(() => {
   const routeParams = router.currentRoute.value.params;
@@ -354,8 +362,32 @@ onMounted(() => {
       restoreSession();
     }
   }
-});
 
+  // Add position listener
+  nextTick(() => {
+    const element = observerRef.value;
+    if (element) {
+      // Initial position check
+      checkElementPosition();
+
+      // Create ResizeObserver to monitor size and position changes
+      const resizeObserver = new ResizeObserver(() => {
+        checkElementPosition();
+      });
+
+
+      resizeObserver.observe(element);
+      resizeObserver.observe(document.body);
+      resizeObserver.observe(toolPanel.value.$el);
+
+      
+      // Cleanup on component unmount
+      onUnmounted(() => {
+        resizeObserver.disconnect();
+      });
+    }
+  });
+});
 
 const handleToolClick = (tool: ToolContent) => {
   realTime.value = false;
@@ -378,10 +410,6 @@ const handleFollow = () => {
 
 const handleScroll = (_: Event) => {
   follow.value = simpleBarRef.value?.isScrolledToBottom() ?? false;
-}
-
-const handleGoHome = () => {
-  router.push('/');
 }
 </script>
 
@@ -412,4 +440,4 @@ const handleGoHome = () => {
 .\[\&\:not\(\:empty\)\]\:pb-2:not(:empty) {
   padding-bottom: .5rem;
 }
-</style>../types/event
+</style>
