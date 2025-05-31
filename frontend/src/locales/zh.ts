@@ -3,6 +3,7 @@ export default {
   'What can I do for you?': '我能为你做什么？',
   'Failed to create agent, please try again later': '创建Agent失败，请稍后重试',
   'New Chat': '新对话',
+  'New Task': '新建任务',
   'Thinking': '思考中',
   'Task Progress': '任务进度',
   'Confirm Task Completion': '确认任务完成',

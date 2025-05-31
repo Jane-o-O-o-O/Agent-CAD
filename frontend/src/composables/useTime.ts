@@ -1,7 +1,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { formatRelativeTime } from '../utils/time';
 
-export function useRelativeTime(timestamp: number) {
+export function useRelativeTime() {
   // Create a reactive current time variable to trigger re-rendering
   const currentTime = ref(Date.now());
 
@@ -24,7 +24,7 @@ export function useRelativeTime(timestamp: number) {
   // Calculate relative time, depends on currentTime for automatic updates
   const relativeTime = computed(() => {
     currentTime.value; // Depends on currentTime, recalculate when currentTime updates
-    return formatRelativeTime(timestamp);
+    return (timestamp: number) => formatRelativeTime(timestamp);
   });
 
   return {

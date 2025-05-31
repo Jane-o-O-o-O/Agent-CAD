@@ -3,6 +3,7 @@ export default {
   'What can I do for you?': 'What can I do for you?',
   'Failed to create agent, please try again later': 'Failed to create agent, please try again later',
   'New Chat': 'New Chat',
+  'New Task': 'New Task',
   'Thinking': 'Thinking',
   'Task Progress': 'Task Progress',
   'Confirm Task Completion': 'Confirm Task Completion',

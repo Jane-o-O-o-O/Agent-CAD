@@ -1,6 +1,7 @@
 <template>
   <SimpleBar ref="simpleBarRef" @scroll="handleScroll">
     <div
+      ref="chatContainerRef"
       class="relative flex flex-col h-full flex-1 min-w-0 mx-auto w-full max-w-full sm:max-w-[768px] sm:min-w-[390px] px-5">
       <div
         ref="observerRef"
@@ -104,14 +105,14 @@
         <ChatBox v-model="inputMessage" :rows="1" @submit="chat(inputMessage)" />
       </div>
     </div>
-    <ToolPanel ref="toolPanel" :sessionId="sessionId" :realTime="realTime" @jumpToRealTime="jumpToRealTime" />
+    <ToolPanel ref="toolPanel" :size="toolPanelSize" :sessionId="sessionId" :realTime="realTime" @jumpToRealTime="jumpToRealTime" />
   </SimpleBar>
 </template>
 
 <script setup lang="ts">
 import SimpleBar from '../components/SimpleBar.vue';
-import { ref, onMounted, watch, nextTick, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted, watch, nextTick, onUnmounted, reactive, toRefs } from 'vue';
+import { useRouter, onBeforeRouteUpdate } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import ChatBox from '../components/ChatBox.vue';
 import ChatMessage from '../components/ChatMessage.vue';
@@ -133,21 +134,63 @@ import { showErrorToast } from '../utils/toast';
 
 const router = useRouter();
 const { t } = useI18n();
-const inputMessage = ref('');
-const isLoading = ref(false);
-const sessionId = ref<string>();
-const messages = ref<Message[]>([]);
+
+// Create initial state factory
+const createInitialState = () => ({
+  inputMessage: '',
+  isLoading: false,
+  sessionId: undefined as string | undefined,
+  messages: [] as Message[],
+  toolPanelSize: 0,
+  realTime: true,
+  follow: true,
+  title: t('New Chat'),
+  isShowPlanPanel: false,
+  plan: undefined as PlanEventData | undefined,
+  lastNoMessageTool: undefined as ToolContent | undefined,
+  lastEventId: undefined as string | undefined,
+  shouldAddPaddingClass: false,
+  cancelCurrentChat: null as (() => void) | null,
+});
+
+// Create reactive state
+const state = reactive(createInitialState());
+
+// Destructure refs from reactive state
+const {
+  inputMessage,
+  isLoading, 
+  sessionId,
+  messages,
+  toolPanelSize,
+  realTime,
+  follow,
+  title,
+  isShowPlanPanel,
+  plan,
+  lastNoMessageTool,
+  lastEventId,
+  shouldAddPaddingClass,
+  cancelCurrentChat
+} = toRefs(state);
+
+// Non-state refs that don't need reset
 const toolPanel = ref();
-const realTime = ref(true);
-const follow = ref(true);
 const simpleBarRef = ref<InstanceType<typeof SimpleBar>>();
-const title = ref(t('New Chat'));
-const isShowPlanPanel = ref(false)
-const plan = ref<PlanEventData>();
-const lastNoMessageTool = ref<ToolContent>();
-const lastEventId = ref<string>();
 const observerRef = ref<HTMLDivElement>();
-const shouldAddPaddingClass = ref(false);
+const resizeObserver = ref<ResizeObserver>();
+const chatContainerRef = ref<HTMLDivElement>();
+
+// Reset all refs to their initial values
+const resetState = () => {
+  // Cancel any existing chat connection
+  if (cancelCurrentChat.value) {
+    cancelCurrentChat.value();
+  }
+  
+  // Reset reactive state to initial values
+  Object.assign(state, createInitialState());
+};
 
 // Watch message changes and automatically scroll to bottom
 watch(messages, async () => {
@@ -276,6 +319,12 @@ const handleEvent = (event: AgentSSEEvent) => {
 const chat = async (message: string = '') => {
   if (!sessionId.value) return;
 
+  // Cancel any existing chat connection before starting a new one
+  if (cancelCurrentChat.value) {
+    cancelCurrentChat.value();
+    cancelCurrentChat.value = null;
+  }
+
   if (message.trim()) {
   // Add user message to conversation list
   messages.value.push({
@@ -295,8 +344,8 @@ const chat = async (message: string = '') => {
   isLoading.value = true;
 
   try {
-    // Use the split event handler function
-    await agentApi.chatWithSession(
+    // Use the split event handler function and store the cancel function
+    cancelCurrentChat.value = await agentApi.chatWithSession(
       sessionId.value,
       message,
       lastEventId.value,
@@ -311,16 +360,25 @@ const chat = async (message: string = '') => {
         onClose: () => {
           console.log('Chat closed');
           isLoading.value = false;
+          // Clear the cancel function when connection is closed normally
+          if (cancelCurrentChat.value) {
+            cancelCurrentChat.value = null;
+          }
         },
         onError: (error) => {
           console.error('Chat error:', error);
           isLoading.value = false;
+          // Clear the cancel function when there's an error
+          if (cancelCurrentChat.value) {
+            cancelCurrentChat.value = null;
+          }
         }
       }
     );
   } catch (error) {
     console.error('Chat error:', error);
     isLoading.value = false;
+    cancelCurrentChat.value = null;
   }
 }
 
@@ -345,7 +403,18 @@ const checkElementPosition = () => {
     const rect = element.getBoundingClientRect();
     shouldAddPaddingClass.value = rect.left <= 40;
   }
+  toolPanelSize.value = Math.min((simpleBarRef.value?.$el.clientWidth ?? 0) / 2, 768);
 };
+
+onBeforeRouteUpdate((to, from, next) => {
+  resetState();
+  if (to.params.sessionId) {
+    messages.value = [];
+    sessionId.value = String(to.params.sessionId) as string;
+    restoreSession();
+  }
+  next();
+})
 
 // Initialize active conversation
 onMounted(() => {
@@ -363,31 +432,22 @@ onMounted(() => {
     }
   }
 
+  resizeObserver.value = new ResizeObserver(() => {
+    checkElementPosition();
+  });
+
   // Add position listener
   nextTick(() => {
-    const element = observerRef.value;
-    if (element) {
-      // Initial position check
-      checkElementPosition();
-
-      // Create ResizeObserver to monitor size and position changes
-      const resizeObserver = new ResizeObserver(() => {
-        checkElementPosition();
-      });
-
-
-      resizeObserver.observe(element);
-      resizeObserver.observe(document.body);
-      resizeObserver.observe(toolPanel.value.$el);
-
-      
-      // Cleanup on component unmount
-      onUnmounted(() => {
-        resizeObserver.disconnect();
-      });
-    }
+    checkElementPosition();
+    resizeObserver.value?.observe(observerRef.value as Element);
+    resizeObserver.value?.observe(document.body as Element);
+    resizeObserver.value?.observe(toolPanel.value.$el as Element);
   });
 });
+
+onUnmounted(() => {
+  resizeObserver.value?.disconnect();
+})
 
 const handleToolClick = (tool: ToolContent) => {
   realTime.value = false;

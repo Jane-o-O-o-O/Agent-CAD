@@ -19,8 +19,9 @@ class Session(BaseModel):
     agent_id: str
     task_id: Optional[str] = None
     title: Optional[str] = None
-    last_message: Optional[str] = None
-    last_message_at: Optional[datetime] = None
+    unread_message_count: int = 0
+    latest_message: Optional[str] = None
+    latest_message_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(UTC))
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     events: List[BaseEvent] = []

@@ -1,5 +1,6 @@
-from typing import Optional, Protocol
-from app.domain.models.session import Session
+from typing import Optional, Protocol, List
+from datetime import datetime
+from app.domain.models.session import Session, SessionStatus
 from app.domain.events.agent_events import BaseEvent
 
 class SessionRepository(Protocol):
@@ -17,10 +18,34 @@ class SessionRepository(Protocol):
         """Update the title of a session"""
         ...
 
+    async def update_latest_message(self, session_id: str, message: str, timestamp: datetime) -> None:
+        """Update the latest message of a session"""
+        ...
+
     async def add_event(self, session_id: str, event: BaseEvent) -> None:
         """Add an event to a session"""
+        ...
+
+    async def update_status(self, session_id: str, status: SessionStatus) -> None:
+        """Update the status of a session"""
+        ...
+    
+    async def update_unread_message_count(self, session_id: str, count: int) -> None:
+        """Update the unread message count of a session"""
+        ...
+    
+    async def increment_unread_message_count(self, session_id: str) -> None:
+        """Increment the unread message count of a session"""
+        ...
+    
+    async def decrement_unread_message_count(self, session_id: str) -> None:
+        """Decrement the unread message count of a session"""
         ...
     
     async def delete(self, session_id: str) -> None:
         """Delete a session"""
         ... 
+    
+    async def get_all(self) -> List[Session]:
+        """Get all sessions"""
+        ...

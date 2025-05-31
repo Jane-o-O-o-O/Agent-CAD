@@ -1,5 +1,6 @@
-from typing import AsyncGenerator, Dict, Any, Optional, Generator
+from typing import AsyncGenerator, Dict, Any, Optional, Generator, List
 import logging
+from datetime import datetime
 from app.domain.models.session import Session
 from app.domain.repositories.session_repository import SessionRepository
 
@@ -74,7 +75,7 @@ class AgentService:
         self,
         session_id: str,
         message: Optional[str] = None,
-        timestamp: Optional[int] = None,
+        timestamp: Optional[datetime] = None,
         event_id: Optional[str] = None
     ) -> AsyncGenerator[AgentEvent, None]:
         logger.info(f"Starting chat with session {session_id}: {message[:50]}...")
@@ -90,6 +91,9 @@ class AgentService:
             logger.warning(f"Session not found: {session_id}")
             raise NotFoundError(f"Session not found: {session_id}")
         return session
+    
+    async def get_all_sessions(self) -> List[Session]:
+        return await self._session_repository.get_all()
 
     async def shutdown(self):
         logger.info("Closing all agents and cleaning up resources")

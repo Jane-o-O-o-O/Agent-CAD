@@ -1,7 +1,7 @@
 from typing import Optional, AsyncGenerator
 import asyncio
 import logging
-from app.domain.events.agent_events import BaseEvent, ErrorEvent, TitleEvent
+from app.domain.events.agent_events import BaseEvent, ErrorEvent, TitleEvent, MessageEvent
 from app.domain.services.flows.plan_act import PlanActFlow
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.browser import Browser
@@ -10,6 +10,7 @@ from app.domain.external.llm import LLM
 from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.external.task import TaskRunner, Task
 from app.domain.repositories.session_repository import SessionRepository
+from app.domain.models.session import SessionStatus
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,8 @@ class AgentTaskRunner(TaskRunner):
                 return
                 
             logger.info(f"Agent {self._agent_id} received new message: {message[:50]}...")
+
+            await self._session_repository.update_status(self._session_id, SessionStatus.ACTIVE)
             
             async for event in self._run_flow(message):
                 event_id = await task.output_stream.put(event.model_dump_json())
@@ -60,12 +63,17 @@ class AgentTaskRunner(TaskRunner):
                 await self._session_repository.add_event(self._session_id, event)
                 if isinstance(event, TitleEvent):
                     await self._session_repository.update_title(self._session_id, event.title)
-                
+                if isinstance(event, MessageEvent):
+                    await self._session_repository.update_latest_message(self._session_id, event.message, event.timestamp)
+                    await self._session_repository.increment_unread_message_count(self._session_id)
+
         except asyncio.CancelledError:
             logger.info(f"Agent {self._agent_id} task cancelled")
         except Exception as e:
             logger.exception(f"Agent {self._agent_id} task encountered exception: {str(e)}")
-            await task.output_stream.put(ErrorEvent(error=f"Task error: {str(e)}"))
+            await task.output_stream.put(ErrorEvent(error=f"Task error: {str(e)}").model_dump_json())
+        finally:
+            await self._session_repository.update_status(self._session_id, SessionStatus.COMPLETED)
     
     async def _run_flow(self, message: str) -> AsyncGenerator[BaseEvent, None]:
         """Process a single message through the agent's flow and yield events"""

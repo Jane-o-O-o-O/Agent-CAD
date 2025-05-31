@@ -1,7 +1,7 @@
 <template>
   <div
     :class="{ 'h-full w-full top-0 ltr:right-0 rtl:left-0 z-50 fixed sm:sticky sm:top-0 sm:right-0 sm:h-[100vh] sm:ml-3 sm:py-3 sm:mr-4': isShow, 'h-full overflow-hidden': !isShow }"
-    :style="{ 'width': isShow ? '768px' : '0px', 'opacity': isShow ? '1' : '0', 'transition': '0.2s ease-in-out' }">
+    :style="{ 'width': isShow ? `${size}px` : '0px', 'opacity': isShow ? '1' : '0', 'transition': '0.2s ease-in-out' }">
     <div class="h-full" :style="{ 'width': isShow ? '100%' : '0px' }">
       <div v-if="isShow"
         class="bg-[var(--background-gray-main)] sm:bg-[var(--background-menu-white)] sm:rounded-[22px] shadow-[0px_0px_8px_0px_rgba(0,0,0,0.02)] border border-black/8 dark:border-[var(--border-light)] flex h-full w-full">
@@ -63,6 +63,7 @@ const emit = defineEmits<{
 defineProps<{
   sessionId?: string;
   realTime: boolean;
+  size: number;
 }>();
 
 const show = (content: ToolContent) => {

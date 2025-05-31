@@ -42,15 +42,13 @@ class MongoAgentRepository(AgentRepository):
                           name: str,
                           memory: Memory) -> None:
         """Add or update a memory for an agent"""
-        mongo_agent = await AgentDocument.find_one(
+        result = await AgentDocument.find_one(
             AgentDocument.agent_id == agent_id
+        ).update(
+            {"$set": {f"memories.{name}": memory, "updated_at": datetime.now(UTC)}}
         )
-        if not mongo_agent:
+        if not result:
             raise ValueError(f"Agent {agent_id} not found")
-
-        mongo_agent.memories[name] = memory
-        mongo_agent.updated_at = datetime.now(UTC)
-        await mongo_agent.save()
 
     async def get_memory(self, agent_id: str, name: str) -> Memory:
         """Get memory by name from agent, create if not exists"""
@@ -63,15 +61,13 @@ class MongoAgentRepository(AgentRepository):
     
     async def save_memory(self, agent_id: str, name: str, memory: Memory) -> None:
         """Update the messages of a memory"""
-        mongo_agent = await AgentDocument.find_one(
+        result = await AgentDocument.find_one(
             AgentDocument.agent_id == agent_id
+        ).update(
+            {"$set": {f"memories.{name}": memory, "updated_at": datetime.now(UTC)}}
         )
-        if not mongo_agent:
+        if not result:
             raise ValueError(f"Agent {agent_id} not found")
-        
-        mongo_agent.memories[name] = memory
-        mongo_agent.updated_at = datetime.now(UTC)
-        await mongo_agent.save()
 
     def _to_domain_agent(self, mongo_agent: AgentDocument) -> Agent:
         """Convert MongoDB document to domain model"""

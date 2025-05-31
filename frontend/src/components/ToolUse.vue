@@ -25,7 +25,7 @@
       </div>
     </div>
     <div class="float-right transition text-[12px] text-[var(--text-tertiary)] invisible group-hover:visible">
-      {{ relativeTime }}
+      {{ relativeTime(tool.timestamp) }}
     </div>
   </div>
 </template>
@@ -44,7 +44,7 @@ const emit = defineEmits<{
   (e: "click"): void;
 }>();
 
-const { relativeTime } = useRelativeTime(props.tool.timestamp);
+const { relativeTime } = useRelativeTime();
 const { toolInfo } = useToolInfo(ref(props.tool));
 
 const handleClick = () => {

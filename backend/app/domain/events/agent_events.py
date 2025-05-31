@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Literal, Optional, Union
+from datetime import datetime
 import time
 import uuid
 from enum import Enum
@@ -30,7 +31,7 @@ class BaseEvent(BaseModel):
     """Base class for agent events"""
     type: str
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: int = Field(default_factory=lambda: int(time.time()))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now())
 
 class ErrorEvent(BaseEvent):
     """Error event"""

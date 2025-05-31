@@ -2,7 +2,7 @@
 import { apiClient, BASE_URL, ApiResponse } from './client';
 import { fetchEventSource, EventSourceMessage } from '@microsoft/fetch-event-source';
 import { AgentSSEEvent } from '../types/event';
-import { CreateSessionResponse, GetSessionResponse, ShellViewResponse, FileViewResponse } from '../types/response';
+import { CreateSessionResponse, GetSessionResponse, ShellViewResponse, FileViewResponse, ListSessionResponse } from '../types/response';
 
 /**
  * Create Session
@@ -15,6 +15,11 @@ export async function createSession(): Promise<CreateSessionResponse> {
 
 export async function getSession(sessionId: string): Promise<GetSessionResponse> {
   const response = await apiClient.get<ApiResponse<GetSessionResponse>>(`/sessions/${sessionId}`);
+  return response.data.data;
+}
+
+export async function getSessions(): Promise<ListSessionResponse> {
+  const response = await apiClient.get<ApiResponse<ListSessionResponse>>('/sessions');
   return response.data.data;
 }
 
@@ -33,25 +38,31 @@ interface ChatCallbacks {
 
 /**
  * Chat with Session (using SSE to receive streaming responses)
+ * @returns A function to cancel the SSE connection
  */
 export const chatWithSession = async (
   sessionId: string, 
   message: string = '',
   eventId?: string,
   callbacks?: ChatCallbacks
-) => {
+): Promise<() => void> => {
   const { onOpen, onMessage, onClose, onError } = callbacks || {};
+  
+  // Create AbortController for cancellation
+  const abortController = new AbortController();
   
   try {
     const apiUrl = `${BASE_URL}/sessions/${sessionId}/chat`;
     
-    await fetchEventSource(apiUrl, {
+    // Start the SSE connection (this is async but we don't await it)
+    const ssePromise = fetchEventSource(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       openWhenHidden: true,
       body: JSON.stringify({ message, timestamp: Math.floor(Date.now() / 1000), event_id: eventId }),
+      signal: abortController.signal,
       async onopen() {
         if (onOpen) {
           onOpen();
@@ -80,12 +91,29 @@ export const chatWithSession = async (
         throw err;
       },
     });
+
+    // Handle the SSE promise in the background
+    ssePromise.catch((error) => {
+      // Only handle errors that are not due to abortion
+      if (!abortController.signal.aborted) {
+        console.error('Chat error:', error);
+        if (onError) {
+          onError(error instanceof Error ? error : new Error(String(error)));
+        }
+      }
+    });
+
+    // Return the cancel function immediately
+    return () => {
+      abortController.abort();
+    };
   } catch (error) {
-    console.error('Chat error:', error);
+    console.error('Chat setup error:', error);
     if (onError) {
       onError(error instanceof Error ? error : new Error(String(error)));
     }
-    throw error;
+    // Return a no-op cancel function
+    return () => {};
   }
 };
 

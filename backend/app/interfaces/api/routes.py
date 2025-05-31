@@ -1,13 +1,14 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Request
 from sse_starlette.sse import EventSourceResponse
-from typing import AsyncGenerator, Dict, Any
+from typing import AsyncGenerator, Dict, Any, List
 from sse_starlette.event import ServerSentEvent
+from datetime import datetime
 import asyncio
 import websockets
 import logging
 from app.application.services.agent_service import AgentService
 from app.interfaces.schemas.request import ChatRequest, FileViewRequest, ShellViewRequest
-from app.interfaces.schemas.response import APIResponse, CreateSessionResponse, GetSessionResponse, ShellViewResponse, FileViewResponse
+from app.interfaces.schemas.response import APIResponse, CreateSessionResponse, GetSessionResponse, ShellViewResponse, FileViewResponse, ListSessionItem, ListSessionResponse
 from app.interfaces.schemas.event import SSEEventFactory
 
 
@@ -42,6 +43,23 @@ async def get_session(
         events=SSEEventFactory.from_events(session.events)
     ))
 
+@router.get("/sessions", response_model=APIResponse[ListSessionResponse])
+async def get_all_sessions(
+    agent_service: AgentService = Depends(get_agent_service)
+) -> APIResponse[ListSessionResponse]:
+    sessions = await agent_service.get_all_sessions()
+    session_items = [
+        ListSessionItem(
+            session_id=session.id,
+            title=session.title,
+            status=session.status,
+            unread_message_count=session.unread_message_count,
+            latest_message=session.latest_message,
+            latest_message_at=int(session.latest_message_at.timestamp()) if session.latest_message_at else None
+        ) for session in sessions
+    ]
+    return APIResponse.success(ListSessionResponse(sessions=session_items))
+
 @router.post("/sessions/{session_id}/chat")
 async def chat(
     session_id: str,
@@ -49,7 +67,12 @@ async def chat(
     agent_service: AgentService = Depends(get_agent_service)
 ) -> EventSourceResponse:
     async def event_generator() -> AsyncGenerator[ServerSentEvent, None]:
-        async for event in agent_service.chat(session_id, request.message, request.timestamp, request.event_id):
+        async for event in agent_service.chat(
+            session_id=session_id,
+            message=request.message,
+            timestamp=datetime.fromtimestamp(request.timestamp) if request.timestamp else None,
+            event_id=request.event_id
+        ):
             sse_event = SSEEventFactory.from_event(event)
             logger.debug(f"Received event: {sse_event}")
             if sse_event:

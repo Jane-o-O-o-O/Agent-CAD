@@ -29,8 +29,9 @@ class SessionDocument(Document):
     agent_id: str
     task_id: Optional[str] = None
     title: Optional[str] = None
-    last_message: Optional[str] = None
-    last_message_at: Optional[datetime] = None
+    unread_message_count: int = 0
+    latest_message: Optional[str] = None
+    latest_message_at: Optional[datetime] = None
     created_at: datetime = datetime.now(timezone.utc)
     updated_at: datetime = datetime.now(timezone.utc)
     events: List[AgentEvent]

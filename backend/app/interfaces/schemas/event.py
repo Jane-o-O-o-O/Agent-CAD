@@ -100,6 +100,7 @@ class SSEEventFactory:
         if isinstance(event, PlanEvent):
             return PlanSSEEvent(
                 data=PlanEventData(
+                    timestamp=int(event.timestamp.timestamp()),
                     event_id=event.id,
                     steps=[StepEventData(
                         status=step.status,
@@ -110,17 +111,27 @@ class SSEEventFactory:
             )
         elif isinstance(event, MessageEvent):
             return MessageSSEEvent(
-                data=MessageEventData(event_id=event.id, content=event.message, role=event.role)
+                data=MessageEventData(
+                    event_id=event.id,
+                    content=event.message,
+                    role=event.role,
+                    timestamp=int(event.timestamp.timestamp())
+                )
             )
         elif isinstance(event, TitleEvent):
             return TitleSSEEvent(
-                data=TitleEventData(event_id=event.id, title=event.title)
+                data=TitleEventData(
+                    event_id=event.id,
+                    title=event.title,
+                    timestamp=int(event.timestamp.timestamp())
+                )
             )
         elif isinstance(event, ToolEvent):
             if event.status == ToolStatus.CALLING and event.tool_name in ["browser", "file", "shell", "message"]:
                 return ToolSSEEvent(
                     data=ToolEventData(
                         event_id=event.id,
+                        timestamp=int(event.timestamp.timestamp()),
                         name=event.tool_name,
                         status=event.status,
                         function=event.function_name,
@@ -131,6 +142,7 @@ class SSEEventFactory:
                 return ToolSSEEvent(
                     id=event.id,
                     data=ToolEventData(
+                        timestamp=int(event.timestamp.timestamp()),
                         name=event.tool_name,
                         function=event.function_name,
                         args=event.function_args,
@@ -143,6 +155,7 @@ class SSEEventFactory:
                 id=event.id,
                 data=StepEventData(
                     event_id=event.id,
+                    timestamp=int(event.timestamp.timestamp()),
                     status=event.step.status,
                     id=event.step.id, 
                     description=event.step.description
@@ -150,9 +163,16 @@ class SSEEventFactory:
             )
         elif isinstance(event, DoneEvent):
             return DoneSSEEvent(
-                data=BaseEventData(event_id=event.id)
+                data=BaseEventData(
+                    event_id=event.id,
+                    timestamp=int(event.timestamp.timestamp())
+                )
             )
         elif isinstance(event, ErrorEvent):
             return ErrorSSEEvent(
-                data=ErrorEventData(event_id=event.id, error=event.error)
+                data=ErrorEventData(
+                    event_id=event.id,
+                    error=event.error,
+                    timestamp=int(event.timestamp.timestamp())
+                )
             )
