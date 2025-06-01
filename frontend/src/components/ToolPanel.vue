@@ -1,7 +1,7 @@
 <template>
   <div
     :class="{ 'h-full w-full top-0 ltr:right-0 rtl:left-0 z-50 fixed sm:sticky sm:top-0 sm:right-0 sm:h-[100vh] sm:ml-3 sm:py-3 sm:mr-4': isShow, 'h-full overflow-hidden': !isShow }"
-    :style="{ 'width': isShow ? '768px' : '0px', 'opacity': isShow ? '1' : '0', 'transition': '0.2s ease-in-out' }">
+    :style="{ 'width': isShow ? `${size}px` : '0px', 'opacity': isShow ? '1' : '0', 'transition': '0.2s ease-in-out' }">
     <div class="h-full" :style="{ 'width': isShow ? '100%' : '0px' }">
       <div v-if="isShow"
         class="bg-[var(--background-gray-main)] sm:bg-[var(--background-menu-white)] sm:rounded-[22px] shadow-[0px_0px_8px_0px_rgba(0,0,0,0.02)] border border-black/8 dark:border-[var(--border-light)] flex h-full w-full">
@@ -30,7 +30,7 @@
           </div>
           <div
             class="flex flex-col rounded-[12px] overflow-hidden bg-[var(--background-gray-main)] border border-[var(--border-dark)] dark:border-black/30 shadow-[0px_4px_32px_0px_rgba(0,0,0,0.04)] flex-1 min-h-0 mt-[16px]">
-            <component ref="toolView" v-if="toolInfo" :is="toolInfo.view" :agentId="agentId" :toolContent="toolContent" />
+            <component ref="toolView" v-if="toolInfo" :is="toolInfo.view" :sessionId="sessionId" :toolContent="toolContent" />
             <div class="mt-auto flex w-full items-center gap-2 px-4 h-[44px] relative" v-if="!realTime">
               <button
                 class="h-10 px-3 border border-[var(--border-main)] flex items-center gap-1 bg-[var(--background-white-main)] hover:bg-[var(--background-gray-main)] shadow-[0px_5px_16px_0px_var(--shadow-S),0px_0px_1.25px_0px_var(--shadow-S)] rounded-full cursor-pointer absolute left-[50%] translate-x-[-50%]"
@@ -61,8 +61,9 @@ const emit = defineEmits<{
 }>();
 
 defineProps<{
-  agentId?: string;
+  sessionId?: string;
   realTime: boolean;
+  size: number;
 }>();
 
 const show = (content: ToolContent) => {

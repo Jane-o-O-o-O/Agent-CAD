@@ -26,7 +26,7 @@ import { getVNCUrl } from '../api/agent';
 import RFB from '@novnc/novnc/lib/rfb';
 
 const props = defineProps<{
-  agentId: string;
+  sessionId: string;
   toolContent: ToolContent;
 }>();
 
@@ -36,8 +36,8 @@ let rfb: RFB | null = null;
 onMounted(() => {
   if (!vncContainer.value) return;
 
-  const agentId = props.agentId;
-  const wsUrl = getVNCUrl(agentId);
+  const sessionId = props.sessionId;
+  const wsUrl = getVNCUrl(sessionId);
 
   // Create NoVNC connection
   rfb = new RFB(vncContainer.value, wsUrl, {

@@ -1,8 +1,10 @@
 from pydantic import BaseModel
+from typing import Optional
 
 class ChatRequest(BaseModel):
-    timestamp: int
-    message: str
+    timestamp: Optional[int] = None
+    message: Optional[str] = None
+    event_id: Optional[str] = None
 
 class FileViewRequest(BaseModel):
     file: str

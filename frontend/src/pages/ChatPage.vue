@@ -1,16 +1,14 @@
 <template>
   <SimpleBar ref="simpleBarRef" @scroll="handleScroll">
     <div
+      ref="chatContainerRef"
       class="relative flex flex-col h-full flex-1 min-w-0 mx-auto w-full max-w-full sm:max-w-[768px] sm:min-w-[390px] px-5">
       <div
-        class="sticky top-0 z-10 bg-[var(--background-gray-main)] flex-shrink-0 flex flex-row items-center justify-between pt-3 pb-1">
+        ref="observerRef"
+        class="sticky top-0 z-10 bg-[var(--background-gray-main)] flex-shrink-0 flex flex-row items-center justify-between pt-4 pb-1">
         <div class="flex w-full flex-col gap-[4px]">
           <div
-            class="text-[var(--text-primary)] text-lg font-medium w-full flex flex-row items-center justify-between flex-1 min-w-0">
-            <div @click="handleGoHome"
-              class="flex h-8 w-8 items-center justify-center cursor-pointer hover:bg-[var(--fill-tsp-gray-main)] rounded-md">
-              <Bot class="h-6 w-6 text-[var(--icon-secondary)]" :size="24" />
-            </div>
+            :class="['text-[var(--text-primary)] text-lg font-medium w-full flex flex-row items-center justify-between flex-1 min-w-0 gap-2', { 'ps-7': shouldAddPaddingClass }]">
             <div class="flex flex-row items-center gap-2 flex-1 min-w-0">
               <span class="whitespace-nowrap text-ellipsis overflow-hidden">
                 {{ title }}
@@ -43,102 +41,95 @@
             class="flex items-center justify-center w-[36px] h-[36px] rounded-full bg-[var(--background-white-main)] hover:bg-[var(--background-gray-main)] clickable border border-[var(--border-main)] shadow-[0px_5px_16px_0px_var(--shadow-S),0px_0px_1.25px_0px_var(--shadow-S)] absolute -top-20 left-1/2 -translate-x-1/2">
             <ArrowDown class="text-[var(--icon-primary)]" :size="20" />
           </button>
-          <div class="[&amp;:not(:empty)]:pb-2 bg-[var(--background-gray-main)] rounded-[22px_22px_0px_0px]">
-            <div v-if="isShowPlanPanel"
-              class="border border-black/8 dark:border-[var(--border-main)] bg-[var(--background-menu-white)] rounded-[16px] sm:rounded-[12px] shadow-[0px_0px_1px_0px_rgba(0,_0,_0,_0.05),_0px_8px_32px_0px_rgba(0,_0,_0,_0.04)] z-99 flex flex-col py-4">
-              <div class="flex px-4 mb-4 w-full">
-                <div class="flex items-start ml-auto">
-                  <div class="flex items-center justify-center gap-2">
-                    <div @click="isShowPlanPanel = false"
-                      class="flex h-7 w-7 items-center justify-center cursor-pointer hover:bg-[var(--fill-tsp-gray-main)] rounded-md">
-                      <ChevronDown class="text-[var(--icon-tertiary)]" :size="16" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="px-4">
-                <div class="bg-[var(--fill-tsp-gray-main)] rounded-lg pt-4 pb-2">
-                  <div class="flex justify-between w-full px-4"><span
-                      class="text-[var(--text-primary)] font-bold">{{ $t('Task Progress') }}</span>
-                    <div class="flex items-center gap-3"><span class="text-xs text-[var(--text-tertiary)]">{{ planProgress() }}</span>
-                    </div>
-                  </div>
-                  <div class="max-h-[min(calc(100vh-360px),400px)] overflow-y-auto">
-                    <div v-for="step in plan.steps" :key="step.id"
-                      class="flex items-start gap-2.5 w-full px-4 py-2 truncate">
-                      <StepSuccessIcon v-if="step.status === 'completed'" />
-                      <Clock v-else class="relative top-[2px] flex-shrink-0" :size="16" />
-                      <div class="flex flex-col w-full gap-[2px] truncate">
-                        <div class="text-sm truncate" title="{{ step.description }}"
-                          style="color: var(--text-primary);">
-                          {{ step.description }}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div v-if="!isShowPlanPanel" @click="isShowPlanPanel = true"
-              class="flex flex-row items-start justify-between pe-3 relative clickable border border-black/8 dark:border-[var(--border-main)] bg-[var(--background-menu-white)] rounded-[16px] sm:rounded-[12px] shadow-[0px_0px_1px_0px_rgba(0,_0,_0,_0.05),_0px_8px_32px_0px_rgba(0,_0,_0,_0.04)] z-99">
-              <div class="flex-1 min-w-0 relative overflow-hidden">
-                <div class="w-full" style="height: 36px; --offset: -36px;">
-                  <div class="w-full">
-                    <div class="flex items-start gap-2.5 w-full px-4 py-2 truncate">
-                      <StepSuccessIcon v-if="planCompleted()" />
-                      <Clock v-else class="relative top-[2px] flex-shrink-0" :size="16" />
-                      <div class="flex flex-col w-full gap-[2px] truncate">
-                        <div class="text-sm truncate" :title="runningStep()" style="color: var(--text-tertiary);">
-                          {{ runningStep() }}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <button
-                class="flex h-full cursor-pointer justify-center gap-2 hover:opacity-80 flex-shrink-0 items-start py-2.5">
-                <span class="text-xs text-[var(--text-tertiary)] hidden sm:flex">{{ planProgress() }}</span>
-                <ChevronUp class="text-[var(--icon-tertiary)]" :size="16" />
-              </button>
-            </div>
-          </div>
+          <PlanPanel :plan="plan" />
         </template>
-        <ChatBox v-model="inputMessage" :rows="1" @submit="sendMessage(inputMessage)" />
+        <ChatBox v-model="inputMessage" :rows="1" @submit="chat(inputMessage)" :isRunning="isLoading" @stop="handleStop" />
       </div>
     </div>
-    <ToolPanel ref="toolPanel" :agentId="agentId" :realTime="realTime" @jumpToRealTime="jumpToRealTime" />
+    <ToolPanel ref="toolPanel" :size="toolPanelSize" :sessionId="sessionId" :realTime="realTime" @jumpToRealTime="jumpToRealTime" />
   </SimpleBar>
 </template>
 
 <script setup lang="ts">
 import SimpleBar from '../components/SimpleBar.vue';
-import { ref, onMounted, watch, nextTick } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted, watch, nextTick, onUnmounted, reactive, toRefs } from 'vue';
+import { useRouter, onBeforeRouteUpdate } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import ChatBox from '../components/ChatBox.vue';
 import ChatMessage from '../components/ChatMessage.vue';
-import { chatWithAgent } from '../api/agent';
+import * as agentApi from '../api/agent';
 import { Message, MessageContent, ToolContent, StepContent } from '../types/message';
-import { StepEventData, ToolEventData, MessageEventData, ErrorEventData, TitleEventData, PlanEventData } from '../types/sseEvent';
+import { 
+  StepEventData, 
+  ToolEventData, 
+  MessageEventData, 
+  ErrorEventData, 
+  TitleEventData, 
+  PlanEventData, 
+  AgentSSEEvent 
+} from '../types/event';
 import ToolPanel from '../components/ToolPanel.vue';
-import { ArrowDown, Bot, Clock, ChevronUp, ChevronDown } from 'lucide-vue-next';
-import StepSuccessIcon from '../components/icons/StepSuccessIcon.vue';
+import PlanPanel from '../components/PlanPanel.vue';
+import { ArrowDown } from 'lucide-vue-next';
+import { showErrorToast } from '../utils/toast';
 
 const router = useRouter();
 const { t } = useI18n();
-const inputMessage = ref('');
-const isLoading = ref(false);
-const agentId = ref<string>();
-const messages = ref<Message[]>([]);
+
+// Create initial state factory
+const createInitialState = () => ({
+  inputMessage: '',
+  isLoading: false,
+  sessionId: undefined as string | undefined,
+  messages: [] as Message[],
+  toolPanelSize: 0,
+  realTime: true,
+  follow: true,
+  title: t('New Chat'),
+  plan: undefined as PlanEventData | undefined,
+  lastNoMessageTool: undefined as ToolContent | undefined,
+  lastEventId: undefined as string | undefined,
+  shouldAddPaddingClass: false,
+  cancelCurrentChat: null as (() => void) | null,
+});
+
+// Create reactive state
+const state = reactive(createInitialState());
+
+// Destructure refs from reactive state
+const {
+  inputMessage,
+  isLoading, 
+  sessionId,
+  messages,
+  toolPanelSize,
+  realTime,
+  follow,
+  title,
+  plan,
+  lastNoMessageTool,
+  lastEventId,
+  shouldAddPaddingClass,
+  cancelCurrentChat
+} = toRefs(state);
+
+// Non-state refs that don't need reset
 const toolPanel = ref();
-const realTime = ref(true);
-const follow = ref(true);
 const simpleBarRef = ref<InstanceType<typeof SimpleBar>>();
-const title = ref(t('New Chat'));
-const isShowPlanPanel = ref(false)
-const plan = ref<PlanEventData>();
-const lastNoMessageTool = ref<ToolContent>();
+const observerRef = ref<HTMLDivElement>();
+const resizeObserver = ref<ResizeObserver>();
+const chatContainerRef = ref<HTMLDivElement>();
+
+// Reset all refs to their initial values
+const resetState = () => {
+  // Cancel any existing chat connection
+  if (cancelCurrentChat.value) {
+    cancelCurrentChat.value();
+  }
+  
+  // Reset reactive state to initial values
+  Object.assign(state, createInitialState());
+};
 
 // Watch message changes and automatically scroll to bottom
 watch(messages, async () => {
@@ -148,23 +139,7 @@ watch(messages, async () => {
   }
 }, { deep: true });
 
-const runningStep = (): string => {
-  for (const step of plan.value?.steps ?? []) {
-    if (step.status === 'running') {
-      return step.description;
-    }
-  }
-  return t('Confirm Task Completion');
-}
 
-const planCompleted = (): boolean => {
-  return plan.value?.steps.every(step => step.status === 'completed') ?? false;
-}
-
-const planProgress = (): string => {
-  const completedSteps = plan.value?.steps.filter(step => step.status === 'completed').length ?? 0;
-  return `${completedSteps} / ${plan.value?.steps.length ?? 1}`;
-}
 
 const getLastStep = (): StepContent | undefined => {
   return messages.value.filter(message => message.type === 'step').pop()?.content as StepContent;
@@ -173,7 +148,7 @@ const getLastStep = (): StepContent | undefined => {
 // Handle message event
 const handleMessageEvent = (messageData: MessageEventData) => {
   messages.value.push({
-    type: 'assistant',
+    type: messageData.role,
     content: {
       ...messageData
     } as MessageContent,
@@ -241,11 +216,12 @@ const handleTitleEvent = (titleData: TitleEventData) => {
 
 // Handle plan event
 const handlePlanEvent = (planData: PlanEventData) => {
+  console.log('handlePlanEvent', planData);
   plan.value = planData;
 }
 
 // Main event handler function
-const handleEvent = (event: any) => {
+const handleEvent = (event: AgentSSEEvent) => {
   if (event.event === 'message') {
     handleMessageEvent(event.data as MessageEventData);
   } else if (event.event === 'tool') {
@@ -253,7 +229,7 @@ const handleEvent = (event: any) => {
   } else if (event.event === 'step') {
     handleStepEvent(event.data as StepEventData);
   } else if (event.event === 'done') {
-    isLoading.value = false;
+    //isLoading.value = false;
   } else if (event.event === 'error') {
     handleErrorEvent(event.data as ErrorEventData);
   } else if (event.event === 'title') {
@@ -261,10 +237,17 @@ const handleEvent = (event: any) => {
   } else if (event.event === 'plan') {
     handlePlanEvent(event.data as PlanEventData);
   }
+  lastEventId.value = event.data.event_id;
 }
 
-const sendMessage = async (message: string = '') => {
-  if (!agentId.value) return;
+const chat = async (message: string = '') => {
+  if (!sessionId.value) return;
+
+  // Cancel any existing chat connection before starting a new one
+  if (cancelCurrentChat.value) {
+    cancelCurrentChat.value();
+    cancelCurrentChat.value = null;
+  }
 
   if (message.trim()) {
   // Add user message to conversation list
@@ -285,38 +268,117 @@ const sendMessage = async (message: string = '') => {
   isLoading.value = true;
 
   try {
-    // Use the split event handler function
-    await chatWithAgent(agentId.value, message, handleEvent, (error) => {
-      console.error('Chat error:', error);
-      isLoading.value = false;
-    });
+    // Use the split event handler function and store the cancel function
+    cancelCurrentChat.value = await agentApi.chatWithSession(
+      sessionId.value,
+      message,
+      lastEventId.value,
+      {
+        onOpen: () => {
+          console.log('Chat opened');
+          isLoading.value = true;
+        },
+        onMessage: (event) => {
+          handleEvent(event);
+        },
+        onClose: () => {
+          console.log('Chat closed');
+          isLoading.value = false;
+          // Clear the cancel function when connection is closed normally
+          if (cancelCurrentChat.value) {
+            cancelCurrentChat.value = null;
+          }
+        },
+        onError: (error) => {
+          console.error('Chat error:', error);
+          isLoading.value = false;
+          // Clear the cancel function when there's an error
+          if (cancelCurrentChat.value) {
+            cancelCurrentChat.value = null;
+          }
+        }
+      }
+    );
   } catch (error) {
     console.error('Chat error:', error);
     isLoading.value = false;
+    cancelCurrentChat.value = null;
   }
 }
+
+const restoreSession = async () => {
+  if (!sessionId.value) {
+    showErrorToast(t('Session not found'));
+    return;
+  }
+  const session = await agentApi.getSession(sessionId.value);
+  realTime.value = false;
+  for (const event of session.events) {
+    handleEvent(event);
+  }
+  realTime.value = true;
+  await chat();
+}
+
+// Position monitoring function
+const checkElementPosition = () => {
+  const element = observerRef.value;
+  if (element) {
+    const rect = element.getBoundingClientRect();
+    shouldAddPaddingClass.value = rect.left <= 40;
+  }
+  toolPanelSize.value = Math.min((simpleBarRef.value?.$el.clientWidth ?? 0) / 2, 768);
+};
+
+onBeforeRouteUpdate((to, from, next) => {
+  if (toolPanel.value) {
+    toolPanel.value.hide();
+  }
+  resetState();
+  if (to.params.sessionId) {
+    messages.value = [];
+    sessionId.value = String(to.params.sessionId) as string;
+    restoreSession();
+  }
+  next();
+})
 
 // Initialize active conversation
 onMounted(() => {
   const routeParams = router.currentRoute.value.params;
-  if (routeParams.agentId) {
-    // If agentId is included in URL, use it directly
-    agentId.value = String(routeParams.agentId) as string;
+  if (routeParams.sessionId) {
+    // If sessionId is included in URL, use it directly
+    sessionId.value = String(routeParams.sessionId) as string;
     // Get initial message from history.state
     const message = history.state?.message;
     history.replaceState({}, document.title);
     if (message) {
-      sendMessage(message);
+      chat(message);
     } else {
-      sendMessage();
+      restoreSession();
     }
   }
+
+  resizeObserver.value = new ResizeObserver(() => {
+    checkElementPosition();
+  });
+
+  // Add position listener
+  nextTick(() => {
+    checkElementPosition();
+    resizeObserver.value?.observe(observerRef.value as Element);
+    resizeObserver.value?.observe(document.body as Element);
+    resizeObserver.value?.observe(toolPanel.value.$el as Element);
+  });
 });
 
+onUnmounted(() => {
+  resizeObserver.value?.disconnect();
+})
 
 const handleToolClick = (tool: ToolContent) => {
   realTime.value = false;
-  if (toolPanel.value && agentId.value) {
+  if (toolPanel.value && sessionId.value) {
     toolPanel.value.show(tool);
   }
 }
@@ -337,8 +399,10 @@ const handleScroll = (_: Event) => {
   follow.value = simpleBarRef.value?.isScrolledToBottom() ?? false;
 }
 
-const handleGoHome = () => {
-  router.push('/');
+const handleStop = () => {
+  if (sessionId.value) {
+    agentApi.stopSession(sessionId.value);
+  }
 }
 </script>
 

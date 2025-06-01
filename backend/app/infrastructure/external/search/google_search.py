@@ -2,10 +2,11 @@ from typing import Optional
 import logging
 import httpx
 from app.domain.models.tool_result import ToolResult
+from app.domain.external.search import SearchEngine
 
 logger = logging.getLogger(__name__)
 
-class GoogleSearchEngine:
+class GoogleSearchEngine(SearchEngine):
     """Google API based search engine implementation"""
     
     def __init__(self, api_key: str, cx: str):
@@ -91,75 +92,3 @@ class GoogleSearchEngine:
                     "results": []
                 }
             )
-
-
-# If this file is run directly, execute the test
-if __name__ == "__main__":
-    import asyncio
-    import os
-    
-    async def main():
-        # Get API key and search engine ID from environment variables
-        # Make sure these environment variables are set
-        api_key = os.environ.get("GOOGLE_API_KEY")
-        cx = os.environ.get("GOOGLE_SEARCH_ENGINE_ID")
-        
-        if not api_key or not cx:
-            print("Error: Please set environment variables GOOGLE_API_KEY and GOOGLE_SEARCH_ENGINE_ID")
-            return
-        
-        # Initialize search engine
-        search_engine = GoogleSearchEngine(api_key=api_key, cx=cx)
-        
-        # Test query
-        query = "artificial intelligence latest developments"
-        
-        # Execute search
-        print(f"Searching: {query}")
-        result = await search_engine.search(query=query)
-        
-        if not result.success:
-            print(f"Search failed: {result.message}")
-            return
-            
-        results = result.data
-        
-        # Print results
-        print("\nSearch results summary:")
-        print(f"Query: {results['query']}")
-        print(f"Total results: {results['total_results']}")
-        
-        # Print first 3 results
-        print("\nFirst 3 search results:")
-        for i, result_item in enumerate(results.get('results', [])[:3], 1):
-            print(f"\nResult {i}:")
-            print(f"Title: {result_item['title']}")
-            print(f"Link: {result_item['link']}")
-            print(f"Snippet: {result_item['snippet']}")
-        
-        # Test search with time range
-        date_range = "past_week"
-        print(f"\n\nSearching with time range: {date_range}")
-        time_result = await search_engine.search(query=query, date_range=date_range)
-        
-        if not time_result.success:
-            print(f"Search failed: {time_result.message}")
-            return
-            
-        time_results = time_result.data
-        
-        # Print time range search results
-        print("\nTime range search results summary:")
-        print(f"Query: {time_results['query']}")
-        print(f"Time range: {time_results['date_range']}")
-        print(f"Total results: {time_results['total_results']}")
-        
-        print("\nFirst 3 time range search results:")
-        for i, result_item in enumerate(time_results.get('results', [])[:3], 1):
-            print(f"\nResult {i}:")
-            print(f"Title: {result_item['title']}")
-            print(f"Link: {result_item['link']}")
-            print(f"Snippet: {result_item['snippet']}")
-
-    # Run main function
-    asyncio.run(main()) 

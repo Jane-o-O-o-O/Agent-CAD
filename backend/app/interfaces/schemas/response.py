@@ -1,6 +1,8 @@
 from typing import Any, Generic, Optional, TypeVar, List
+from datetime import datetime
 from pydantic import BaseModel
-
+from app.interfaces.schemas.event import AgentSSEEvent
+from app.domain.models.session import SessionStatus
 
 T = TypeVar('T')
 
@@ -19,11 +21,24 @@ class APIResponse(BaseModel, Generic[T]):
         return APIResponse(code=code, msg=msg, data=None)
 
 
-class AgentResponse(BaseModel):
-    agent_id: str
-    status: str = "created"
-    message: str = "Agent created successfully" 
+class CreateSessionResponse(BaseModel):
+    session_id: str
 
+class GetSessionResponse(BaseModel):
+    session_id: str
+    title: Optional[str] = None
+    events: List[AgentSSEEvent] = []
+
+class ListSessionItem(BaseModel):
+    session_id: str
+    title: Optional[str] = None
+    latest_message: Optional[str] = None
+    latest_message_at: Optional[int] = None
+    status: SessionStatus
+    unread_message_count: int
+
+class ListSessionResponse(BaseModel):
+    sessions: List[ListSessionItem]
 
 class ConsoleRecord(BaseModel):
     ps1: str

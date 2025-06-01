@@ -1,62 +1,97 @@
 // Backend API service
 import { apiClient, BASE_URL, ApiResponse } from './client';
 import { fetchEventSource, EventSourceMessage } from '@microsoft/fetch-event-source';
-import { SSEEvent } from '../types/sseEvent';
-
-
-// Agent related interfaces
-export interface Agent {
-  agent_id: string;
-  status: string;
-  message: string;
-}
+import { AgentSSEEvent } from '../types/event';
+import { CreateSessionResponse, GetSessionResponse, ShellViewResponse, FileViewResponse, ListSessionResponse } from '../types/response';
 
 /**
- * Create Agent
+ * Create Session
+ * @returns Session
  */
-export async function createAgent(): Promise<Agent> {
-  const response = await apiClient.post<ApiResponse<Agent>>('/agents');
-  // Error handling
-  if (response.data.code !== 0) {
-    throw new Error(response.data.msg);
-  }
+export async function createSession(): Promise<CreateSessionResponse> {
+  const response = await apiClient.put<ApiResponse<CreateSessionResponse>>('/sessions');
   return response.data.data;
 }
 
-export const getVNCUrl = (agentId: string): string => {
+export async function getSession(sessionId: string): Promise<GetSessionResponse> {
+  const response = await apiClient.get<ApiResponse<GetSessionResponse>>(`/sessions/${sessionId}`);
+  return response.data.data;
+}
+
+export async function getSessions(): Promise<ListSessionResponse> {
+  const response = await apiClient.get<ApiResponse<ListSessionResponse>>('/sessions');
+  return response.data.data;
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  await apiClient.delete<ApiResponse<void>>(`/sessions/${sessionId}`);
+}
+
+export async function stopSession(sessionId: string): Promise<void> {
+  await apiClient.post<ApiResponse<void>>(`/sessions/${sessionId}/stop`);
+}
+
+export const getVNCUrl = (sessionId: string): string => {
   // Convert http to ws, https to wss
   const wsBaseUrl = BASE_URL.replace(/^http/, 'ws');
-  return `${wsBaseUrl}/agents/${agentId}/vnc`;
+  return `${wsBaseUrl}/sessions/${sessionId}/vnc`;
+}
+
+interface ChatCallbacks {
+  onOpen: () => void;
+  onMessage: (event: AgentSSEEvent) => void;
+  onClose: () => void;
+  onError?: (error: Error) => void;
 }
 
 /**
- * Chat with Agent (using SSE to receive streaming responses)
+ * Chat with Session (using SSE to receive streaming responses)
+ * @returns A function to cancel the SSE connection
  */
-export const chatWithAgent = async (
-  agentId: string, 
-  message: string = '', 
-  onMessage: (event: SSEEvent) => void,
-  onError?: (error: Error) => void
-) => {
+export const chatWithSession = async (
+  sessionId: string, 
+  message: string = '',
+  eventId?: string,
+  callbacks?: ChatCallbacks
+): Promise<() => void> => {
+  const { onOpen, onMessage, onClose, onError } = callbacks || {};
+  
+  // Create AbortController for cancellation
+  const abortController = new AbortController();
+  
   try {
-    const apiUrl = `${BASE_URL}/agents/${agentId}/chat`;
+    const apiUrl = `${BASE_URL}/sessions/${sessionId}/chat`;
     
-    await fetchEventSource(apiUrl, {
+    // Start the SSE connection (this is async but we don't await it)
+    const ssePromise = fetchEventSource(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       openWhenHidden: true,
-      body: JSON.stringify({ message, timestamp: Math.floor(Date.now() / 1000) }),
-      onmessage(event: EventSourceMessage) {
-        if (event.event && event.event.trim() !== '') {
-          onMessage({
-            event: event.event as SSEEvent['event'],
-            data: JSON.parse(event.data) as SSEEvent['data']
-          });
+      body: JSON.stringify({ message, timestamp: Math.floor(Date.now() / 1000), event_id: eventId }),
+      signal: abortController.signal,
+      async onopen() {
+        if (onOpen) {
+          onOpen();
         }
       },
-      onerror(err) {
+      onmessage(event: EventSourceMessage) {
+        if (event.event && event.event.trim() !== '') {
+          if (onMessage) {
+          onMessage({
+              event: event.event as AgentSSEEvent['event'],
+              data: JSON.parse(event.data) as AgentSSEEvent['data']
+            });
+          }
+        }
+      },
+      onclose() {
+        if (onClose) {
+          onClose();
+        }
+      },
+      onerror(err: any) {
         console.error('EventSource error:', err);
         if (onError) {
           onError(err instanceof Error ? err : new Error(String(err)));
@@ -64,58 +99,50 @@ export const chatWithAgent = async (
         throw err;
       },
     });
+
+    // Handle the SSE promise in the background
+    ssePromise.catch((error) => {
+      // Only handle errors that are not due to abortion
+      if (!abortController.signal.aborted) {
+        console.error('Chat error:', error);
+        if (onError) {
+          onError(error instanceof Error ? error : new Error(String(error)));
+        }
+      }
+    });
+
+    // Return the cancel function immediately
+    return () => {
+      abortController.abort();
+    };
   } catch (error) {
-    console.error('Chat error:', error);
+    console.error('Chat setup error:', error);
     if (onError) {
       onError(error instanceof Error ? error : new Error(String(error)));
     }
-    throw error;
+    // Return a no-op cancel function
+    return () => {};
   }
 };
 
-export interface ConsoleRecord {
-  ps1: string;
-  command: string;
-  output: string;
-}
-
-export interface ShellViewResponse {
-  output: string;
-  session_id: string;
-  console: ConsoleRecord[];
-}
-
 /**
  * View Shell session output
- * @param agentId Agent ID
- * @param sessionId Shell session ID
+ * @param sessionId Session ID
+ * @param shellSessionId Shell session ID
  * @returns Shell session output content
  */
-export async function viewShellSession(agentId: string, sessionId: string): Promise<ShellViewResponse> {
-  const response = await apiClient.post<ApiResponse<ShellViewResponse>>(`/agents/${agentId}/shell`, { session_id: sessionId });
-  // Error handling
-  if (response.data.code !== 0) {
-    throw new Error(response.data.msg);
-  }
+export async function viewShellSession(sessionId: string, shellSessionId: string): Promise<ShellViewResponse> {
+  const response = await apiClient.post<ApiResponse<ShellViewResponse>>(`/sessions/${sessionId}/shell`, { session_id: shellSessionId });
   return response.data.data;
-}
-
-export interface FileViewResponse {
-  content: string;
-  file: string;
 }
 
 /**
  * View file content
- * @param agentId Agent ID
+ * @param sessionId Session ID
  * @param file File path
  * @returns File content
  */
-export async function viewFile(agentId: string, file: string): Promise<FileViewResponse> {
-  const response = await apiClient.post<ApiResponse<FileViewResponse>>(`/agents/${agentId}/file`, { file });
-  // Error handling
-  if (response.data.code !== 0) {
-    throw new Error(response.data.msg);
-  }
+export async function viewFile(sessionId: string, file: string): Promise<FileViewResponse> {
+  const response = await apiClient.post<ApiResponse<FileViewResponse>>(`/sessions/${sessionId}/file`, { file });
   return response.data.data;
 }

@@ -29,6 +29,9 @@
           <div v-else-if="toast.type === 'info'" class="me-2.5 inline-flex relative top-1">
             <InfoIcon />
           </div>
+          <div v-else-if="toast.type === 'success'" class="me-2.5 inline-flex relative top-1">
+            <SuccessIcon />
+          </div>
           {{ toast.message }}
         </div>
       </li>
@@ -45,11 +48,12 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import ErrorIcon from './icons/ErrorIcon.vue';
 import InfoIcon from './icons/InfoIcon.vue';
+import SuccessIcon from './icons/SuccessIcon.vue';
 
 interface Toast {
   id: number;
   message: string;
-  type: 'error' | 'info';
+  type: 'error' | 'info' | 'success';
   duration?: number;
 }
 
@@ -57,7 +61,7 @@ const toasts = ref<Toast[]>([]);
 let toastCounter = 0;
 
 // Add toast
-const addToast = (message: string, type: 'error' | 'info' = 'info', duration: number = 3000) => {
+const addToast = (message: string, type: 'error' | 'info' | 'success' = 'info', duration: number = 3000) => {
   const id = toastCounter++;
   const toast: Toast = { id, message, type, duration };
   toasts.value.push(toast);

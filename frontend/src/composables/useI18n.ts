@@ -3,19 +3,33 @@ import { ref, watch } from 'vue'
 import messages from '../locales'
 import type { Locale } from '../locales'
 
-const STORAGE_KEY = 'tiny-manus-locale'
+const STORAGE_KEY = 'manus-locale'
 
-// Get current language from localStorage, default to English
+// Get browser language and map to supported locale
+const getBrowserLocale = (): Locale => {
+  const browserLang = navigator.language || navigator.languages?.[0]
+  // Check if browser language starts with any supported locale
+  if (browserLang?.startsWith('zh')) {
+    return 'zh'
+  }
+  if (browserLang?.startsWith('en')) {
+    return 'en'
+  }
+  // Default to Chinese if no match
+  return 'en'
+}
+
+// Get current language from localStorage, default to browser language
 const getStoredLocale = (): Locale => {
   const storedLocale = localStorage.getItem(STORAGE_KEY)
-  return (storedLocale as Locale) || 'zh'
+  return (storedLocale as Locale) || getBrowserLocale()
 }
 
 // Create i18n instance
 export const i18n = createI18n({
   legacy: false, // Use Composition API mode
   locale: getStoredLocale(),
-  fallbackLocale: 'zh',
+  fallbackLocale: 'en',
   messages
 })
 

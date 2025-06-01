@@ -1,52 +1,126 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Request
 from sse_starlette.sse import EventSourceResponse
-from typing import AsyncGenerator, Dict, Any
+from typing import AsyncGenerator, Dict, Any, List
 from sse_starlette.event import ServerSentEvent
+from datetime import datetime
 import asyncio
 import websockets
 import logging
-from app.application.services.agent import agent_service
-from app.application.schemas.request import ChatRequest, FileViewRequest, ShellViewRequest
-from app.application.schemas.response import APIResponse, AgentResponse, ShellViewResponse, FileViewResponse
+from app.application.services.agent_service import AgentService
+from app.interfaces.schemas.request import ChatRequest, FileViewRequest, ShellViewRequest
+from app.interfaces.schemas.response import APIResponse, CreateSessionResponse, GetSessionResponse, ShellViewResponse, FileViewResponse, ListSessionItem, ListSessionResponse
+from app.interfaces.schemas.event import SSEEventFactory
+
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-@router.post("/agents", response_model=APIResponse[AgentResponse])
-async def create_agent() -> APIResponse[AgentResponse]:
-    agent = await agent_service.create_agent()
+
+def get_agent_service() -> AgentService:
+    # Placeholder for dependency injection
+    return None
+
+@router.put("/sessions", response_model=APIResponse[CreateSessionResponse])
+async def create_session(
+    agent_service: AgentService = Depends(get_agent_service)
+) -> APIResponse[CreateSessionResponse]:
+    session = await agent_service.create_session()
     return APIResponse.success(
-        AgentResponse(
-            agent_id=agent.id,
-            status="created",
-            message="Agent created successfully"
+        CreateSessionResponse(
+            session_id=session.id,
         )
     )
 
-@router.post("/agents/{agent_id}/chat")
-async def chat(agent_id: str, request: ChatRequest) -> EventSourceResponse:
+@router.get("/sessions/{session_id}", response_model=APIResponse[GetSessionResponse])
+async def get_session(
+    session_id: str,
+    agent_service: AgentService = Depends(get_agent_service)
+) -> APIResponse[GetSessionResponse]:
+    session = await agent_service.get_session(session_id)
+    return APIResponse.success(GetSessionResponse(
+        session_id=session.id,
+        title=session.title,
+        events=SSEEventFactory.from_events(session.events)
+    ))
+
+@router.delete("/sessions/{session_id}", response_model=APIResponse[None])
+async def delete_session(
+    session_id: str,
+    agent_service: AgentService = Depends(get_agent_service)
+) -> APIResponse[None]:
+    await agent_service.delete_session(session_id)
+    return APIResponse.success()
+
+@router.post("/sessions/{session_id}/stop", response_model=APIResponse[None])
+async def stop_session(
+    session_id: str,
+    agent_service: AgentService = Depends(get_agent_service)
+) -> APIResponse[None]:
+    await agent_service.stop_session(session_id)
+    return APIResponse.success()
+
+
+@router.get("/sessions", response_model=APIResponse[ListSessionResponse])
+async def get_all_sessions(
+    agent_service: AgentService = Depends(get_agent_service)
+) -> APIResponse[ListSessionResponse]:
+    sessions = await agent_service.get_all_sessions()
+    session_items = [
+        ListSessionItem(
+            session_id=session.id,
+            title=session.title,
+            status=session.status,
+            unread_message_count=session.unread_message_count,
+            latest_message=session.latest_message,
+            latest_message_at=int(session.latest_message_at.timestamp()) if session.latest_message_at else None
+        ) for session in sessions
+    ]
+    return APIResponse.success(ListSessionResponse(sessions=session_items))
+
+@router.post("/sessions/{session_id}/chat")
+async def chat(
+    session_id: str,
+    request: ChatRequest,
+    agent_service: AgentService = Depends(get_agent_service)
+) -> EventSourceResponse:
     async def event_generator() -> AsyncGenerator[ServerSentEvent, None]:
-        async for event in agent_service.chat(agent_id, request.message, request.timestamp):
-            yield ServerSentEvent(
-                event=event.event,
-                data=event.data.model_dump_json() if event.data else None
-            )
+        async for event in agent_service.chat(
+            session_id=session_id,
+            message=request.message,
+            timestamp=datetime.fromtimestamp(request.timestamp) if request.timestamp else None,
+            event_id=request.event_id
+        ):
+            sse_event = SSEEventFactory.from_event(event)
+            logger.debug(f"Received event: {sse_event}")
+            if sse_event:
+                yield ServerSentEvent(
+                    event=sse_event.event,
+                    data=sse_event.data.model_dump_json() if sse_event.data else None
+                )
 
     return EventSourceResponse(event_generator()) 
 
 
-@router.post("/agents/{agent_id}/shell", response_model=APIResponse[ShellViewResponse])
-async def view_shell(agent_id: str, request: ShellViewRequest) -> APIResponse[ShellViewResponse]:
+@router.post("/sessions/{session_id}/shell", response_model=APIResponse[ShellViewResponse])
+async def view_shell(
+    session_id: str,
+    request: ShellViewRequest,
+    agent_service: AgentService = Depends(get_agent_service)
+) -> APIResponse[ShellViewResponse]:
     """View shell session output
     
     If the agent does not exist or fails to get shell output, an appropriate exception will be thrown and handled by the global exception handler
     """
-    result = await agent_service.shell_view(agent_id, request.session_id)
+    result = await agent_service.shell_view(session_id, request.session_id)
     return APIResponse.success(result)
 
 
-@router.post("/agents/{agent_id}/file", response_model=APIResponse[FileViewResponse])
-async def view_file(agent_id: str, request: FileViewRequest) -> APIResponse[FileViewResponse]:
+@router.post("/sessions/{session_id}/file", response_model=APIResponse[FileViewResponse])
+async def view_file(
+    session_id: str,
+    request: FileViewRequest,
+    agent_service: AgentService = Depends(get_agent_service)
+) -> APIResponse[FileViewResponse]:
     """View file content
     
     If the agent does not exist or fails to get file content, an appropriate exception will be thrown and handled by the global exception handler
@@ -58,26 +132,31 @@ async def view_file(agent_id: str, request: FileViewRequest) -> APIResponse[File
     Returns:
         APIResponse containing file content
     """
-    result = await agent_service.file_view(agent_id, request.file)
+    result = await agent_service.file_view(session_id, request.file)
     return APIResponse.success(result)
 
 
-@router.websocket("/agents/{agent_id}/vnc")
-async def vnc_websocket(websocket: WebSocket, agent_id: str):
+@router.websocket("/sessions/{session_id}/vnc")
+async def vnc_websocket(
+    websocket: WebSocket,
+    session_id: str,
+    agent_service: AgentService = Depends(get_agent_service)
+) -> None:
     """VNC WebSocket endpoint (binary mode)
     
     Establishes a connection with the VNC WebSocket service in the sandbox environment and forwards data bidirectionally
     
     Args:
         websocket: WebSocket connection
-        agent_id: Agent ID
+        session_id: Session ID
     """
+    
     await websocket.accept(subprotocol="binary")
     
     try:
     
         # Get sandbox environment address
-        sandbox_ws_url = await agent_service.get_vnc_url(agent_id)
+        sandbox_ws_url = await agent_service.get_vnc_url(session_id)
 
         logger.info(f"Connecting to VNC WebSocket at {sandbox_ws_url}")
     
@@ -129,5 +208,3 @@ async def vnc_websocket(websocket: WebSocket, agent_id: str):
     except Exception as e:
         logger.error(f"WebSocket error: {str(e)}")
         await websocket.close(code=1011, reason=f"WebSocket error: {str(e)}")
-
-

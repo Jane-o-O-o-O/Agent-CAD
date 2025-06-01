@@ -19,4 +19,19 @@ class LLM(Protocol):
         Returns:
             Response message from AI service
         """
-        pass 
+        ... 
+
+    @property
+    def model_name(self) -> str:
+        """Get the model name"""
+        ...
+    
+    @property
+    def temperature(self) -> float:
+        """Get the temperature"""
+        ...
+
+    @property
+    def max_tokens(self) -> int:
+        """Get the max tokens"""
+        ...

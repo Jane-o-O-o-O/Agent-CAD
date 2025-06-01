@@ -5,21 +5,41 @@ import docker
 import socket
 import logging
 import asyncio
+from async_lru import alru_cache
 from app.infrastructure.config import get_settings
-from urllib.parse import urlparse
 from app.domain.models.tool_result import ToolResult
+from app.domain.external.sandbox import Sandbox
+from app.infrastructure.external.browser.playwright_browser import PlaywrightBrowser
+from app.domain.external.browser import Browser
+from app.domain.external.llm import LLM
 
 logger = logging.getLogger(__name__)
 
-class DockerSandbox:
+class DockerSandbox(Sandbox):
     def __init__(self, ip: str = None, container_name: str = None):
         """Initialize Docker sandbox and API interaction client"""
         self.client = httpx.AsyncClient(timeout=600)
         self.ip = ip
         self.base_url = f"http://{self.ip}:8080"
-        self.vnc_url = f"ws://{self.ip}:5901"
-        self.cdp_url = f"http://{self.ip}:9222"
-        self.container_name = container_name
+        self._vnc_url = f"ws://{self.ip}:5901"
+        self._cdp_url = f"http://{self.ip}:9222"
+        self._container_name = container_name
+    
+    @property
+    def id(self) -> str:
+        """Sandbox ID"""
+        if not self._container_name:
+            return "dev-sandbox"
+        return self._container_name
+    
+    
+    @property
+    def cdp_url(self) -> str:
+        return self._cdp_url
+
+    @property
+    def vnc_url(self) -> str:
+        return self._vnc_url
 
     @staticmethod
     def _create_task() -> 'DockerSandbox':
@@ -89,23 +109,6 @@ class DockerSandbox:
             
         except Exception as e:
             raise Exception(f"Failed to create Docker sandbox: {str(e)}")
-
-    @staticmethod
-    async def create() -> 'DockerSandbox':
-        settings = get_settings()
-
-        if settings.sandbox_address:
-            # Chrome CDP needs IP address
-            ip = await DockerSandbox._resolve_hostname_to_ip(settings.sandbox_address)
-            return DockerSandbox(ip=ip)
-    
-        return await asyncio.to_thread(DockerSandbox._create_task)
-    
-    def get_cdp_url(self) -> str:
-        return self.cdp_url
-
-    def get_vnc_url(self) -> str:
-        return self.vnc_url
 
     async def exec_command(self, session_id: str, exec_dir: str, command: str) -> ToolResult:
         response = await self.client.post(
@@ -315,6 +318,7 @@ class DockerSandbox:
         return ToolResult(**response.json())
     
     @staticmethod
+    @alru_cache(maxsize=128, typed=True)
     async def _resolve_hostname_to_ip(hostname: str) -> str:
         """Resolve hostname to IP address
         
@@ -323,6 +327,10 @@ class DockerSandbox:
             
         Returns:
             Resolved IP address, or None if resolution fails
+            
+        Note:
+            This method is cached using LRU cache with a maximum size of 128 entries.
+            The cache helps reduce repeated DNS lookups for the same hostname.
         """
         try:
             # First check if hostname is already in IP address format
@@ -357,3 +365,87 @@ class DockerSandbox:
         except Exception as e:
             logger.error(f"Failed to destroy Docker sandbox: {str(e)}")
             return False
+    
+    async def get_browser(self) -> Browser:
+        """Get browser instance
+        
+        Args:
+            llm: LLM instance used for browser automation
+            
+        Returns:
+            Browser: Returns a configured PlaywrightBrowser instance
+                    connected using the sandbox's CDP URL
+        """
+        return PlaywrightBrowser(self.cdp_url)
+
+    @staticmethod
+    @alru_cache(maxsize=128, typed=True)
+    async def _resolve_hostname_to_ip(hostname: str) -> str:
+        """Resolve hostname to IP address
+        
+        Args:
+            hostname: Hostname to resolve
+            
+        Returns:
+            Resolved IP address, or None if resolution fails
+            
+        Note:
+            This method is cached using LRU cache with a maximum size of 128 entries.
+            The cache helps reduce repeated DNS lookups for the same hostname.
+        """
+        try:
+            # First check if hostname is already in IP address format
+            try:
+                socket.inet_pton(socket.AF_INET, hostname)
+                # If successfully parsed, it's an IPv4 address format, return directly
+                return hostname
+            except OSError:
+                # Not a valid IP address format, proceed with DNS resolution
+                pass
+                
+            # Use socket.getaddrinfo for DNS resolution
+            addr_info = socket.getaddrinfo(hostname, None, family=socket.AF_INET)
+            # Return the first IPv4 address found
+            if addr_info and len(addr_info) > 0:
+                return addr_info[0][4][0]  # Return sockaddr[0] from (family, type, proto, canonname, sockaddr), which is the IP address
+            return None
+        except Exception as e:
+            # Log error and return None on failure
+            logger.error(f"Failed to resolve hostname {hostname}: {str(e)}")
+            return None
+
+    @classmethod
+    async def create(cls) -> Sandbox:
+        """Create a new sandbox instance
+        
+        Returns:
+            New sandbox instance
+        """
+        settings = get_settings()
+
+        if settings.sandbox_address:
+            # Chrome CDP needs IP address
+            ip = await cls._resolve_hostname_to_ip(settings.sandbox_address)
+            return DockerSandbox(ip=ip)
+    
+        return await asyncio.to_thread(DockerSandbox._create_task)
+    
+    @classmethod
+    @alru_cache(maxsize=128, typed=True)
+    async def get(cls, id: str) -> Sandbox:
+        """Get sandbox by ID
+        
+        Args:
+            id: Sandbox ID
+            
+        Returns:
+            Sandbox instance
+        """
+        settings = get_settings()
+        if settings.sandbox_address:
+            ip = await cls._resolve_hostname_to_ip(settings.sandbox_address)
+            return DockerSandbox(ip=ip, container_name=id)
+
+        docker_client = docker.from_env()
+        container = docker_client.containers.get(id)
+        return DockerSandbox(ip=container.attrs['NetworkSettings']['IPAddress'], container_name=id)

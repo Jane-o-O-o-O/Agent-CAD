@@ -51,6 +51,26 @@ services:
     networks:
       - manus-network
 
+  mongodb:
+    image: mongo:7.0
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+    #ports:
+    #  - "27017:27017"
+    networks:
+      - manus-network
+
+  redis:
+    image: redis:7.0
+    restart: unless-stopped
+    networks:
+      - manus-network
+
+volumes:
+  mongodb_data:
+    name: manus-mongodb-data
+
 networks:
   manus-network:
     name: manus-network

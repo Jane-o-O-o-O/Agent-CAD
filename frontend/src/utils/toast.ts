@@ -3,7 +3,7 @@
  * Provide global Toast message notification functionality
  */
 
-type ToastType = 'error' | 'info';
+type ToastType = 'error' | 'info' | 'success';
 
 interface ToastOptions {
   message: string;
@@ -47,6 +47,10 @@ export function showInfoToast(message: string, duration?: number): void {
   showToast({ message, type: 'info', duration });
 }
 
+export function showSuccessToast(message: string, duration?: number): void {
+  showToast({ message, type: 'success', duration });
+}
+
 // To support non-Vue page calls, add to global window object
 declare global {
   interface Window {
@@ -54,6 +58,7 @@ declare global {
       show: typeof showToast;
       error: typeof showErrorToast;
       info: typeof showInfoToast;
+      success: typeof showSuccessToast;
     };
   }
 }
@@ -63,6 +68,7 @@ if (typeof window !== 'undefined') {
   window.toast = {
     show: showToast,
     error: showErrorToast,
-    info: showInfoToast
+    info: showInfoToast,
+    success: showSuccessToast
   };
 } 

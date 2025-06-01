@@ -3,7 +3,7 @@
     <div class="flex items-end">
       <div class="flex items-center justify-end gap-[2px] invisible group-hover:visible">
         <div class="float-right transition text-[12px] text-[var(--text-tertiary)] invisible group-hover:visible">
-          {{ relativeTime }}
+          {{ relativeTime(message.content.timestamp) }}
         </div>
       </div>
     </div>
@@ -22,7 +22,7 @@
       </div>
       <div class="flex items-center gap-[2px] invisible group-hover:visible">
         <div class="float-right transition text-[12px] text-[var(--text-tertiary)] invisible group-hover:visible">
-          {{ relativeTime }}
+          {{ relativeTime(message.content.timestamp) }}
         </div>
       </div>
     </div>
@@ -55,7 +55,7 @@
         </span>
       </div>
       <div class="float-right transition text-[12px] text-[var(--text-tertiary)] invisible group-hover/header:visible">
-        {{ relativeTime }}
+        {{ relativeTime(message.content.timestamp) }}
       </div>
     </div>
     <div class="flex">
@@ -104,7 +104,7 @@ const toolContent = computed(() => props.message.content as ToolContent);
 // Control content expand/collapse state
 const isExpanded = ref(true);
 
-const { relativeTime } = useRelativeTime(props.message.content.timestamp);
+const { relativeTime } = useRelativeTime();
 
 // Render Markdown to HTML and sanitize
 const renderMarkdown = (text: string) => {

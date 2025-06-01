@@ -1,5 +1,7 @@
-from typing import Any, Optional, Protocol, Dict
+from typing import Any, Optional, Protocol
 from app.domain.models.tool_result import ToolResult
+from app.domain.external.browser import Browser
+from app.domain.external.llm import LLM
 
 class Sandbox(Protocol):
     """Sandbox service gateway interface"""
@@ -209,23 +211,50 @@ class Sandbox(Protocol):
         """
         ...
     
-    @staticmethod
-    async def create() -> 'Sandbox':
-        """Create a new sandbox instance (static method)
-        
-        Args:
-            image: Sandbox image name
-            name_prefix: Sandbox name prefix
-            
-        Returns:
-            Sandbox instance
-        """
-        ...
-    
     async def destroy(self) -> bool:
         """Destroy current sandbox instance
         
         Returns:
             Whether destroyed successfully
+        """
+        ...
+    
+    async def get_browser(self) -> Browser:
+        """Get browser instance
+        
+        Returns:
+            Browser: Returns a configured browser instance for web automation
+        """
+        ...
+
+    @property
+    def id(self) -> str:
+        """Sandbox ID"""
+        ...
+
+    @property
+    def cdp_url(self) -> str:
+        """CDP URL"""
+        ...
+
+    @property
+    def vnc_url(self) -> str:
+        """VNC URL"""
+        ...
+    
+    @classmethod
+    async def create(cls) -> 'Sandbox':
+        """Create a new sandbox instance"""
+        ...
+    
+    @classmethod
+    async def get(cls, id: str) -> 'Sandbox':
+        """Get sandbox by ID
+        
+        Args:
+            id: Sandbox ID
+            
+        Returns:
+            Sandbox instance
         """
         ...

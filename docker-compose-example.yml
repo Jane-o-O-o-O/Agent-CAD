@@ -28,15 +28,30 @@ services:
       # LLM model name
       - MODEL_NAME=gpt-4o
       # LLM temperature parameter, controls randomness
-      - TEMPERATURE=0.7 
+      - TEMPERATURE=0.7
       # Maximum tokens for LLM response
       - MAX_TOKENS=2000
-      # Google Search API key for web search capability
-      #- GOOGLE_SEARCH_API_KEY=
-      # Google Custom Search Engine ID
-      #- GOOGLE_SEARCH_ENGINE_ID=
-      # Application log level
-      - LOG_LEVEL=INFO
+      
+      # MongoDB connection URI (optional)
+      #- MONGODB_URI=mongodb://mongodb:27017
+      # MongoDB database name (optional)
+      #- MONGODB_DATABASE=manus
+      # MongoDB username (optional)
+      #- MONGODB_USERNAME=
+      # MongoDB password (optional)
+      #- MONGODB_PASSWORD=
+      
+      # Redis server hostname (optional)
+      #- REDIS_HOST=redis
+      # Redis server port (optional)
+      #- REDIS_PORT=6379
+      # Redis database number (optional)
+      #- REDIS_DB=0
+      # Redis password (optional)
+      #- REDIS_PASSWORD=
+      
+      # Sandbox server address (optional)
+      #- SANDBOX_ADDRESS=
       # Docker image used for the sandbox
       - SANDBOX_IMAGE=simpleyyt/manus-sandbox
       # Prefix for sandbox container names
@@ -45,6 +60,22 @@ services:
       - SANDBOX_TTL_MINUTES=30
       # Docker network for sandbox containers
       - SANDBOX_NETWORK=manus-network
+      # Chrome browser arguments for sandbox (optional)
+      #- SANDBOX_CHROME_ARGS=
+      # HTTPS proxy for sandbox (optional)
+      #- SANDBOX_HTTPS_PROXY=
+      # HTTP proxy for sandbox (optional)
+      #- SANDBOX_HTTP_PROXY=
+      # No proxy hosts for sandbox (optional)
+      #- SANDBOX_NO_PROXY=
+      
+      # Google Search API key for web search capability (optional)
+      #- GOOGLE_SEARCH_API_KEY=
+      # Google Custom Search Engine ID (optional)
+      #- GOOGLE_SEARCH_ENGINE_ID=
+      
+      # Application log level
+      - LOG_LEVEL=INFO
 
   sandbox:
     image: simpleyyt/manus-sandbox
@@ -52,6 +83,26 @@ services:
     restart: "no"
     networks:
       - manus-network
+
+  mongodb:
+    image: mongo:7.0
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+    #ports:
+    #  - "27017:27017"
+    networks:
+      - manus-network
+
+  redis:
+    image: redis:7.0
+    restart: unless-stopped
+    networks:
+      - manus-network
+
+volumes:
+  mongodb_data:
+    name: manus-mongodb-data
 
 networks:
   manus-network:

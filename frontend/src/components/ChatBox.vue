@@ -7,19 +7,27 @@
                     class="flex rounded-md border-input focus-visible:outline-none focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden flex-1 bg-transparent p-0 pt-[1px] border-0 focus-visible:ring-0 focus-visible:ring-offset-0 w-full placeholder:text-[var(--text-disable)] text-[15px] shadow-none resize-none min-h-[40px]"
                     :rows="rows" :value="modelValue"
                     @input="$emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
-                    @compositionstart="isComposing = true"
-                    @compositionend="isComposing = false"
-                    @keydown.enter.exact="handleEnterKeydown"
-                    :placeholder="t('Give Manus a task to work on...')" :style="{ height: '46px' }"></textarea>
+                    @compositionstart="isComposing = true" @compositionend="isComposing = false"
+                    @keydown.enter.exact="handleEnterKeydown" :placeholder="t('Give Manus a task to work on...')"
+                    :style="{ height: '46px' }"></textarea>
             </div>
             <footer class="flex flex-row justify-between w-full px-3">
                 <div class="flex gap-2 pr-2 items-center">
                 </div>
                 <div class="flex gap-2">
                     <button
-                        :class="'whitespace-nowrap text-sm font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-primary-foreground hover:bg-primary/90 p-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:opacity-90 ' + (disabled ? 'cursor-not-allowed bg-[var(--fill-tsp-white-dark)]' : 'cursor-pointer bg-[var(--Button-primary-black)]')"
+                        v-if="!isRunning || hasTextInput"
+                        class="whitespace-nowrap text-sm font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-primary-foreground hover:bg-primary/90 p-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:opacity-90"
+                        :class="!hasTextInput ? 'cursor-not-allowed bg-[var(--fill-tsp-white-dark)]' : 'cursor-pointer bg-[var(--Button-primary-black)]'"
                         @click="handleSubmit">
-                        <SendIcon :disabled="disabled" />
+                        <SendIcon :disabled="!hasTextInput" />
+                    </button>
+                    <button
+                        v-else
+                        @click="handleStop"
+                        class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-[var(--Button-primary-black)] text-[var(--text-onblack)] gap-[4px] hover:opacity-90 rounded-full p-0 w-8 h-8">
+                        <div class="w-[10px] h-[10px] bg-[var(--icon-onblack)] rounded-[2px]">
+                        </div>
                     </button>
                 </div>
             </footer>
@@ -33,17 +41,19 @@ import SendIcon from './icons/SendIcon.vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
-const disabled = ref(true);
+const hasTextInput = ref(false);
 const isComposing = ref(false);
 
 const props = defineProps<{
     modelValue: string;
-    rows?: number;
+    rows: number;
+    isRunning: boolean;
 }>();
 
 const emit = defineEmits<{
     (e: 'update:modelValue', value: string): void;
     (e: 'submit'): void;
+    (e: 'stop'): void;
 }>();
 
 const handleEnterKeydown = (event: KeyboardEvent) => {
@@ -51,20 +61,24 @@ const handleEnterKeydown = (event: KeyboardEvent) => {
         // If in input method composition state, do nothing and allow default behavior
         return;
     }
-    
-    // Not in input method composition state and not disabled, prevent default behavior and submit
-    if (!disabled.value) {
+
+    // Not in input method composition state and has text input, prevent default behavior and submit
+    if (hasTextInput.value) {
         event.preventDefault();
         handleSubmit();
     }
 };
 
 const handleSubmit = () => {
-    if (disabled.value) return;
+    if (!hasTextInput.value) return;
     emit('submit');
 };
 
+const handleStop = () => {
+    emit('stop');
+};
+
 watch(() => props.modelValue, (value) => {
-    disabled.value = value.trim() === '';
+    hasTextInput.value = value.trim() !== '';
 });
 </script>

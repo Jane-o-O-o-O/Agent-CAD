@@ -1,11 +1,15 @@
-from app.domain.models.event import AgentEvent
+from app.domain.events.agent_events import BaseEvent
 from app.domain.models.agent import Agent
 from typing import AsyncGenerator
 from abc import ABC, abstractmethod
+from app.domain.repositories.agent_repository import AgentRepository
+
 class BaseFlow(ABC):
-    def __init__(self, agent: Agent):
-        self.agent = agent
 
     @abstractmethod
-    def run(self) -> AsyncGenerator[AgentEvent, None]:
+    def run(self) -> AsyncGenerator[BaseEvent, None]:
+        pass
+
+    @abstractmethod
+    def is_done(self) -> bool:
         pass

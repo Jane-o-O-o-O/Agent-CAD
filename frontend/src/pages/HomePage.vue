@@ -2,16 +2,12 @@
   <SimpleBar>
     <div
       class="flex flex-col h-full flex-1 min-w-0 mx-auto w-full sm:min-w-[390px] px-5 justify-center items-start gap-2 relative max-w-full sm:max-w-full">
-      <div class="absolute top-4 left-5 ps-7">
+      <div class="absolute top-4 start-5">
         <div class="flex">
-          <Bot :size="38"/>
+          <Bot :size="30"/>
           <ManusLogoTextIcon />
         </div>
       </div>
-
-    <div className="fixed top-4 right-4">
-      <LanguageSwitcher />
-    </div>
       <div class="w-full max-w-full sm:max-w-[768px] sm:min-w-[390px] mx-auto mt-[180px] mb-auto">
         <div class="w-full flex pl-4 items-center justify-start pb-4">
           <span class="text-[var(--text-primary)] text-start font-serif text-[32px] leading-[40px]" :style="{
@@ -29,7 +25,7 @@
           <div class="flex flex-col bg-[var(--background-gray-main)] w-full">
             <div class="[&amp;:not(:empty)]:pb-2 bg-[var(--background-gray-main)] rounded-[22px_22px_0px_0px]">
             </div>
-            <ChatBox :rows="2" v-model="message" @submit="handleSubmit" />
+            <ChatBox :rows="2" v-model="message" @submit="handleSubmit" :isRunning="false" />
           </div>
         </div>
       </div>
@@ -38,13 +34,12 @@
 </template>
 
 <script setup lang="ts">
-import LanguageSwitcher from '../components/LanguageSwitcher.vue';
 import SimpleBar from '../components/SimpleBar.vue';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import ChatBox from '../components/ChatBox.vue';
-import { createAgent } from '../api/agent';
+import { createSession } from '../api/agent';
 import { showErrorToast } from '../utils/toast';
 import { Bot } from 'lucide-vue-next';
 import ManusLogoTextIcon from '../components/icons/ManusLogoTextIcon.vue';
@@ -60,17 +55,17 @@ const handleSubmit = async () => {
 
     try {
       // Create new Agent
-      const agent = await createAgent();
-      const agentId = agent.agent_id;
+      const session = await createSession();
+      const sessionId = session.session_id;
 
-      // Navigate to new route with agent_id, passing initial message via state
+      // Navigate to new route with session_id, passing initial message via state
       router.push({
-        path: `/chat/${agentId}`,
+        path: `/chat/${sessionId}`,
         state: { message: message.value }
       });
     } catch (error) {
-      console.error('Failed to create Agent:', error);
-      showErrorToast(t('Failed to create agent, please try again later'));
+      console.error('Failed to create session:', error);
+      showErrorToast(t('Failed to create session, please try again later'));
       isSubmitting.value = false;
     }
   }

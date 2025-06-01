@@ -3,7 +3,7 @@
     class="h-[36px] flex items-center px-3 w-full bg-[var(--background-gray-main)] border-b border-[var(--border-main)] rounded-t-[12px] shadow-[inset_0px_1px_0px_0px_#FFFFFF] dark:shadow-[inset_0px_1px_0px_0px_#FFFFFF30]">
     <div class="flex-1 flex items-center justify-center">
       <div class="max-w-[250px] truncate text-[var(--text-tertiary)] text-sm font-medium text-center">{{
-        sessionId }}
+        shellSessionId }}
       </div>
     </div>
   </div>
@@ -23,10 +23,10 @@
 import { onMounted, ref, computed, watch, onUnmounted } from 'vue';
 import { viewShellSession } from '../api/agent';
 import { ToolContent } from '../types/message';
-import { showErrorToast } from '../utils/toast';
+//import { showErrorToast } from '../utils/toast';
 
 const props = defineProps<{
-  agentId: string;
+  sessionId: string;
   toolContent: ToolContent;
 }>();
 
@@ -39,8 +39,8 @@ defineExpose({
 const shell = ref('');
 const refreshInterval = ref<number | null>(null);
 
-// Get sessionId from toolContent
-const sessionId = computed(() => {
+// Get shellSessionId from toolContent
+const shellSessionId = computed(() => {
   if (props.toolContent && props.toolContent.args.id) {
     return props.toolContent.args.id;
   }
@@ -49,9 +49,9 @@ const sessionId = computed(() => {
 
 // Function to load Shell session content
 const loadShellContent = () => {
-  if (!sessionId.value) return;
+  if (!shellSessionId.value) return;
 
-  viewShellSession(props.agentId, sessionId.value).then((response) => {
+  viewShellSession(props.sessionId, shellSessionId.value).then((response) => {
     let newShell = '';
     for (const e of response.console) {
       newShell += `<span style="color: rgb(0, 187, 0);">${e.ps1}</span><span> ${e.command}</span>\n`;
@@ -62,12 +62,12 @@ const loadShellContent = () => {
     }
   }).catch((error) => {
     console.error('Failed to load Shell session content:', error);
-    showErrorToast('加载Shell会话内容失败');
+    //showErrorToast('加载Shell会话内容失败');
   });
 };
 
 // Watch for sessionId changes to reload content
-watch(sessionId, (newVal) => {
+watch(shellSessionId, (newVal) => {
   if (newVal) {
     loadShellContent();
   }
