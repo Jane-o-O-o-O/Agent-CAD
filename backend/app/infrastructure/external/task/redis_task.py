@@ -126,14 +126,13 @@ class RedisStreamTask(Task):
         return cls(runner)
 
     @classmethod
-    def destroy(cls) -> None:
+    async def destroy(cls) -> None:
         """Destroy all task instances."""
         for task_id in cls._task_registry:
             task = cls._task_registry[task_id]
             task.cancel()
-            task._cleanup_registry()
             if task._runner:
-                asyncio.create_task(task._runner.destroy())
+                await task._runner.destroy()
         cls._task_registry.clear()
     
     def __repr__(self) -> str:

@@ -55,11 +55,8 @@ def create_agent_service() -> AgentService:
 # Create agent service instance
 agent_service = create_agent_service()
 
-async def shutdown(signal_name=None) -> None:
+async def shutdown() -> None:
     """Cleanup function that will be called when the application is shutting down"""
-    if signal_name:
-        logger.info(f"Received exit signal {signal_name}")
-
     logger.info("Graceful shutdown...")
     
     try:
