@@ -42,6 +42,31 @@ class DockerSandbox(Sandbox):
         return self._vnc_url
 
     @staticmethod
+    def _get_container_ip(container) -> str:
+        """Get container IP address from network settings
+        
+        Args:
+            container: Docker container instance
+            
+        Returns:
+            Container IP address
+        """
+        # Get container network settings
+        network_settings = container.attrs['NetworkSettings']
+        ip_address = network_settings['IPAddress']
+        
+        # If default network has no IP, try to get IP from other networks
+        if not ip_address and 'Networks' in network_settings:
+            networks = network_settings['Networks']
+            # Try to get IP from first available network
+            for network_name, network_config in networks.items():
+                if 'IPAddress' in network_config and network_config['IPAddress']:
+                    ip_address = network_config['IPAddress']
+                    break
+        
+        return ip_address
+
+    @staticmethod
     def _create_task() -> 'DockerSandbox':
         """Create a new Docker sandbox (static method)
         
@@ -87,19 +112,7 @@ class DockerSandbox(Sandbox):
             
             # Get container IP address
             container.reload()  # Refresh container info
-            
-            # Get container network settings
-            network_settings = container.attrs['NetworkSettings']
-            ip_address = network_settings['IPAddress']
-            
-            # If default network has no IP, try to get IP from other networks
-            if not ip_address and 'Networks' in network_settings:
-                networks = network_settings['Networks']
-                # Try to get IP from first available network
-                for network_name, network_config in networks.items():
-                    if 'IPAddress' in network_config and network_config['IPAddress']:
-                        ip_address = network_config['IPAddress']
-                        break
+            ip_address = DockerSandbox._get_container_ip(container)
             
             # Create and return DockerSandbox instance
             return DockerSandbox(
@@ -448,4 +461,8 @@ class DockerSandbox(Sandbox):
 
         docker_client = docker.from_env()
         container = docker_client.containers.get(id)
-        return DockerSandbox(ip=container.attrs['NetworkSettings']['IPAddress'], container_name=id)
+        container.reload()
+        
+        ip_address = cls._get_container_ip(container)
+        logger.info(f"IP address: {ip_address}")
+        return DockerSandbox(ip=ip_address, container_name=id)

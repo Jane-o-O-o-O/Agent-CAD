@@ -104,7 +104,7 @@ class Task(Protocol):
         ...
 
     @classmethod
-    def destroy(cls) -> None:
+    async def destroy(cls) -> None:
         """Destroy all task instances.
         
         Cleans up all running tasks and releases associated resources.
