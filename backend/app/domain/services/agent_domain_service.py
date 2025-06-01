@@ -11,6 +11,7 @@ from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.repositories.session_repository import SessionRepository
 from app.domain.services.agent_task_runner import AgentTaskRunner
 from app.domain.external.task import Task
+from app.domain.utils.json_parser import JsonParser
 from typing import Type
 
 # Setup logging
@@ -28,6 +29,7 @@ class AgentDomainService:
         llm: LLM,
         sandbox_cls: Type[Sandbox],
         task_cls: Type[Task],
+        json_parser: JsonParser,
         search_engine: Optional[SearchEngine] = None
     ):
         self._repository = agent_repository
@@ -36,6 +38,7 @@ class AgentDomainService:
         self._sandbox_cls = sandbox_cls
         self._search_engine = search_engine
         self._task_cls = task_cls
+        self._json_parser = json_parser
         logger.info("AgentDomainService initialization completed")
             
     async def shutdown(self) -> None:
@@ -54,7 +57,7 @@ class AgentDomainService:
             sandbox = await self._sandbox_cls.create()
             session.sandbox_id = sandbox.id
             await self._session_repository.save(session)
-        browser = await sandbox.get_browser(self._llm)
+        browser = await sandbox.get_browser()
         if not browser:
             logger.error(f"Failed to get browser for Sandbox {sandbox_id}")
             raise RuntimeError(f"Failed to get browser for Sandbox {sandbox_id}")
@@ -69,7 +72,8 @@ class AgentDomainService:
             browser=browser,
             search_engine=self._search_engine,
             session_repository=self._session_repository,
-            agent_repository=self._repository
+            json_parser=self._json_parser,
+            agent_repository=self._repository,
         )
 
         task = self._task_cls.create(task_runner)
@@ -153,6 +157,8 @@ class AgentDomainService:
 
         except Exception as e:
             logger.exception(f"Error in Session {session_id}")
-            yield ErrorEvent(error=str(e)) # TODO: raise api exception
+            event = ErrorEvent(error=str(e))
+            await self._session_repository.add_event(session_id, event)
+            yield event # TODO: raise api exception
         finally:
             await self._session_repository.update_unread_message_count(session_id, 0)

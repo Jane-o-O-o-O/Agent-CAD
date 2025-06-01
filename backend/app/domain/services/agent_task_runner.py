@@ -11,6 +11,7 @@ from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.external.task import TaskRunner, Task
 from app.domain.repositories.session_repository import SessionRepository
 from app.domain.models.session import SessionStatus
+from app.domain.utils.json_parser import JsonParser
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,8 @@ class AgentTaskRunner(TaskRunner):
         browser: Browser,
         agent_repository: AgentRepository,
         session_repository: SessionRepository,
-        search_engine: Optional[SearchEngine] = None
+        json_parser: JsonParser,
+        search_engine: Optional[SearchEngine] = None,
     ):
         self._session_id = session_id
         self._agent_id = agent_id
@@ -35,14 +37,21 @@ class AgentTaskRunner(TaskRunner):
         self._search_engine = search_engine
         self._repository = agent_repository
         self._session_repository = session_repository
+        self._json_parser = json_parser
         self._flow = PlanActFlow(
             self._agent_id,
             self._repository,
             self._llm,
             self._sandbox,
             self._browser,
-            self._search_engine
+            self._json_parser,
+            self._search_engine,
         )
+
+    async def _put_and_add_event(self, task: Task, event: BaseEvent) -> None:
+        event_id = await task.output_stream.put(event.model_dump_json())
+        event.id = event_id
+        await self._session_repository.add_event(self._session_id, event)
 
     async def run(self, task: Task) -> None:
         """Process agent's message queue and run the agent's flow"""
@@ -58,9 +67,7 @@ class AgentTaskRunner(TaskRunner):
             await self._session_repository.update_status(self._session_id, SessionStatus.ACTIVE)
             
             async for event in self._run_flow(message):
-                event_id = await task.output_stream.put(event.model_dump_json())
-                event.id = event_id
-                await self._session_repository.add_event(self._session_id, event)
+                await self._put_and_add_event(task, event)
                 if isinstance(event, TitleEvent):
                     await self._session_repository.update_title(self._session_id, event.title)
                 if isinstance(event, MessageEvent):
@@ -69,10 +76,10 @@ class AgentTaskRunner(TaskRunner):
 
         except asyncio.CancelledError:
             logger.info(f"Agent {self._agent_id} task cancelled")
-            await task.output_stream.put(DoneEvent().model_dump_json())
+            await self._put_and_add_event(task, DoneEvent())
         except Exception as e:
             logger.exception(f"Agent {self._agent_id} task encountered exception: {str(e)}")
-            await task.output_stream.put(ErrorEvent(error=f"Task error: {str(e)}").model_dump_json())
+            await self._put_and_add_event(task, ErrorEvent(error=f"Task error: {str(e)}"))
         finally:
             await self._session_repository.update_status(self._session_id, SessionStatus.COMPLETED)
     

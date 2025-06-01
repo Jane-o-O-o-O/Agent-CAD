@@ -331,6 +331,9 @@ const checkElementPosition = () => {
 };
 
 onBeforeRouteUpdate((to, from, next) => {
+  if (toolPanel.value) {
+    toolPanel.value.hide();
+  }
   resetState();
   if (to.params.sessionId) {
     messages.value = [];

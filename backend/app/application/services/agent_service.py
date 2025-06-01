@@ -16,6 +16,7 @@ from app.domain.external.search import SearchEngine
 from app.domain.external.llm import LLM
 from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.external.task import Task
+from app.domain.utils.json_parser import JsonParser
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ class AgentService:
         session_repository: SessionRepository,
         sandbox_cls: Type[Sandbox],
         task_cls: Type[Task],
+        json_parser: JsonParser,
         search_engine: Optional[SearchEngine] = None
     ):
         logger.info("Initializing AgentService")
@@ -39,7 +41,8 @@ class AgentService:
             llm,
             sandbox_cls,
             task_cls,
-            search_engine
+            json_parser,
+            search_engine,
         )
         self._llm = llm
         self._search_engine = search_engine

@@ -2,7 +2,7 @@ from typing import Dict, Any, Optional, List
 from playwright.async_api import async_playwright, Browser, Page
 import asyncio
 from markdownify import markdownify
-from app.domain.external.llm import LLM
+from app.infrastructure.external.llm.openai_llm import OpenAILLM
 from app.infrastructure.config import get_settings
 from app.domain.models.tool_result import ToolResult
 import logging
@@ -13,11 +13,11 @@ logger = logging.getLogger(__name__)
 class PlaywrightBrowser:
     """Playwright client that provides specific implementation of browser operations"""
     
-    def __init__(self, llm: LLM, cdp_url: str):
+    def __init__(self, cdp_url: str):
         self.browser: Optional[Browser] = None
         self.page: Optional[Page] = None
         self.playwright = None
-        self.llm = llm
+        self.llm = OpenAILLM()
         self.settings = get_settings()
         self.cdp_url = cdp_url
         

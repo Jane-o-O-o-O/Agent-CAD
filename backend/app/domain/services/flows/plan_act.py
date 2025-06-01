@@ -1,7 +1,7 @@
 import logging
 from app.domain.services.flows.base import BaseFlow
 from app.domain.models.agent import Agent
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 from enum import Enum
 from app.domain.events.agent_events import (
     BaseEvent,
@@ -19,6 +19,7 @@ from app.domain.external.sandbox import Sandbox
 from app.domain.external.browser import Browser
 from app.domain.external.search import SearchEngine
 from app.domain.repositories.agent_repository import AgentRepository
+from app.domain.utils.json_parser import JsonParser
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,8 @@ class PlanActFlow(BaseFlow):
         llm: LLM,
         sandbox: Sandbox,
         browser: Browser,
-        search_engine: SearchEngine
+        json_parser: JsonParser,
+        search_engine: Optional[SearchEngine] = None,
     ):
         self._agent_id = agent_id
         self._repository = agent_repository
@@ -48,6 +50,7 @@ class PlanActFlow(BaseFlow):
             agent_id=self._agent_id,
             agent_repository=self._repository,
             llm=llm,
+            json_parser=json_parser,
         )
         logger.debug(f"Created planner agent for Agent {self._agent_id}")
         
@@ -57,6 +60,7 @@ class PlanActFlow(BaseFlow):
             llm=llm,
             sandbox=sandbox,
             browser=browser,
+            json_parser=json_parser,
             search_engine=search_engine,
         )
         logger.debug(f"Created execution agent for Agent {self._agent_id}")

@@ -366,7 +366,7 @@ class DockerSandbox(Sandbox):
             logger.error(f"Failed to destroy Docker sandbox: {str(e)}")
             return False
     
-    async def get_browser(self, llm: LLM) -> Browser:
+    async def get_browser(self) -> Browser:
         """Get browser instance
         
         Args:
@@ -376,7 +376,7 @@ class DockerSandbox(Sandbox):
             Browser: Returns a configured PlaywrightBrowser instance
                     connected using the sandbox's CDP URL
         """
-        return PlaywrightBrowser(llm, self.cdp_url)
+        return PlaywrightBrowser(self.cdp_url)
 
     @staticmethod
     @alru_cache(maxsize=128, typed=True)

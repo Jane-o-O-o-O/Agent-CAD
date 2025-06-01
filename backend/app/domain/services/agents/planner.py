@@ -22,6 +22,7 @@ from app.domain.external.sandbox import Sandbox
 from app.domain.services.tools.file import FileTool
 from app.domain.services.tools.shell import ShellTool
 from app.domain.repositories.agent_repository import AgentRepository
+from app.domain.utils.json_parser import JsonParser
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +40,14 @@ class PlannerAgent(BaseAgent):
         agent_id: str,
         agent_repository: AgentRepository,
         llm: LLM,
+        json_parser: JsonParser,
     ):
-        super().__init__(agent_id, agent_repository, llm)
+        super().__init__(
+            agent_id=agent_id,
+            agent_repository=agent_repository,
+            llm=llm,
+            json_parser=json_parser,
+        )
 
 
     async def create_plan(self, message: Optional[str] = None) -> AsyncGenerator[BaseEvent, None]:
@@ -48,7 +55,7 @@ class PlannerAgent(BaseAgent):
         async for event in self.execute(message):
             if isinstance(event, MessageEvent):
                 logger.info(event.message)
-                parsed_response = json.loads(event.message)
+                parsed_response = await self.json_parser.parse(event.message)
                 steps = [Step(id=step["id"], description=step["description"]) for step in parsed_response["steps"]]
                 plan = Plan(id=f"plan_{len(steps)}", goal=parsed_response["goal"], title=parsed_response["title"], steps=steps, message=parsed_response["message"], todo=parsed_response.get("todo", ""))
                 yield PlanEvent(status=PlanStatus.CREATED, plan=plan)
@@ -59,7 +66,7 @@ class PlannerAgent(BaseAgent):
         message = UPDATE_PLAN_PROMPT.format(plan=plan.model_dump_json(include={"steps"}), goal=plan.goal)
         async for event in self.execute(message):
             if isinstance(event, MessageEvent):
-                parsed_response = json.loads(event.message)
+                parsed_response = await self.json_parser.parse(event.message)
                 new_steps = [Step(id=step["id"], description=step["description"]) for step in parsed_response["steps"]]
                 
                 # Find the index of the first pending step

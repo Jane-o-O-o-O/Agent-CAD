@@ -219,12 +219,9 @@ class Sandbox(Protocol):
         """
         ...
     
-    async def get_browser(self, llm: LLM) -> Browser:
+    async def get_browser(self) -> Browser:
         """Get browser instance
         
-        Args:
-            llm: LLM instance used for browser automation
-            
         Returns:
             Browser: Returns a configured browser instance for web automation
         """

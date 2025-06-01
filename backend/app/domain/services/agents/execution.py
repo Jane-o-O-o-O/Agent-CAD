@@ -20,6 +20,7 @@ from app.domain.services.tools.browser import BrowserTool
 from app.domain.services.tools.search import SearchTool
 from app.domain.services.tools.file import FileTool
 from app.domain.services.tools.message import MessageTool
+from app.domain.utils.json_parser import JsonParser
 
 
 class ExecutionAgent(BaseAgent):
@@ -37,14 +38,21 @@ class ExecutionAgent(BaseAgent):
         llm: LLM,
         sandbox: Sandbox,
         browser: Browser,
+        json_parser: JsonParser,
         search_engine: Optional[SearchEngine] = None,
     ):
-        super().__init__(agent_id, agent_repository, llm, [   
-            ShellTool(sandbox),
-            BrowserTool(browser),
-            FileTool(sandbox),
-            MessageTool()
-        ])
+        super().__init__(
+            agent_id=agent_id,
+            agent_repository=agent_repository,
+            llm=llm,
+            json_parser=json_parser,
+            tools=[
+                ShellTool(sandbox),
+                BrowserTool(browser),
+                FileTool(sandbox),
+                MessageTool()
+            ]
+        )
         
         # Only add search tool when search_engine is not None
         if search_engine:

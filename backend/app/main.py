@@ -19,6 +19,7 @@ from app.infrastructure.repositories.mongo_session_repository import MongoSessio
 from app.infrastructure.external.task.redis_task import RedisStreamTask
 from app.interfaces.api.routes import get_agent_service
 from app.infrastructure.models.documents import AgentDocument, SessionDocument
+from app.infrastructure.utils.llm_json_parser import LLMJsonParser
 from beanie import init_beanie
 
 # Initialize logging system
@@ -47,7 +48,8 @@ def create_agent_service() -> AgentService:
         session_repository=MongoSessionRepository(),
         sandbox_cls=DockerSandbox,
         task_cls=RedisStreamTask,
-        search_engine=search_engine
+        json_parser=LLMJsonParser(),
+        search_engine=search_engine,
     )
 
 # Create agent service instance

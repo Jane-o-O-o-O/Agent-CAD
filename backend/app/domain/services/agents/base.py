@@ -1,5 +1,5 @@
 import json
-import time
+import logging
 import asyncio
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional, AsyncGenerator
@@ -17,7 +17,9 @@ from app.domain.events.agent_events import (
     DoneEvent,
 )
 from app.domain.repositories.agent_repository import AgentRepository
+from app.domain.utils.json_parser import JsonParser
 
+logger = logging.getLogger(__name__)
 class BaseAgent(ABC):
     """
     Base agent class, defining the basic behavior of the agent
@@ -30,10 +32,18 @@ class BaseAgent(ABC):
     max_retries: int = 3
     retry_interval: float = 1.0
 
-    def __init__(self, agent_id: str, agent_repository: AgentRepository, llm: LLM, tools: List[BaseTool] = []):
+    def __init__(
+        self,
+        agent_id: str,
+        agent_repository: AgentRepository,
+        llm: LLM,
+        json_parser: JsonParser,
+        tools: List[BaseTool] = []
+    ):
         self._agent_id = agent_id
         self._repository = agent_repository
         self.llm = llm
+        self.json_parser = json_parser
         self.tools = tools
         self.memory = None
     
@@ -64,6 +74,7 @@ class BaseAgent(ABC):
                 if retries <= self.max_retries:
                     await asyncio.sleep(self.retry_interval)
                 else:
+                    logger.exception(f"Tool execution failed, {function_name}, {arguments}")
                     break
         
         raise ValueError(f"Tool execution failed, retried {self.max_retries} times: {last_error}")
@@ -79,8 +90,8 @@ class BaseAgent(ABC):
                     continue
                 
                 function_name = tool_call["function"]["name"]
-                function_args = json.loads(tool_call["function"]["arguments"])
                 tool_call_id = tool_call["id"]
+                function_args = await self.json_parser.parse(tool_call["function"]["arguments"])
                 
                 tool = self.get_tool(function_name)
 
