@@ -47,11 +47,26 @@ class SupervisorService:
         self.timeout_active = settings.SERVICE_TIMEOUT_MINUTES is not None
         self.shutdown_task = None
         self.shutdown_time = None
+        # Auto-expand functionality - disabled when user explicitly controls timeout
+        self._auto_expand_enabled = True
         
         # If timeout is configured, create scheduled task
         if settings.SERVICE_TIMEOUT_MINUTES is not None:
             self.shutdown_time = datetime.now() + timedelta(minutes=settings.SERVICE_TIMEOUT_MINUTES)
             self._setup_timer(settings.SERVICE_TIMEOUT_MINUTES)
+    
+    @property
+    def auto_expand_enabled(self) -> bool:
+        """Get auto-expand status"""
+        return self._auto_expand_enabled
+    
+    def disable_auto_expand(self):
+        """Disable auto-expand functionality (called when user explicitly manages timeout)"""
+        self._auto_expand_enabled = False
+    
+    def enable_auto_expand(self):
+        """Enable auto-expand functionality"""
+        self._auto_expand_enabled = True
     
     def _connect_rpc(self):
         """Connect to supervisord's RPC interface"""
@@ -212,6 +227,8 @@ class SupervisorService:
         
         self.timeout_active = False
         self.shutdown_time = None
+        # Re-enable auto-expand when timeout is cancelled
+        self._auto_expand_enabled = True
         
         return SupervisorTimeout(status="timeout_cancelled", active=False)
     

@@ -14,6 +14,7 @@ from app.core.exceptions import (
     validation_exception_handler,
     general_exception_handler
 )
+from app.core.middleware import auto_extend_timeout_middleware
 
 # Configure logging
 def setup_logging():
@@ -59,6 +60,9 @@ app.add_middleware(
 )
 
 logger.info("Sandbox API server starting")
+
+# Register middleware
+app.middleware("http")(auto_extend_timeout_middleware)
 
 # Register exception handlers
 app.add_exception_handler(AppException, app_exception_handler)

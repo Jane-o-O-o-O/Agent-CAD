@@ -226,7 +226,7 @@ class PlaywrightBrowser:
         }
         ])
         
-        return response.content
+        return response.get("content", "")
     
     async def view_page(self) -> ToolResult:
         """View visible elements within the current page's viewport and convert to Markdown format"""
