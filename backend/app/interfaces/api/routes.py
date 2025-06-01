@@ -43,6 +43,15 @@ async def get_session(
         events=SSEEventFactory.from_events(session.events)
     ))
 
+@router.delete("/sessions/{session_id}", response_model=APIResponse[None])
+async def delete_session(
+    session_id: str,
+    agent_service: AgentService = Depends(get_agent_service)
+) -> APIResponse[None]:
+    await agent_service.delete_session(session_id)
+    return APIResponse.success()
+
+
 @router.get("/sessions", response_model=APIResponse[ListSessionResponse])
 async def get_all_sessions(
     agent_service: AgentService = Depends(get_agent_service)

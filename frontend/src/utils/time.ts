@@ -32,4 +32,65 @@ export const formatRelativeTime = (timestamp: number): string => {
   } else {
     return `${diffYear} ${t('years ago')}`;
   }
+};
+
+/**
+ * Format timestamp according to custom requirements:
+ * - Today: show time (HH:MM)
+ * - This week: show day of week (e.g., 周一)
+ * - This year: show date (MM/DD)
+ * - Other years: show year/month (YYYY/MM)
+ * @param timestamp Timestamp (seconds)
+ * @param t Translation function from i18n
+ * @param locale Current locale (for date formatting)
+ * @returns Formatted time string
+ */
+export const formatCustomTime = (timestamp: number, t?: (key: string) => string, locale?: string): string => {
+  const date = new Date(timestamp * 1000);
+  const now = new Date();
+  
+  // Check if it's today
+  const isToday = date.toDateString() === now.toDateString();
+  if (isToday) {
+    // Use locale-appropriate time format
+    const timeFormat = locale?.startsWith('zh') ? 'zh-CN' : 'en-US';
+    return date.toLocaleTimeString(timeFormat, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+  }
+  
+  // Check if it's this week
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay() + 1); // Monday as start of week
+  startOfWeek.setHours(0, 0, 0, 0);
+  
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+  
+  if (date >= startOfWeek && date <= endOfWeek) {
+    const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    if (t) {
+      return t(weekdays[date.getDay()]);
+    } else {
+      return weekdays[date.getDay()];
+    }
+  }
+  
+  // Check if it's this year
+  const isThisYear = date.getFullYear() === now.getFullYear();
+  if (isThisYear) {
+    // Use locale-appropriate date format
+    if (locale?.startsWith('zh')) {
+      return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+    } else {
+      // For English and other locales, use MM/DD format
+      return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+    }
+  }
+  
+  // Other years: show year/month
+  return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`;
 }; 

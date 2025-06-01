@@ -7,12 +7,21 @@ export default {
   'Thinking': 'Thinking',
   'Task Progress': 'Task Progress',
   'Confirm Task Completion': 'Confirm Task Completion',
+  'Delete': 'Delete',
   'Just now': 'Just now',
   'minutes ago': 'minutes ago',
   'hours ago': 'hours ago',
   'days ago': 'days ago',
   'months ago': 'months ago',
   'years ago': 'years ago',
+  // Weekdays
+  'Sunday': 'Sun',
+  'Monday': 'Mon',
+  'Tuesday': 'Tue',
+  'Wednesday': 'Wed',
+  'Thursday': 'Thu',
+  'Friday': 'Fri',
+  'Saturday': 'Sat',
   'Manus Computer': 'Manus Computer',
   'Manus is using': 'Manus is using',
   'Jump to live': 'Jump to live',
@@ -53,5 +62,13 @@ export default {
   'File': 'File',
   'Browser': 'Browser',
   'Information': 'Information',
-  'Message': 'Message'
+  'Message': 'Message',
+  // Dialog
+  'Confirm': 'Confirm',
+  'Cancel': 'Cancel',
+  'Close Dialog': 'Close Dialog',
+  'Are you sure you want to delete this session?': 'Are you sure you want to delete this session?',
+  'The chat history of this session cannot be recovered after deletion.': 'The chat history of this session cannot be recovered after deletion.',
+  'Deleted successfully': 'Deleted successfully',
+  'Failed to delete session': 'Failed to delete session'
 } 

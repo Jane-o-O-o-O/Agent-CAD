@@ -7,12 +7,21 @@ export default {
   'Thinking': '思考中',
   'Task Progress': '任务进度',
   'Confirm Task Completion': '确认任务完成',
+  'Delete': '删除',
   'Just now': '刚刚',
   'minutes ago': '分钟前',
   'hours ago': '小时前',
   'days ago': '天前',
   'months ago': '个月前',
   'years ago': '年前',
+  // Weekdays
+  'Sunday': '周日',
+  'Monday': '周一',
+  'Tuesday': '周二',
+  'Wednesday': '周三',
+  'Thursday': '周四',
+  'Friday': '周五',
+  'Saturday': '周六',
   'Manus Computer': 'Manus 的电脑',
   'Manus is using': 'Manus 正在使用',
   'Jump to live': '跳到实时',
@@ -53,5 +62,13 @@ export default {
   'File': '文件',
   'Browser': '浏览器',
   'Information': '信息',
-  'Message': '消息'
+  'Message': '消息',
+  // Dialog
+  'Confirm': '确认',
+  'Cancel': '取消',
+  'Close Dialog': '关闭对话框',
+  'Are you sure you want to delete this session?': '确定要删除该会话吗？',
+  'The chat history of this session cannot be recovered after deletion.': '删除后将无法恢复该会话的聊天记录。',
+  'Deleted successfully': '删除成功',
+  'Failed to delete session': '删除会话失败'
 } 

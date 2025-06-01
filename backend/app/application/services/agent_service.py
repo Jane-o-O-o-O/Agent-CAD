@@ -95,6 +95,9 @@ class AgentService:
     async def get_all_sessions(self) -> List[Session]:
         return await self._session_repository.get_all()
 
+    async def delete_session(self, session_id: str):
+        await self._session_repository.delete(session_id)
+
     async def shutdown(self):
         logger.info("Closing all agents and cleaning up resources")
         # Clean up all Agents and their associated sandboxes

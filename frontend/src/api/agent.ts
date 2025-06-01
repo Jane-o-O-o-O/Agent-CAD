@@ -23,6 +23,10 @@ export async function getSessions(): Promise<ListSessionResponse> {
   return response.data.data;
 }
 
+export async function deleteSession(sessionId: string): Promise<void> {
+  await apiClient.delete<ApiResponse<void>>(`/sessions/${sessionId}`);
+}
+
 export const getVNCUrl = (sessionId: string): string => {
   // Convert http to ws, https to wss
   const wsBaseUrl = BASE_URL.replace(/^http/, 'ws');

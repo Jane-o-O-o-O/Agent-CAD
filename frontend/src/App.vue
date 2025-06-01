@@ -7,10 +7,14 @@
       </div>
     </div>
   </div>
+  <ContextMenu />
+  <CustomDialog />
   <Toast />
 </template>
 
 <script setup lang="ts">
 import Toast from './components/Toast.vue';
 import Panel from './components/Panel.vue';
+import CustomDialog from './components/CustomDialog.vue';
+import ContextMenu from './components/ContextMenu.vue';
 </script>

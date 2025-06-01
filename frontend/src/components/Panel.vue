@@ -61,77 +61,32 @@
         </button>
       </div>
       <div class="flex flex-col flex-1 min-h-0 overflow-auto pt-2 pb-5 overflow-x-hidden">
-        <div v-for="session in sessions" class="px-2">
-          <div @click="handleSessionClick(session.session_id)"
-            :class="currentSessionId === session.session_id ?
-              'group flex h-14 cursor-pointer items-center gap-2 rounded-[10px] px-2 transition-colors bg-[var(--background-white-main)]' :
-              'group flex h-14 cursor-pointer items-center gap-2 rounded-[10px] px-2 transition-colors hover:bg-[var(--fill-tsp-gray-main)]'">
-            <div class="relative">
-              <div
-                class="h-8 w-8 rounded-full flex items-center justify-center relative bg-[var(--fill-tsp-white-dark)]">
-                <div class="relative h-4 w-4 object-cover brightness-0 opacity-75 dark:opacity-100 dark:brightness-100">
-                  <img alt="Hello" class="w-full h-full object-cover" src="/chatting.svg">
-                </div>
-              </div>
-              <div v-if="session.status === SessionStatus.ACTIVE" class="absolute -start-[5px] -top-[3px] w-[calc(100%+8px)] h-[calc(100%+8px)]"
-                style="transform: rotateY(180deg);">
-                <SpinnigIcon />
-              </div>
-              <div
-                v-if="session.unread_message_count > 0 && currentSessionId !== session.session_id"
-                class="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--function-error)] absolute -end-1 -top-1">
-                <span class="px-1 text-xs text-[var(--text-white)]">{{ session.unread_message_count }}</span></div>
-            </div>
-            <div class="min-w-20 flex-1 transition-opacity opacity-100">
-              <div class="flex items-center gap-1 overflow-x-hidden">
-                <span class="truncate text-sm font-medium text-[var(--text-primary)] flex-1 min-w-0"
-                  :title="session.title || t('New Chat')">
-                  <span class="">
-                    {{ session.title || t('New Chat') }}
-                  </span>
-                </span>
-                <span class="text-[var(--text-tertiary)] text-xs whitespace-nowrap">
-                  {{ session.latest_message_at ? relativeTime(session.latest_message_at) : '' }}
-                </span>
-              </div>
-              <div class="flex items-center gap-2 h-[18px] relative">
-                <span class="min-w-0 flex-1 truncate text-xs text-[var(--text-tertiary)]"
-                  :title="session.latest_message || ''">
-                  {{ session.latest_message }}
-                </span>
-                <div
-                  class="w-[22px] h-[22px] flex rounded-[6px] items-center justify-center pointer invisible cursor-pointer bg-[var(--background-menu-white)] border border-[var(--border-main)] shadow-sm group-hover:visible touch-device:visible"
-                  aria-expanded="false" aria-haspopup="dialog">
-                  <Ellipsis :size="16" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <SessionItem 
+          v-for="session in sessions" 
+          :key="session.session_id"
+          :session="session"
+          @deleted="handleSessionDeleted"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { PanelRight, Plus, Command, Ellipsis, Bot } from 'lucide-vue-next';
+import { PanelRight, Plus, Command, Bot } from 'lucide-vue-next';
 import ManusLogoTextIcon from './icons/ManusLogoTextIcon.vue';
+import SessionItem from './SessionItem.vue';
 import { usePanelState } from '../composables/usePanelState';
 import { computed, ref, onMounted, watch, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getSessions } from '../api/agent';
 import { ListSessionItem, SessionStatus } from '../types/response';
-import { useRelativeTime } from '../composables/useTime';
 import { useI18n } from 'vue-i18n';
-import SpinnigIcon from './icons/SpinnigIcon.vue';
-
-const { relativeTime } = useRelativeTime();
 
 const { t } = useI18n()
 const { isPanelShow, togglePanel } = usePanelState()
 const route = useRoute()
 const router = useRouter()
-const currentSessionId = ref<string>()
 
 // Check if current page is homepage
 const isHomepage = computed(() => {
@@ -154,6 +109,10 @@ const fetchSessions = async () => {
 
 const handleNewTaskClick = () => {
   router.push('/')
+}
+
+const handleSessionDeleted = (sessionId: string) => {
+  sessions.value = sessions.value.filter(session => session.session_id !== sessionId);
 }
 
 // Handle keyboard shortcuts
@@ -188,12 +147,7 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
 })
 
-const handleSessionClick = (sessionId: string) => {
-  router.push(`/chat/${sessionId}`)
-}
-
 watch(() => route.path, async () => {
   await fetchSessions()
-  currentSessionId.value = route.params.sessionId as string
 })
 </script>
