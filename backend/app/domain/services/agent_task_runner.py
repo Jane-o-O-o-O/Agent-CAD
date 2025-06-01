@@ -1,7 +1,7 @@
 from typing import Optional, AsyncGenerator
 import asyncio
 import logging
-from app.domain.events.agent_events import BaseEvent, ErrorEvent, TitleEvent, MessageEvent
+from app.domain.events.agent_events import BaseEvent, ErrorEvent, TitleEvent, MessageEvent, DoneEvent
 from app.domain.services.flows.plan_act import PlanActFlow
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.browser import Browser
@@ -69,6 +69,7 @@ class AgentTaskRunner(TaskRunner):
 
         except asyncio.CancelledError:
             logger.info(f"Agent {self._agent_id} task cancelled")
+            await task.output_stream.put(DoneEvent().model_dump_json())
         except Exception as e:
             logger.exception(f"Agent {self._agent_id} task encountered exception: {str(e)}")
             await task.output_stream.put(ErrorEvent(error=f"Task error: {str(e)}").model_dump_json())

@@ -41,68 +41,9 @@
             class="flex items-center justify-center w-[36px] h-[36px] rounded-full bg-[var(--background-white-main)] hover:bg-[var(--background-gray-main)] clickable border border-[var(--border-main)] shadow-[0px_5px_16px_0px_var(--shadow-S),0px_0px_1.25px_0px_var(--shadow-S)] absolute -top-20 left-1/2 -translate-x-1/2">
             <ArrowDown class="text-[var(--icon-primary)]" :size="20" />
           </button>
-          <div class="[&amp;:not(:empty)]:pb-2 bg-[var(--background-gray-main)] rounded-[22px_22px_0px_0px]">
-            <div v-if="isShowPlanPanel"
-              class="border border-black/8 dark:border-[var(--border-main)] bg-[var(--background-menu-white)] rounded-[16px] sm:rounded-[12px] shadow-[0px_0px_1px_0px_rgba(0,_0,_0,_0.05),_0px_8px_32px_0px_rgba(0,_0,_0,_0.04)] z-99 flex flex-col py-4">
-              <div class="flex px-4 mb-4 w-full">
-                <div class="flex items-start ml-auto">
-                  <div class="flex items-center justify-center gap-2">
-                    <div @click="isShowPlanPanel = false"
-                      class="flex h-7 w-7 items-center justify-center cursor-pointer hover:bg-[var(--fill-tsp-gray-main)] rounded-md">
-                      <ChevronDown class="text-[var(--icon-tertiary)]" :size="16" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="px-4">
-                <div class="bg-[var(--fill-tsp-gray-main)] rounded-lg pt-4 pb-2">
-                  <div class="flex justify-between w-full px-4"><span
-                      class="text-[var(--text-primary)] font-bold">{{ $t('Task Progress') }}</span>
-                    <div class="flex items-center gap-3"><span class="text-xs text-[var(--text-tertiary)]">{{ planProgress() }}</span>
-                    </div>
-                  </div>
-                  <div class="max-h-[min(calc(100vh-360px),400px)] overflow-y-auto">
-                    <div v-for="step in plan.steps" :key="step.id"
-                      class="flex items-start gap-2.5 w-full px-4 py-2 truncate">
-                      <StepSuccessIcon v-if="step.status === 'completed'" />
-                      <Clock v-else class="relative top-[2px] flex-shrink-0" :size="16" />
-                      <div class="flex flex-col w-full gap-[2px] truncate">
-                        <div class="text-sm truncate" title="{{ step.description }}"
-                          style="color: var(--text-primary);">
-                          {{ step.description }}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div v-if="!isShowPlanPanel" @click="isShowPlanPanel = true"
-              class="flex flex-row items-start justify-between pe-3 relative clickable border border-black/8 dark:border-[var(--border-main)] bg-[var(--background-menu-white)] rounded-[16px] sm:rounded-[12px] shadow-[0px_0px_1px_0px_rgba(0,_0,_0,_0.05),_0px_8px_32px_0px_rgba(0,_0,_0,_0.04)] z-99">
-              <div class="flex-1 min-w-0 relative overflow-hidden">
-                <div class="w-full" style="height: 36px; --offset: -36px;">
-                  <div class="w-full">
-                    <div class="flex items-start gap-2.5 w-full px-4 py-2 truncate">
-                      <StepSuccessIcon v-if="planCompleted()" />
-                      <Clock v-else class="relative top-[2px] flex-shrink-0" :size="16" />
-                      <div class="flex flex-col w-full gap-[2px] truncate">
-                        <div class="text-sm truncate" :title="runningStep()" style="color: var(--text-tertiary);">
-                          {{ runningStep() }}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <button
-                class="flex h-full cursor-pointer justify-center gap-2 hover:opacity-80 flex-shrink-0 items-start py-2.5">
-                <span class="text-xs text-[var(--text-tertiary)] hidden sm:flex">{{ planProgress() }}</span>
-                <ChevronUp class="text-[var(--icon-tertiary)]" :size="16" />
-              </button>
-            </div>
-          </div>
+          <PlanPanel :plan="plan" />
         </template>
-        <ChatBox v-model="inputMessage" :rows="1" @submit="chat(inputMessage)" />
+        <ChatBox v-model="inputMessage" :rows="1" @submit="chat(inputMessage)" :isRunning="isLoading" @stop="handleStop" />
       </div>
     </div>
     <ToolPanel ref="toolPanel" :size="toolPanelSize" :sessionId="sessionId" :realTime="realTime" @jumpToRealTime="jumpToRealTime" />
@@ -128,8 +69,8 @@ import {
   AgentSSEEvent 
 } from '../types/event';
 import ToolPanel from '../components/ToolPanel.vue';
-import { ArrowDown, Bot, Clock, ChevronUp, ChevronDown } from 'lucide-vue-next';
-import StepSuccessIcon from '../components/icons/StepSuccessIcon.vue';
+import PlanPanel from '../components/PlanPanel.vue';
+import { ArrowDown } from 'lucide-vue-next';
 import { showErrorToast } from '../utils/toast';
 
 const router = useRouter();
@@ -145,7 +86,6 @@ const createInitialState = () => ({
   realTime: true,
   follow: true,
   title: t('New Chat'),
-  isShowPlanPanel: false,
   plan: undefined as PlanEventData | undefined,
   lastNoMessageTool: undefined as ToolContent | undefined,
   lastEventId: undefined as string | undefined,
@@ -166,7 +106,6 @@ const {
   realTime,
   follow,
   title,
-  isShowPlanPanel,
   plan,
   lastNoMessageTool,
   lastEventId,
@@ -200,23 +139,7 @@ watch(messages, async () => {
   }
 }, { deep: true });
 
-const runningStep = (): string => {
-  for (const step of plan.value?.steps ?? []) {
-    if (step.status === 'running') {
-      return step.description;
-    }
-  }
-  return t('Confirm Task Completion');
-}
 
-const planCompleted = (): boolean => {
-  return plan.value?.steps.every(step => step.status === 'completed') ?? false;
-}
-
-const planProgress = (): string => {
-  const completedSteps = plan.value?.steps.filter(step => step.status === 'completed').length ?? 0;
-  return `${completedSteps} / ${plan.value?.steps.length ?? 1}`;
-}
 
 const getLastStep = (): StepContent | undefined => {
   return messages.value.filter(message => message.type === 'step').pop()?.content as StepContent;
@@ -293,6 +216,7 @@ const handleTitleEvent = (titleData: TitleEventData) => {
 
 // Handle plan event
 const handlePlanEvent = (planData: PlanEventData) => {
+  console.log('handlePlanEvent', planData);
   plan.value = planData;
 }
 
@@ -470,6 +394,12 @@ const handleFollow = () => {
 
 const handleScroll = (_: Event) => {
   follow.value = simpleBarRef.value?.isScrolledToBottom() ?? false;
+}
+
+const handleStop = () => {
+  if (sessionId.value) {
+    agentApi.stopSession(sessionId.value);
+  }
 }
 </script>
 

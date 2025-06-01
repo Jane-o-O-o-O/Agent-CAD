@@ -27,6 +27,10 @@ export async function deleteSession(sessionId: string): Promise<void> {
   await apiClient.delete<ApiResponse<void>>(`/sessions/${sessionId}`);
 }
 
+export async function stopSession(sessionId: string): Promise<void> {
+  await apiClient.post<ApiResponse<void>>(`/sessions/${sessionId}/stop`);
+}
+
 export const getVNCUrl = (sessionId: string): string => {
   // Convert http to ws, https to wss
   const wsBaseUrl = BASE_URL.replace(/^http/, 'ws');

@@ -2,7 +2,7 @@ from typing import Optional, AsyncGenerator
 import logging
 import time
 from datetime import datetime
-from app.domain.models.session import Session
+from app.domain.models.session import Session, SessionStatus
 from app.domain.external.llm import LLM
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.search import SearchEngine
@@ -87,6 +87,17 @@ class AgentDomainService:
         
         return self._task_cls.get(task_id)
 
+    async def stop_session(self, session_id: str) -> None:
+        """Stop a session"""
+        session = await self._session_repository.find_by_id(session_id)
+        if not session:
+            logger.error(f"Attempted to stop non-existent Session {session_id}")
+            raise RuntimeError("Session not found")
+        task = await self._get_task(session)
+        if task:
+            task.cancel()
+        await self._session_repository.update_status(session_id, SessionStatus.COMPLETED)
+
     async def chat(
         self,
         session_id: str,
@@ -108,7 +119,7 @@ class AgentDomainService:
 
             if message:
                 if task:
-                    await task.cancel()
+                    task.cancel()
                 task = await self._create_task(session)
                 if not task:
                     raise RuntimeError("Failed to create task")
@@ -125,11 +136,13 @@ class AgentDomainService:
             logger.debug(f"Session {session_id} task: {task}")
            
             while task and not task.done:
-                latest_event_id, event_str = await task.output_stream.get(start_id=latest_event_id, block_ms=0)
+                event_id, event_str = await task.output_stream.get(start_id=latest_event_id, block_ms=0)
+                latest_event_id = event_id
                 if event_str is None:
                     logger.debug(f"No event found in Session {session_id}'s event queue")
                     continue
                 event = AgentEventFactory.from_json(event_str)
+                event.id = event_id
                 logger.debug(f"Got event from Session {session_id}'s event queue: {type(event).__name__}")
                 await self._session_repository.update_unread_message_count(session_id, 0)
                 yield event
@@ -139,7 +152,7 @@ class AgentDomainService:
             logger.info(f"Session {session_id} completed")
 
         except Exception as e:
-            logger.exception(f"Error in Session {session_id}")  
-            yield ErrorEvent(error=str(e))
+            logger.exception(f"Error in Session {session_id}")
+            yield ErrorEvent(error=str(e)) # TODO: raise api exception
         finally:
             await self._session_repository.update_unread_message_count(session_id, 0)

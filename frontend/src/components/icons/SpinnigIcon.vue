@@ -35,7 +35,7 @@
 
 
 
-<style scoped>
+<style>
 @keyframes spin {
   from {
     transform: rotate(0deg);

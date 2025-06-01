@@ -60,27 +60,28 @@
           </div>
         </button>
       </div>
-      <div class="flex flex-col flex-1 min-h-0 overflow-auto pt-2 pb-5 overflow-x-hidden">
-        <SessionItem 
-          v-for="session in sessions" 
-          :key="session.session_id"
-          :session="session"
-          @deleted="handleSessionDeleted"
-        />
+      <div v-if="sessions.length > 0" class="flex flex-col flex-1 min-h-0 overflow-auto pt-2 pb-5 overflow-x-hidden">
+        <SessionItem v-for="session in sessions" :key="session.session_id" :session="session"
+          @deleted="handleSessionDeleted" />
+      </div>
+      <div v-else class="flex flex-1 flex-col items-center justify-center gap-4">
+        <div class="flex flex-col items-center gap-2 text-[var(--text-tertiary)]">
+          <MessageSquareDashed :size="38" />
+          <span class="text-sm font-medium">{{ t('Create a task to get started') }}</span></div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { PanelRight, Plus, Command, Bot } from 'lucide-vue-next';
+import { PanelRight, Plus, Command, Bot, MessageSquareDashed } from 'lucide-vue-next';
 import ManusLogoTextIcon from './icons/ManusLogoTextIcon.vue';
 import SessionItem from './SessionItem.vue';
 import { usePanelState } from '../composables/usePanelState';
 import { computed, ref, onMounted, watch, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getSessions } from '../api/agent';
-import { ListSessionItem, SessionStatus } from '../types/response';
+import { ListSessionItem } from '../types/response';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n()
@@ -90,7 +91,6 @@ const router = useRouter()
 
 // Check if current page is homepage
 const isHomepage = computed(() => {
-  console.log(route.path)
   return route.path === '/'
 })
 

@@ -51,6 +51,14 @@ async def delete_session(
     await agent_service.delete_session(session_id)
     return APIResponse.success()
 
+@router.post("/sessions/{session_id}/stop", response_model=APIResponse[None])
+async def stop_session(
+    session_id: str,
+    agent_service: AgentService = Depends(get_agent_service)
+) -> APIResponse[None]:
+    await agent_service.stop_session(session_id)
+    return APIResponse.success()
+
 
 @router.get("/sessions", response_model=APIResponse[ListSessionResponse])
 async def get_all_sessions(

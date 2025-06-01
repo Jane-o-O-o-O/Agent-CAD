@@ -56,7 +56,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useCustomTime } from '../composables/useTime';
 import { ListSessionItem, SessionStatus } from '../types/response';
 import SpinnigIcon from './icons/SpinnigIcon.vue';
-import { useContextMenu, createMenuItem, createDangerMenuItem } from '../composables/useContextMenu';
+import { useContextMenu, createDangerMenuItem } from '../composables/useContextMenu';
 import { useDialog } from '../composables/useDialog';
 import { deleteSession } from '../api/agent';
 import { showSuccessToast, showErrorToast } from '../utils/toast';
@@ -109,12 +109,12 @@ const handleSessionMenuClick = (event: MouseEvent) => {
         cancelText: t('Cancel'),
         confirmType: 'danger',
         onConfirm: () => {
+          emit('delete', props.session.session_id);
           deleteSession(props.session.session_id).then(() => {
             showSuccessToast(t('Deleted successfully'));
           }).catch(() => {
             showErrorToast(t('Failed to delete session'));
           });
-          emit('delete', props.session.session_id);
           if (isCurrentSession.value) {
             router.push('/');
           }
