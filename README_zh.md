@@ -16,7 +16,7 @@ AI Manus 是一个通用的 AI Agent 系统，支持在沙盒环境中运行各�
 
 ### 基本功能
 
-https://github.com/user-attachments/assets/62d69242-5173-48b0-94cc-c3cbe7244121
+https://github.com/user-attachments/assets/37060a09-c647-4bcb-920c-959f7fa73ebe
 
 ### Browser Use
 
@@ -47,6 +47,7 @@ https://github.com/user-attachments/assets/5cb2240b-0984-4db0-8818-a24f81624b04
  * 对话：支持文件上传与下载。
  * 沙盒：支持接管电脑，支持手机与 Windows 电脑接入。
  * 部署：支持 K8s 和 Dock Swarm 多集群部署。
+ * 认证：用户登录与认证。
 
 ## 环境要求
 

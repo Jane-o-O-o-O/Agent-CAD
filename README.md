@@ -16,7 +16,7 @@ Enjoy your own agent with AI Manus!
 
 ### Basic Features
 
-https://github.com/user-attachments/assets/62d69242-5173-48b0-94cc-c3cbe7244121
+https://github.com/user-attachments/assets/37060a09-c647-4bcb-920c-959f7fa73ebe
 
 ### Browser Use
 
@@ -47,6 +47,7 @@ https://github.com/user-attachments/assets/62d69242-5173-48b0-94cc-c3cbe7244121
  * Conversations: Support for file upload and download.
  * Sandbox: Support for computer takeover, mobile and Windows computer access.
  * Deployment: Support for K8s and Docker Swarm multi-cluster deployment.
+ * Authentication: User login and authentication.
 
 ### Overall Design
 
