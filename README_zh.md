@@ -14,6 +14,10 @@ AI Manus 是一个通用的 AI Agent 系统，支持在沙盒环境中运行各�
 
 ## 示例
 
+### 基本功能
+
+https://github.com/user-attachments/assets/62d69242-5173-48b0-94cc-c3cbe7244121
+
 ### Browser Use
 
 * 任务：llm 最新论文
@@ -27,6 +31,22 @@ https://github.com/user-attachments/assets/8f7788a4-fbda-49f5-b836-949a607c64ac
 https://github.com/user-attachments/assets/5cb2240b-0984-4db0-8818-a24f81624b04
 
 
+## 主要特性
+
+ * 部署：最小只需要一个 LLM 服务即可完成部署，不需要依赖其它外部服务。
+ * 工具：支持 Terminal、Browser、File、Web Search 工具，并支持实查看。
+ * 沙盒：每个 Task 会分配单独的一个沙盒，沙盒在本地 Dock 环境里面运行。
+ * 任务会话：通过 Mongo/Redis 对会话历史进行管理，支持后台任务。
+ * 对话：支持停止与打断。
+ * 多语言：支持中文与英文。
+
+## 开发计划
+
+ * 工具：支持历史工具查看，支持 Deploy & Expose、消息工具。
+ * MCP：支持外部 MCP 工具集成。
+ * 对话：支持文件上传与下载。
+ * 沙盒：支持接管电脑，支持手机与 Windows 电脑接入。
+ * 部署：支持 K8s 和 Dock Swarm 多集群部署。
 
 ## 环境要求
 

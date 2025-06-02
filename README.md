@@ -14,6 +14,10 @@ Enjoy your own agent with AI Manus!
 
 ## Demos
 
+### Basic Features
+
+https://github.com/user-attachments/assets/62d69242-5173-48b0-94cc-c3cbe7244121
+
 ### Browser Use
 
 * Task: Latest LLM papers
@@ -25,6 +29,24 @@ Enjoy your own agent with AI Manus!
 * Task: Write a complex Python example
 
 <https://github.com/user-attachments/assets/765ea387-bb1c-4dc2-b03e-716698feef77>
+
+
+## Key Features
+
+ * Deployment: Minimal deployment requires only an LLM service, with no dependency on other external services.
+ * Tools: Supports Terminal, Browser, File, and Web Search tools with real-time viewing capabilities.
+ * Sandbox: Each task is allocated a separate sandbox that runs in a local Docker environment.
+ * Task Sessions: Session history is managed through MongoDB/Redis, supporting background tasks.
+ * Conversations: Supports stopping and interrupting.
+ * Multilingual: Supports both Chinese and English.
+
+## Development Roadmap
+
+ * Tools: Support for historical tool viewing, Deploy & Expose, and messaging tools.
+ * MCP: Support for external MCP tool integration.
+ * Conversations: Support for file upload and download.
+ * Sandbox: Support for computer takeover, mobile and Windows computer access.
+ * Deployment: Support for K8s and Docker Swarm multi-cluster deployment.
 
 ### Overall Design
 
