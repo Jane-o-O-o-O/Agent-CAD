@@ -38,7 +38,7 @@ defineExpose({
 });
 
 const shell = ref('');
-const refreshInterval = ref<number | null>(null);
+const cancelViewShell = ref<(() => void) | null>(null);
 
 // Get shellSessionId from toolContent
 const shellSessionId = computed(() => {
@@ -61,18 +61,20 @@ const updateShellContent = (console: any) => {
 }
 
 // Function to load Shell session content
-const loadShellContent = () => {
+const loadShellContent = async () => {
   if (!props.live) {
     updateShellContent(props.toolContent.content?.console);
     return;
   }
   if (!shellSessionId.value) return;
 
-  viewShellSession(props.sessionId, shellSessionId.value).then((response) => {
-    updateShellContent(response.console);
-  }).catch((error) => {
-    console.error('Failed to load Shell session content:', error);
-  });
+  cancelViewShell.value = await viewShellSession(props.sessionId, shellSessionId.value, {
+    onMessage: (event) => {
+      if (event.event === "shell") {
+        updateShellContent(event.data.console);
+      }
+    }
+  })
 };
 
 // Watch for sessionId changes to reload content
@@ -89,16 +91,13 @@ watch(() => props.toolContent.status, () => {
 // Load content and set up refresh timer when component is mounted
 onMounted(() => {
   loadShellContent();
-  refreshInterval.value = window.setInterval(() => {
-    loadShellContent();
-  }, 5000);
 });
 
 // Clear timer when component is unmounted
 onUnmounted(() => {
-  if (refreshInterval.value !== null) {
-    clearInterval(refreshInterval.value);
-    refreshInterval.value = null;
+  if (cancelViewShell.value) {
+    cancelViewShell.value();
+    cancelViewShell.value = null;
   }
 });
 </script>
