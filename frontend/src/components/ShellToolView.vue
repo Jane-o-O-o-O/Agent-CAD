@@ -28,6 +28,7 @@ import { ToolContent } from '../types/message';
 const props = defineProps<{
   sessionId: string;
   toolContent: ToolContent;
+  live: boolean;
 }>();
 
 defineExpose({
@@ -47,22 +48,30 @@ const shellSessionId = computed(() => {
   return '';
 });
 
+const updateShellContent = (console: any) => {
+  if (!console) return;
+  let newShell = '';
+  for (const e of console) {
+    newShell += `<span style="color: rgb(0, 187, 0);">${e.ps1}</span><span> ${e.command}</span>\n`;
+    newShell += `<span>${e.output}</span>\n`;
+  }
+  if (newShell !== shell.value) {
+    shell.value = newShell;
+  }
+}
+
 // Function to load Shell session content
 const loadShellContent = () => {
+  if (!props.live) {
+    updateShellContent(props.toolContent.content?.console);
+    return;
+  }
   if (!shellSessionId.value) return;
 
   viewShellSession(props.sessionId, shellSessionId.value).then((response) => {
-    let newShell = '';
-    for (const e of response.console) {
-      newShell += `<span style="color: rgb(0, 187, 0);">${e.ps1}</span><span> ${e.command}</span>\n`;
-      newShell += `<span>${e.output}</span>\n`;
-    }
-    if (newShell !== shell.value) {
-      shell.value = newShell;
-    }
+    updateShellContent(response.console);
   }).catch((error) => {
     console.error('Failed to load Shell session content:', error);
-    //showErrorToast('加载Shell会话内容失败');
   });
 };
 
@@ -71,6 +80,10 @@ watch(shellSessionId, (newVal) => {
   if (newVal) {
     loadShellContent();
   }
+});
+
+watch(() => props.toolContent.status, () => {
+  loadShellContent();
 });
 
 // Load content and set up refresh timer when component is mounted

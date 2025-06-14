@@ -63,6 +63,7 @@ import "monaco-editor/esm/vs/basic-languages/markdown/markdown.contribution";
 const props = defineProps<{
   sessionId: string;
   toolContent: ToolContent;
+  live: boolean;
 }>();
 
 defineExpose({
@@ -145,34 +146,44 @@ const initMonacoEditor = () => {
 
 // Load file content
 const loadFileContent = () => {
+  if (!props.live) {
+    fileContent.value = props.toolContent.content?.content || "";
+    return;
+  }
   if (!filePath.value) return;
   viewFile(props.sessionId, filePath.value)
     .then((response) => {
       if (fileContent.value !== response.content) {
         fileContent.value = response.content;
-        if (editor) {
-          // Use editor model to directly update content, reducing re-rendering overhead
-          const model = editor.getModel();
-          if (model) {
-            model.setValue(fileContent.value);
-          } else {
-            editor.setValue(fileContent.value);
-          }
-          monaco.editor.setModelLanguage(editor.getModel()!, getLanguage(filePath.value));
-        }
       }
     })
     .catch((error) => {
       console.error("Failed to load file content:", error);
-      //showErrorToast(t("Failed to load file content"));
     });
 };
+
+watch(fileContent, () => {
+  if (editor) {
+    // Use editor model to directly update content, reducing re-rendering overhead
+    const model = editor.getModel();
+    if (model) {
+      model.setValue(fileContent.value);
+    } else {
+      editor.setValue(fileContent.value);
+    }
+    monaco.editor.setModelLanguage(editor.getModel()!, getLanguage(filePath.value));
+  }
+});
 
 // Watch for filename changes to reload content
 watch(filePath, (newVal) => {
   if (newVal) {
     loadFileContent();
   }
+});
+
+watch(() => props.toolContent.status, () => {
+  loadFileContent();
 });
 
 // Load content and set up refresh timer when component is mounted
