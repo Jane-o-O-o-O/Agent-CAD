@@ -7,6 +7,7 @@
       </div>
     </div>
   </div>
+  <TakeOverView />
   <ContextMenu />
   <CustomDialog />
   <Toast />
@@ -17,4 +18,5 @@ import Toast from './components/Toast.vue';
 import Panel from './components/Panel.vue';
 import CustomDialog from './components/CustomDialog.vue';
 import ContextMenu from './components/ContextMenu.vue';
+import TakeOverView from './components/TakeOverView.vue';
 </script>
