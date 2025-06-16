@@ -224,7 +224,6 @@ const handleTitleEvent = (titleData: TitleEventData) => {
 
 // Handle plan event
 const handlePlanEvent = (planData: PlanEventData) => {
-  console.log('handlePlanEvent', planData);
   plan.value = planData;
 }
 
@@ -238,6 +237,8 @@ const handleEvent = (event: AgentSSEEvent) => {
     handleStepEvent(event.data as StepEventData);
   } else if (event.event === 'done') {
     //isLoading.value = false;
+  } else if (event.event === 'wait') {
+    // TODO: handle wait event
   } else if (event.event === 'error') {
     handleErrorEvent(event.data as ErrorEventData);
   } else if (event.event === 'title') {
@@ -341,7 +342,7 @@ const checkElementPosition = () => {
   toolPanelSize.value = Math.min((simpleBarRef.value?.$el.clientWidth ?? 0) / 2, 768);
 };
 
-onBeforeRouteUpdate((to, from, next) => {
+onBeforeRouteUpdate((to, _, next) => {
   if (toolPanel.value) {
     toolPanel.value.hide();
   }

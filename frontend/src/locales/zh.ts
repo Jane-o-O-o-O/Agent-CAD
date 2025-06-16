@@ -71,5 +71,7 @@ export default {
   'Are you sure you want to delete this session?': '确定要删除该会话吗？',
   'The chat history of this session cannot be recovered after deletion.': '删除后将无法恢复该会话的聊天记录。',
   'Deleted successfully': '删除成功',
-  'Failed to delete session': '删除会话失败'
+  'Failed to delete session': '删除会话失败',
+  'Exit Takeover': '退出接管',
+  'Take Over': '接管'
 } 
