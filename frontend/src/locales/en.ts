@@ -71,5 +71,7 @@ export default {
   'Are you sure you want to delete this session?': 'Are you sure you want to delete this session?',
   'The chat history of this session cannot be recovered after deletion.': 'The chat history of this session cannot be recovered after deletion.',
   'Deleted successfully': 'Deleted successfully',
-  'Failed to delete session': 'Failed to delete session'
+  'Failed to delete session': 'Failed to delete session',
+  'Exit Takeover': 'Exit Takeover',
+  'Take Over': 'Take Over'
 } 

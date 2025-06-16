@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Dict, Any, Literal, Optional, Union
+from typing import Dict, Any, Literal, Optional, Union, List
 from datetime import datetime
 import time
 import uuid
@@ -45,10 +45,30 @@ class PlanEvent(BaseEvent):
     status: PlanStatus
     step: Optional[Step] = None
 
+class BrowserToolContent(BaseModel):
+    """Browser tool content"""
+    screenshot: str
+
+class SearchToolContent(BaseModel):
+    """Search tool content"""
+    results: List[Dict[str, Any]]
+
+class ShellToolContent(BaseModel):
+    """Shell tool content"""
+    console: Any
+
+class FileToolContent(BaseModel):
+    """File tool content"""
+    content: str
+
+ToolContent = Union[BrowserToolContent, SearchToolContent, ShellToolContent, FileToolContent]
+
 class ToolEvent(BaseEvent):
     """Tool related events"""
     type: Literal["tool"] = "tool"
+    tool_call_id: str
     tool_name: str
+    tool_content: Optional[ToolContent] = None
     function_name: str
     function_args: Dict[str, Any]
     status: ToolStatus
@@ -75,6 +95,10 @@ class DoneEvent(BaseEvent):
     """Done event"""
     type: Literal["done"] = "done"
 
+class WaitEvent(BaseEvent):
+    """Wait event"""
+    type: Literal["wait"] = "wait"
+
 AgentEvent = Union[
     BaseEvent,
     ErrorEvent,
@@ -83,7 +107,8 @@ AgentEvent = Union[
     StepEvent,
     MessageEvent,
     DoneEvent,
-    TitleEvent
+    TitleEvent,
+    WaitEvent
 ]
 
 
@@ -109,6 +134,8 @@ class AgentEventFactory:
             return DoneEvent.model_validate_json(event_str)
         elif (event.type == "title"):
             return TitleEvent.model_validate_json(event_str)
+        elif (event.type == "wait"):
+            return WaitEvent.model_validate_json(event_str)
         else:
             return event
     

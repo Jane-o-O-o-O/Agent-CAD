@@ -46,7 +46,6 @@
                     "leading_newline": true,
                     "trailing_newline": true
                 }
-
 - choices:
     - index: 0
       message:
@@ -60,7 +59,7 @@
                 {
                     "id": "shell-1",
                     "exec_dir": "/home/ubuntu",
-                    "command": "ls -la"
+                    "command": "ls -a"
                 }
 
 - choices:

@@ -11,8 +11,15 @@
     <div class="px-0 py-0 flex flex-col relative h-full">
       <div class="w-full h-full object-cover flex items-center justify-center bg-[var(--fill-white)] relative">
         <div class="w-full h-full">
-          <div ref="vncContainer" style="display: flex; width: 100%; height: 100%; overflow: auto; background: rgb(40, 40, 40);"></div>
+          <div ref="vncContainer"
+            style="display: flex; width: 100%; height: 100%; overflow: auto; background: rgb(40, 40, 40);"></div>
         </div>
+        <button
+          @click="takeOver"
+          class="absolute right-[10px] bottom-[10px] z-10 min-w-10 h-10 flex items-center justify-center rounded-full bg-[var(--background-white-main)] text-[var(--text-primary)] border border-[var(--border-main)] shadow-[0px_5px_16px_0px_var(--shadow-S),0px_0px_1.25px_0px_var(--shadow-S)] backdrop-blur-3xl cursor-pointer hover:bg-[var(--text-brand)] hover:px-4 hover:text-[var(--text-white)] group transition-width duration-300">
+          <TakeOverIcon />
+          <span
+            class="text-sm max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover:max-w-[200px] group-hover:opacity-100 group-hover:ml-1 group-hover:text-[var(--text-white)]">{{ t('Take Over') }}</span></button>
       </div>
     </div>
   </div>
@@ -21,15 +28,19 @@
 <script setup lang="ts">
 import { ToolContent } from '../types/message';
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { getVNCUrl } from '../api/agent';
 // @ts-ignore
 import RFB from '@novnc/novnc/lib/rfb';
+import TakeOverIcon from './icons/TakeOverIcon.vue';
 
 const props = defineProps<{
   sessionId: string;
   toolContent: ToolContent;
+  live: boolean;
 }>();
 
+const { t } = useI18n();
 const vncContainer = ref<HTMLDivElement | null>(null);
 let rfb: RFB | null = null;
 
@@ -75,4 +86,13 @@ onBeforeUnmount(() => {
     rfb = null;
   }
 });
+
+const takeOver = () => {
+  window.dispatchEvent(new CustomEvent('takeover', {
+    detail: {
+      sessionId: props.sessionId,
+      active: true
+    }
+  }));
+};
 </script>
