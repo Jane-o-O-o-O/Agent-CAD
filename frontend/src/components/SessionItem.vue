@@ -109,9 +109,9 @@ const handleSessionMenuClick = (event: MouseEvent) => {
         cancelText: t('Cancel'),
         confirmType: 'danger',
         onConfirm: () => {
-          emit('deleted', props.session.session_id);
           deleteSession(props.session.session_id).then(() => {
             showSuccessToast(t('Deleted successfully'));
+            emit('deleted', props.session.session_id);
           }).catch(() => {
             showErrorToast(t('Failed to delete session'));
           });

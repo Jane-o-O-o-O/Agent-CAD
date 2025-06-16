@@ -37,20 +37,6 @@
         tool_calls:
           - type: function
             function:
-              name: message_ask_user
-              arguments: |
-                {
-                    "text": "test message ask user."
-                }
-
-- choices:
-    - index: 0
-      message:
-        role: assistant
-        content: null
-        tool_calls:
-          - type: function
-            function:
               name: file_write
               arguments: |
                 {
@@ -68,27 +54,12 @@
         tool_calls:
           - type: function
             function:
-              name: info_search_web
-              arguments: |
-                {
-                    "query": "latest AI developments 2024",
-                    "date_range": "past_month"
-                }
-      finish_reason: stop
-- choices:
-    - index: 0
-      message:
-        role: assistant
-        content: null
-        tool_calls:
-          - type: function
-            function:
               name: shell_exec
               arguments: |
                 {
                     "id": "shell-1",
                     "exec_dir": "/home/ubuntu",
-                    "command": "sudo apt update"
+                    "command": "ls -a"
                 }
 
 - choices:
