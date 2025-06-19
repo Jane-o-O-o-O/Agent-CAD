@@ -68,6 +68,11 @@ const loadShellContent = async () => {
   }
   if (!shellSessionId.value) return;
 
+  if (cancelViewShell.value) {
+    cancelViewShell.value();
+    cancelViewShell.value = null;
+  }
+
   cancelViewShell.value = await viewShellSession(props.sessionId, shellSessionId.value, {
     onMessage: (event) => {
       if (event.event === "shell") {

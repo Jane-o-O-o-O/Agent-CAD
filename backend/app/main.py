@@ -12,6 +12,7 @@ from app.interfaces.errors.exception_handlers import register_exception_handlers
 from app.infrastructure.storage.mongodb import get_mongodb
 from app.infrastructure.storage.redis import get_redis
 from app.infrastructure.external.search.google_search import GoogleSearchEngine
+from app.infrastructure.external.search.baidu_search import BaiduSearchEngine
 from app.infrastructure.external.llm.openai_llm import OpenAILLM
 from app.infrastructure.external.sandbox.docker_sandbox import DockerSandbox
 from app.infrastructure.repositories.mongo_agent_repository import MongoAgentRepository
@@ -32,15 +33,23 @@ settings = get_settings()
 
 def create_agent_service() -> AgentService:
     search_engine = None
-    # Initialize search engine only if both API key and engine ID are set
-    if settings.google_search_api_key and settings.google_search_engine_id:
-        logger.info("Initializing Google Search Engine")
-        search_engine = GoogleSearchEngine(
-            api_key=settings.google_search_api_key, 
-            cx=settings.google_search_engine_id
-        )
+    
+    # Initialize search engine based on configuration
+    if settings.search_provider == "google":
+        # Initialize Google search engine only if both API key and engine ID are set
+        if settings.google_search_api_key and settings.google_search_engine_id:
+            logger.info("Initializing Google Search Engine")
+            search_engine = GoogleSearchEngine(
+                api_key=settings.google_search_api_key, 
+                cx=settings.google_search_engine_id
+            )
+        else:
+            logger.warning("Google Search Engine not initialized: missing API key or engine ID")
+    elif settings.search_provider == "baidu":
+        logger.info("Initializing Baidu Search Engine")
+        search_engine = BaiduSearchEngine()
     else:
-        logger.warning("Google Search Engine not initialized: missing API key or engine ID")
+        logger.warning(f"Unknown search provider: {settings.search_provider}")
 
     return AgentService(
         llm=OpenAILLM(),
