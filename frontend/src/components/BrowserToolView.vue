@@ -11,8 +11,10 @@
     <div class="px-0 py-0 flex flex-col relative h-full">
       <div class="w-full h-full object-cover flex items-center justify-center bg-[var(--fill-white)] relative">
         <div class="w-full h-full">
-          <div ref="vncContainer"
-            style="display: flex; width: 100%; height: 100%; overflow: auto; background: rgb(40, 40, 40);"></div>
+          <div v-if="props.live" ref="vncContainer"
+            style="display: flex; width: 100%; height: 100%; overflow: auto; background: rgb(40, 40, 40);">
+          </div>
+          <img v-else alt="Image Preview" class="cursor-pointer w-full" referrerpolicy="no-referrer" :src="getFileDownloadUrl(toolContent?.content?.screenshot)">
         </div>
         <button
           @click="takeOver"
@@ -30,6 +32,7 @@ import { ToolContent } from '../types/message';
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getVNCUrl } from '../api/agent';
+import { getFileDownloadUrl } from '../api/file';
 // @ts-ignore
 import RFB from '@novnc/novnc/lib/rfb';
 import TakeOverIcon from './icons/TakeOverIcon.vue';
