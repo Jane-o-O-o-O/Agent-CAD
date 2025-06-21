@@ -138,9 +138,11 @@ services:
       # No proxy hosts for sandbox (optional)
       #- SANDBOX_NO_PROXY=
       
-      # Google Search API key for web search capability (optional)
+      # Search engine configuration (options: baidu, google)
+      - SEARCH_PROVIDER=baidu
+      # Google Search API key for web search capability (only needed when SEARCH_PROVIDER=google)
       #- GOOGLE_SEARCH_API_KEY=
-      # Google Custom Search Engine ID (optional)
+      # Google Custom Search Engine ID (only needed when SEARCH_PROVIDER=google)
       #- GOOGLE_SEARCH_ENGINE_ID=
       
       # Application log level
@@ -264,7 +266,10 @@ SANDBOX_NETWORK=manus-network
 #SANDBOX_HTTP_PROXY=
 #SANDBOX_NO_PROXY=
 
-# Optional: Google search configuration
+# Search engine configuration
+# Options: baidu, google
+SEARCH_PROVIDER=baidu
+# Optional: Google search configuration (only needed when SEARCH_PROVIDER=google)
 #GOOGLE_SEARCH_API_KEY=
 #GOOGLE_SEARCH_ENGINE_ID=
 

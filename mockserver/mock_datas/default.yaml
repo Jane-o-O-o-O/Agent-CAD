@@ -28,7 +28,21 @@
                 {
                     "text": "test message tools."
                 }
-
+- choices:
+    - index: 0
+      message:
+        role: assistant
+        content: null
+        tool_calls:
+          - type: function
+            function:
+              name: info_search_web
+              arguments: |
+                {
+                    "query": "latest AI developments 2024",
+                    "date_range": "past_month"
+                }
+      finish_reason: stop
 - choices:
     - index: 0
       message:
