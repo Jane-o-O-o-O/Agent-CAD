@@ -99,7 +99,6 @@
 
 - id: chatcmpl
   object: chat.completion
-  model: gpt-4o
   choices:
     - index: 0
       message:
@@ -109,3 +108,15 @@
             "steps": []
           }
       finish_reason: stop
+
+- choices:
+    - index: 0
+      message:
+        role: assistant
+        content: |
+          {
+            "message": "This is a test",
+            "attachments": [
+              "/home/ubuntu/example.txt"
+            ]
+          }

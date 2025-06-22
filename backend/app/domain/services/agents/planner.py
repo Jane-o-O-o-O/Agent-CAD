@@ -66,6 +66,7 @@ class PlannerAgent(BaseAgent):
         message = UPDATE_PLAN_PROMPT.format(plan=plan.model_dump_json(include={"steps"}), goal=plan.goal)
         async for event in self.execute(message):
             if isinstance(event, MessageEvent):
+                logger.debug(f"Planner agent update plan: {event.message}")
                 parsed_response = await self.json_parser.parse(event.message)
                 new_steps = [Step(id=step["id"], description=step["description"]) for step in parsed_response["steps"]]
                 

@@ -80,5 +80,6 @@ export default {
   // File Preview
   'This format cannot be previewed': '此格式无法预览',
   'Please download the file to view its content': '请下载文件以查看其内容',
-  'Download': '下载'
+  'Download': '下载',
+  'View all files in this task': '查看此任务中的所有文件'
 } 

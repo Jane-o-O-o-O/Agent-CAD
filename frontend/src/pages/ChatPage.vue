@@ -64,7 +64,7 @@ import { useI18n } from 'vue-i18n';
 import ChatBox from '../components/ChatBox.vue';
 import ChatMessage from '../components/ChatMessage.vue';
 import * as agentApi from '../api/agent';
-import { Message, MessageContent, ToolContent, StepContent } from '../types/message';
+import { Message, MessageContent, ToolContent, StepContent, AttachmentsContent } from '../types/message';
 import {
   StepEventData,
   ToolEventData,
@@ -72,7 +72,8 @@ import {
   ErrorEventData,
   TitleEventData,
   PlanEventData,
-  AgentSSEEvent
+  AgentSSEEvent,
+  AttachmentsEventData
 } from '../types/event';
 import RightPanel from '../components/RightPanel.vue';
 import PlanPanel from '../components/PlanPanel.vue';
@@ -235,6 +236,17 @@ const handlePlanEvent = (planData: PlanEventData) => {
   plan.value = planData;
 }
 
+// Handle attachments event
+const handleAttachmentsEvent = (attachmentsData: AttachmentsEventData) => {
+  console.log(attachmentsData);
+  messages.value.push({
+    type: 'attachments',
+    content: {
+      ...attachmentsData
+    } as AttachmentsContent,
+  });
+}
+
 // Main event handler function
 const handleEvent = (event: AgentSSEEvent) => {
   if (event.event === 'message') {
@@ -253,6 +265,8 @@ const handleEvent = (event: AgentSSEEvent) => {
     handleTitleEvent(event.data as TitleEventData);
   } else if (event.event === 'plan') {
     handlePlanEvent(event.data as PlanEventData);
+  } else if (event.event === 'attachments') {
+    handleAttachmentsEvent(event.data as AttachmentsEventData);
   }
   lastEventId.value = event.data.event_id;
 }
@@ -443,7 +457,7 @@ const handleStop = () => {
 }
 
 const handleFileListShow = () => {
-  eventBus.emit(EVENT_SESSION_FILE_LIST_SHOW, { sessionId: sessionId.value });
+  eventBus.emit(EVENT_SESSION_FILE_LIST_SHOW);
 }
 </script>
 

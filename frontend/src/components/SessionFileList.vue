@@ -21,12 +21,12 @@
                 <div v-if="files.length > 0" class="flex-1 min-h-0 overflow-auto px-3 mt-4 pb-4">
                     <div class="flex flex-col gap-1 first:pt-0 pt-2">
                         <div class="">
-                            <div
+                            <div v-for="file in files" 
                                 class="flex items-center gap-3 px-3 py-2.5 hover:bg-[var(--fill-tsp-gray-main)] transition-colors rounded-lg clickable">
                                 <div class="relative flex items-center justify-center">
                                     <FileIcon />
                                 </div>
-                                <div v-for="file in files" @click="showFile(file)" class="flex flex-col gap-1 flex-grow flex-1 min-w-0">
+                                <div @click="showFile(file)" class="flex flex-col gap-1 flex-grow flex-1 min-w-0">
                                     <div class="flex justify-between items-center flex-1 min-w-0">
                                         <div class="flex flex-col flex-1 min-w-0 max-w-[100%]">
                                             <div class="flex-1 min-w-0 flex gap-2 items-center">
@@ -62,6 +62,7 @@
 <script setup lang="ts">
 import { X, Download, File } from 'lucide-vue-next';
 import { ref, onMounted, onUnmounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { eventBus } from '../utils/eventBus';
 import { EVENT_SESSION_FILE_LIST_SHOW, EVENT_FILE_SHOW } from '../constants/event';
 import type { FileInfo } from '../api/file';
@@ -70,16 +71,15 @@ import { getFileDownloadUrl } from '../api/file';
 import { getSessionFiles } from '../api/agent';
 import { formatRelativeTime, parseISODateTime } from '../utils/time';
 
-
+const route = useRoute();
 const visible = ref(false);
-const sessionId = ref<string>();
 const files = ref<FileInfo[]>([]);
 
-const fetchFiles = async () => {
-    if (!sessionId.value) {
+const fetchFiles = async (sessionId: string) => {
+    if (!sessionId) {
         return;
     }
-    const response = await getSessionFiles(sessionId.value);
+    const response = await getSessionFiles(sessionId);
     files.value = response;
 }
 
@@ -89,9 +89,10 @@ const downloadFile = async (fileId: string) => {
 }
 
 const open = () => {
-    visible.value = true;
-    if (sessionId.value) {
-        fetchFiles();
+    const sessionId = route.params.sessionId as string;
+    if (sessionId) {
+        visible.value = true;
+        fetchFiles(sessionId);
     }
 }
 
@@ -104,12 +105,8 @@ const close = () => {
     visible.value = false;
 }
 
-const handleShow = (event: unknown) => {
-    const data = event as { sessionId: string };
-    if (data.sessionId) {
-        sessionId.value = data.sessionId;
-        open();
-    }
+const handleShow = () => {
+    open();
 }
 
 onMounted(() => {

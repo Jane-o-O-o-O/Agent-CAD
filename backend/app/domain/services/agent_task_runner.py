@@ -1,4 +1,5 @@
-from typing import Optional, AsyncGenerator
+from typing import Optional, AsyncGenerator, List
+import io
 import asyncio
 import logging
 from app.domain.events.agent_events import (
@@ -9,6 +10,8 @@ from app.domain.events.agent_events import (
     DoneEvent,
     ToolEvent,
     WaitEvent,
+    RawAttachmentsEvent,
+    AttachmentsEvent,
     FileToolContent,
     ShellToolContent,
     SearchToolContent,
@@ -25,6 +28,7 @@ from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.external.task import TaskRunner, Task
 from app.domain.repositories.session_repository import SessionRepository
 from app.domain.models.session import SessionStatus
+from app.domain.models.file import FileInfo
 from app.domain.utils.json_parser import JsonParser
 
 logger = logging.getLogger(__name__)
@@ -76,37 +80,50 @@ class AgentTaskRunner(TaskRunner):
         result = await self._file_storage.upload_file(screenshot, "screenshot.png")
         return result.file_id
 
+    async def _sync_file(self, file_path: str) -> Optional[FileInfo]:
+        """Upload or update file and return FileInfo"""
+        try:
+            file_info = await self._session_repository.get_file_by_path(self._session_id, file_path)
+            file_data = await self._sandbox.file_download(file_path)
+            if file_info:
+                await self._session_repository.remove_file(self._session_id, file_info.file_id)
+            file_name = file_path.split("/")[-1]
+            file_info = await self._file_storage.upload_file(file_data, file_name)
+            file_info.file_path = file_path
+            await self._session_repository.add_file(self._session_id, file_info)
+            return file_info
+        except Exception as e:
+            logger.exception(f"Agent {self._agent_id} failed to sync file: {e}")
+
     
     # TODO: refactor this function
     async def _gen_tool_content(self, event: ToolEvent):
         """Generate tool content"""
-        if event.status == ToolStatus.CALLED:
-            if event.tool_name == "browser":
-                event.tool_content = BrowserToolContent(screenshot=await self._get_browser_screenshot())
-            elif event.tool_name == "search":
-                event.tool_content = SearchToolContent(results=event.function_result.data.get("results", []))
-            elif event.tool_name == "shell":
-                if "id" in event.function_args:
-                    shell_result = await self._sandbox.view_shell(event.function_args["id"])
-                    event.tool_content = ShellToolContent(console=shell_result.data.get("console", []))
+        try:
+            if event.status == ToolStatus.CALLED:
+                if event.tool_name == "browser":
+                    event.tool_content = BrowserToolContent(screenshot=await self._get_browser_screenshot())
+                elif event.tool_name == "search":
+                    event.tool_content = SearchToolContent(results=event.function_result.data.get("results", []))
+                elif event.tool_name == "shell":
+                    if "id" in event.function_args:
+                        shell_result = await self._sandbox.view_shell(event.function_args["id"])
+                        event.tool_content = ShellToolContent(console=shell_result.data.get("console", []))
+                    else:
+                        event.tool_content = ShellToolContent(console="(No Console)")
+                elif event.tool_name == "file":
+                    if "file" in event.function_args:
+                        file_path = event.function_args["file"]
+                        file_read_result = await self._sandbox.file_read(file_path)
+                        file_content: str = file_read_result.data.get("content", "")
+                        event.tool_content = FileToolContent(content=file_content)
+                        await self._sync_file(file_path)
+                    else:
+                        event.tool_content = FileToolContent(content="(No Content)")
                 else:
-                    event.tool_content = ShellToolContent(console="(No Console)")
-            elif event.tool_name == "file":
-                if event.function_name == "file_write" and event.function_result.success:
-                    try:
-                        file_name = event.function_args["file"].split("/")[-1]
-                        file_data = await self._sandbox.file_download(event.function_args["file"])
-                        result = await self._file_storage.upload_file(file_data, file_name)
-                        await self._session_repository.add_file(self._session_id, result)
-                    except Exception as e:
-                        logger.warning(f"Agent {self._agent_id} failed to download file: {e}")
-                if "file" in event.function_args:
-                    file_read_result = await self._sandbox.file_read(event.function_args["file"])
-                    event.tool_content = FileToolContent(content=file_read_result.data.get("content", ""))
-                else:
-                    event.tool_content = FileToolContent(content="(No Content)")
-            else:
-                logger.warning(f"Agent {self._agent_id} received unknown tool event: {event.tool_name}")
+                    logger.warning(f"Agent {self._agent_id} received unknown tool event: {event.tool_name}")
+        except Exception as e:
+            logger.exception(f"Agent {self._agent_id} failed to generate tool content: {e}")
 
     async def run(self, task: Task) -> None:
         """Process agent's message queue and run the agent's flow"""
@@ -121,9 +138,6 @@ class AgentTaskRunner(TaskRunner):
                 logger.info(f"Agent {self._agent_id} received new message: {message[:50]}...")
                 
                 async for event in self._run_flow(message):
-                    if isinstance(event, ToolEvent):
-                        # TODO: move to tool function
-                        await self._gen_tool_content(event)
                     await self._put_and_add_event(task, event)
                     if isinstance(event, TitleEvent):
                         await self._session_repository.update_title(self._session_id, event.title)
@@ -154,6 +168,19 @@ class AgentTaskRunner(TaskRunner):
             return
 
         async for event in self._flow.run(message):
+            if isinstance(event, ToolEvent):
+                # TODO: move to tool function
+                await self._gen_tool_content(event)
+            elif isinstance(event, RawAttachmentsEvent):
+                attachments: List[FileInfo] = []
+                try:
+                    for attachment_path in event.attachments:
+                        file_info = await self._sync_file(attachment_path)
+                        if file_info:
+                            attachments.append(file_info)
+                except Exception as e:
+                    logger.exception(f"Execution agent failed to download attachments: {e}")
+                event = AttachmentsEvent(attachments=attachments)
             yield event
 
         logger.info(f"Agent {self._agent_id} completed processing one message")

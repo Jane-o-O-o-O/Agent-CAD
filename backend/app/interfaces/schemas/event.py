@@ -2,9 +2,11 @@ from pydantic import BaseModel, Field
 from typing import Any, Union, Literal, Dict, Optional, List
 import time
 from app.domain.models.plan import ExecutionStatus
+from app.domain.models.file import FileInfo
 from app.domain.events.agent_events import ToolStatus
 from app.domain.events.agent_events import (
     AgentEvent,
+    AttachmentsEvent,
     DoneEvent,
     ErrorEvent,
     PlanEvent,
@@ -51,6 +53,9 @@ class BaseSSEEvent(BaseModel):
     event: str
     data: Optional[Union[str, BaseEventData]]
 
+class AttachmentsEventData(BaseEventData):
+    attachments: List[FileInfo]
+
 class MessageSSEEvent(BaseSSEEvent):
     event: Literal["message"] = "message"
     data: MessageEventData
@@ -83,6 +88,10 @@ class PlanSSEEvent(BaseSSEEvent):
     event: Literal["plan"] = "plan"
     data: PlanEventData
 
+class AttachmentsSSEEvent(BaseSSEEvent):
+    event: Literal["attachments"] = "attachments"
+    data: AttachmentsEventData
+
 AgentSSEEvent = Union[
     BaseSSEEvent,
     PlanSSEEvent,
@@ -92,7 +101,8 @@ AgentSSEEvent = Union[
     StepSSEEvent,
     DoneSSEEvent,
     ErrorSSEEvent,
-    WaitSSEEvent
+    WaitSSEEvent,
+    AttachmentsSSEEvent
 ]
 
 class SSEEventFactory:
@@ -167,3 +177,10 @@ class SSEEventFactory:
             )
         elif isinstance(event, WaitEvent):
             return WaitSSEEvent(data=base_event)
+        elif isinstance(event, AttachmentsEvent):
+            return AttachmentsSSEEvent(
+                data=AttachmentsEventData(
+                    **base_event.model_dump(),
+                    attachments=event.attachments
+                )
+            )

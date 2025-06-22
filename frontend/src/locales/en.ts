@@ -80,5 +80,6 @@ export default {
   // File Preview
   'This format cannot be previewed': 'This format cannot be previewed',
   'Please download the file to view its content': 'Please download the file to view its content',
-  'Download': 'Download'
+  'Download': 'Download',
+  'View all files in this task': 'View all files in this task'
 } 

@@ -35,6 +35,10 @@ class SessionRepository(Protocol):
         """Remove a file from a session"""
         ...
 
+    async def get_file_by_path(self, session_id: str, file_path: str) -> Optional[FileInfo]:
+        """Get file by path from a session"""
+        ...
+
     async def update_status(self, session_id: str, status: SessionStatus) -> None:
         """Update the status of a session"""
         ...

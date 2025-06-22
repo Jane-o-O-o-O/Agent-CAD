@@ -1,12 +1,14 @@
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, Optional, List
 from app.domain.models.plan import Plan, Step, ExecutionStatus
+from app.domain.models.file import FileInfo
 from app.domain.services.agents.base import BaseAgent
 from app.domain.external.llm import LLM
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.browser import Browser
 from app.domain.external.search import SearchEngine
+from app.domain.external.file import FileStorage
 from app.domain.repositories.agent_repository import AgentRepository
-from app.domain.services.prompts.execution import EXECUTION_SYSTEM_PROMPT, EXECUTION_PROMPT
+from app.domain.services.prompts.execution import EXECUTION_SYSTEM_PROMPT, EXECUTION_PROMPT, CONCLUSION_PROMPT
 from app.domain.events.agent_events import (
     BaseEvent,
     StepEvent,
@@ -17,6 +19,7 @@ from app.domain.events.agent_events import (
     ToolEvent,
     ToolStatus,
     WaitEvent,
+    RawAttachmentsEvent,
 )
 from app.domain.services.tools.shell import ShellTool
 from app.domain.services.tools.browser import BrowserTool
@@ -24,6 +27,9 @@ from app.domain.services.tools.search import SearchTool
 from app.domain.services.tools.file import FileTool
 from app.domain.services.tools.message import MessageTool
 from app.domain.utils.json_parser import JsonParser
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ExecutionAgent(BaseAgent):
@@ -84,3 +90,14 @@ class ExecutionAgent(BaseAgent):
                     continue
             yield event
         step.status = ExecutionStatus.COMPLETED
+
+    async def conclusion(self) -> AsyncGenerator[BaseEvent, None]:
+        message = CONCLUSION_PROMPT
+        async for event in self.execute(message, format="json_object"):
+            if isinstance(event, MessageEvent):
+                logger.debug(f"Execution agent conclusion: {event.message}")
+                parsed_response = await self.json_parser.parse(event.message)
+                yield MessageEvent(message=parsed_response["message"])
+                yield RawAttachmentsEvent(attachments=parsed_response["attachments"])
+                continue
+            yield event
