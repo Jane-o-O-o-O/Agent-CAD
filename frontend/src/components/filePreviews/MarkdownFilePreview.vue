@@ -39,14 +39,15 @@ const renderedContent = computed(() => {
     }
 });
 
-watch(props.file, async (_) => {
+watch(() => props.file.file_id, async (fileId) => {
+    if (!fileId) return;
     try {
-        const blob = await downloadFile(props.file.file_id);
+        const blob = await downloadFile(fileId);
         const text = await blob.text();
         content.value = text;
     } catch (error) {
         console.error('Failed to load file content:', error);
-        content.value = '# Error\n\nFailed to load file content';
+        content.value = '(Failed to load file content)';
     }
 }, { immediate: true });
 </script>

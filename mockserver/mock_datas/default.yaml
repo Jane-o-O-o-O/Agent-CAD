@@ -85,6 +85,23 @@
         tool_calls:
           - type: function
             function:
+              name: file_write
+              arguments: |
+                {
+                    "file": "/home/ubuntu/example.py",
+                    "content": "print('Hello, World!')",
+                    "append": false,
+                    "leading_newline": true,
+                    "trailing_newline": true
+                }
+- choices:
+    - index: 0
+      message:
+        role: assistant
+        content: null
+        tool_calls:
+          - type: function
+            function:
               name: shell_exec
               arguments: |
                 {
@@ -134,6 +151,8 @@
           {
             "message": "This is a test",
             "attachments": [
-              "/home/ubuntu/example.txt"
+              "/home/ubuntu/example.txt",
+              "/home/ubuntu/example.md",
+              "/home/ubuntu/example.py"
             ]
           }

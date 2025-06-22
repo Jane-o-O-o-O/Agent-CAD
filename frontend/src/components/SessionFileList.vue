@@ -24,7 +24,7 @@
                             <div v-for="file in files" 
                                 class="flex items-center gap-3 px-3 py-2.5 hover:bg-[var(--fill-tsp-gray-main)] transition-colors rounded-lg clickable">
                                 <div class="relative flex items-center justify-center">
-                                    <FileIcon />
+                                    <component :is="getFileType(file.filename).icon" />
                                 </div>
                                 <div @click="showFile(file)" class="flex flex-col gap-1 flex-grow flex-1 min-w-0">
                                     <div class="flex justify-between items-center flex-1 min-w-0">
@@ -66,10 +66,10 @@ import { useRoute } from 'vue-router';
 import { eventBus } from '../utils/eventBus';
 import { EVENT_SESSION_FILE_LIST_SHOW, EVENT_FILE_SHOW } from '../constants/event';
 import type { FileInfo } from '../api/file';
-import FileIcon from './icons/FileIcon.vue';
 import { getFileDownloadUrl } from '../api/file';
 import { getSessionFiles } from '../api/agent';
 import { formatRelativeTime, parseISODateTime } from '../utils/time';
+import { getFileType } from '../utils/fileType';
 
 const route = useRoute();
 const visible = ref(false);

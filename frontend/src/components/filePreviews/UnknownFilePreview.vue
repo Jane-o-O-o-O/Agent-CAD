@@ -2,7 +2,7 @@
     <div class="flex flex-col items-center justify-center gap-6 flex-1 w-full min-h-0">
         <div class="flex items-center gap-1.5 rounded-[10px] bg-[var(--fill-tsp-gray-main)] px-2 py-2 w-[280px]">
             <div class="relative flex items-center justify-center">
-                <FileIcon />
+                <component :is="fileType.icon" />
             </div>
             <div class="flex flex-col gap-0.5 flex-1 min-w-0">
                 <div class="text-sm text-[var(--text-primary)] truncate">{{ file.filename }}</div>
@@ -21,17 +21,22 @@
 </template>
 
 <script setup lang="ts">
-import FileIcon from '../icons/FileIcon.vue';
 import { Download } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
+import { computed } from 'vue';
 import type { FileInfo } from '../../api/file';
 import { getFileDownloadUrl } from '../../api/file';
+import { getFileType } from '../../utils/fileType';
 
 const { t } = useI18n();
 
 const props = defineProps<{
     file: FileInfo;
 }>();
+
+const fileType = computed(() => {
+  return getFileType(props.file.filename);
+});
 
 const download = () => {
   const url = getFileDownloadUrl(props.file.file_id);

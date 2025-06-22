@@ -7,7 +7,7 @@
               class="flex flex-row gap-1 items-center text-[var(--text-secondary)] font-medium truncate [&amp;_svg]:flex-shrink-0">
               <a href="" class="p-1 flex-shrink-0 cursor-default" target="_blank">
                 <div class="relative flex items-center justify-center">
-                  <FileIcon />
+                  <component :is="fileType.icon" />
                 </div>
               </a>
               <div class="truncate flex flex-col"><span class="truncate" :title="file.filename">{{ file.filename }}</span></div>
@@ -29,7 +29,7 @@
             </div>
           </div>
         </div>
-        <component :is="fileType" :file="file" />
+        <component :is="fileType.preview" :file="file" />
       </div>
 </template>
 
@@ -37,11 +37,8 @@
 import { computed } from 'vue';
 import { Download, X } from 'lucide-vue-next';
 import type { FileInfo } from '../api/file';
-import FileIcon from './icons/FileIcon.vue';
 import { getFileDownloadUrl } from '../api/file';
-import UnknownFilePreview from './filePreviews/UnknownFilePreview.vue';
-import TextFilePreview from './filePreviews/TextFilePreview.vue';
-import MarkdownFilePreview from './filePreviews/MarkdownFilePreview.vue';
+import { getFileType } from '../utils/fileType';
 
 const props = defineProps<{
   file: FileInfo;
@@ -56,14 +53,7 @@ const hide = () => {
 };
 
 const fileType = computed(() => {
-  const file_extension = props.file.filename.split('.').pop();
-  if (file_extension === 'txt') {
-    return TextFilePreview;
-  }
-  if (file_extension === 'md') {
-    return MarkdownFilePreview;
-  }
-  return UnknownFilePreview;
+  return getFileType(props.file.filename);
 });
 
 const download = () => {
