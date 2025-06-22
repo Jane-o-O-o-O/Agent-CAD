@@ -73,5 +73,12 @@ export default {
   'Deleted successfully': '删除成功',
   'Failed to delete session': '删除会话失败',
   'Exit Takeover': '退出接管',
-  'Take Over': '接管'
+  'Take Over': '接管',
+  // Session File List
+  'All Files in This Task': '此任务中的所有文件',
+  'No Content': '暂无内容',
+  // File Preview
+  'This format cannot be previewed': '此格式无法预览',
+  'Please download the file to view its content': '请下载文件以查看其内容',
+  'Download': '下载'
 } 

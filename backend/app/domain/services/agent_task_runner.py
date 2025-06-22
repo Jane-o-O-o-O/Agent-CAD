@@ -77,6 +77,7 @@ class AgentTaskRunner(TaskRunner):
         return result.file_id
 
     
+    # TODO: refactor this function
     async def _gen_tool_content(self, event: ToolEvent):
         """Generate tool content"""
         if event.status == ToolStatus.CALLED:
@@ -91,6 +92,14 @@ class AgentTaskRunner(TaskRunner):
                 else:
                     event.tool_content = ShellToolContent(console="(No Console)")
             elif event.tool_name == "file":
+                if event.function_name == "file_write" and event.function_result.success:
+                    try:
+                        file_name = event.function_args["file"].split("/")[-1]
+                        file_data = await self._sandbox.file_download(event.function_args["file"])
+                        result = await self._file_storage.upload_file(file_data, file_name)
+                        await self._session_repository.add_file(self._session_id, result)
+                    except Exception as e:
+                        logger.warning(f"Agent {self._agent_id} failed to download file: {e}")
                 if "file" in event.function_args:
                     file_read_result = await self._sandbox.file_read(event.function_args["file"])
                     event.tool_content = FileToolContent(content=file_read_result.data.get("content", ""))

@@ -19,6 +19,7 @@ from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.external.task import Task
 from app.domain.utils.json_parser import JsonParser
 from app.application.services.file_service import FileService
+from app.domain.models.file import FileInfo
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -201,3 +202,10 @@ class AgentService:
         result = await sandbox.file_read(path)
         logger.info(f"File read successfully: {path}")
         return FileViewResponse(**result.data)
+
+    async def get_session_files(self, session_id: str) -> List[FileInfo]:
+        session = await self._session_repository.find_by_id(session_id)
+        if not session:
+            logger.warning(f"Session not found: {session_id}")
+            raise NotFoundError(f"Session not found: {session_id}")
+        return session.files

@@ -38,7 +38,7 @@ async def upload_file(
         filename=result.filename,
         size=result.size,
         upload_date=result.upload_date.isoformat(),
-        message=result.message
+        message="File uploaded successfully"
     ))
 
 @router.get("/{file_id}")
@@ -48,17 +48,17 @@ async def download_file(
 ):
     """Download file"""
     try:
-        result = await file_service.download_file(file_id)
+        file_data, file_info = await file_service.download_file(file_id)
     except FileNotFoundError:
         raise NotFoundError("File not found")
     
     headers = {
-        'Content-Disposition': f'attachment; filename="{result.filename}"'
+        'Content-Disposition': f'attachment; filename="{file_info.filename}"'
     }
     
     return StreamingResponse(
-        result.file_data,
-        media_type=result.content_type or 'application/octet-stream',
+        file_data,
+        media_type=file_info.content_type or 'application/octet-stream',
         headers=headers
     )
 

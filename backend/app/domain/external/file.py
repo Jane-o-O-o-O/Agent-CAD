@@ -1,5 +1,5 @@
-from typing import Protocol, BinaryIO, Optional, Dict, Any
-from app.domain.models.file import FileUploadResult, FileDownloadResult, FileInfo, FileListResult
+from typing import Protocol, BinaryIO, Optional, Dict, Any, Tuple
+from app.domain.models.file import FileInfo
 
 class FileStorage(Protocol):
     """File storage service interface for file upload and download operations"""
@@ -10,7 +10,7 @@ class FileStorage(Protocol):
         filename: str,
         content_type: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None
-    ) -> FileUploadResult:
+    ) -> FileInfo:
         """Upload file to storage
         
         Args:
@@ -27,7 +27,7 @@ class FileStorage(Protocol):
     async def download_file(
         self,
         file_id: str
-    ) -> FileDownloadResult:
+    ) -> Tuple[BinaryIO, FileInfo]:
         """Download file from storage by file ID
         
         Args:
@@ -67,35 +67,4 @@ class FileStorage(Protocol):
             FileInfo containing file metadata, None if file not found
         """
         ...
-    
-    async def list_files(
-        self,
-        limit: int = 50,
-        skip: int = 0,
-        filter_criteria: Optional[Dict[str, Any]] = None
-    ) -> FileListResult:
-        """List files in storage
-        
-        Args:
-            limit: Maximum number of files to return
-            skip: Number of files to skip
-            filter_criteria: Optional filter criteria for file search
-            
-        Returns:
-            FileListResult containing list of file metadata and total count
-        """
-        ...
-    
-    async def file_exists(
-        self,
-        file_id: str
-    ) -> bool:
-        """Check if file exists in storage
-        
-        Args:
-            file_id: File ID
-            
-        Returns:
-            True if file exists, False otherwise
-        """
-        ... 
+

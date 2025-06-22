@@ -1,6 +1,7 @@
 from typing import Optional, List
 from datetime import datetime, UTC
 from app.domain.models.session import Session, SessionStatus
+from app.domain.models.file import FileInfo
 from app.domain.repositories.session_repository import SessionRepository
 from app.domain.events.agent_events import BaseEvent
 from app.infrastructure.models.documents import SessionDocument
@@ -32,6 +33,7 @@ class MongoSessionRepository(SessionRepository):
         mongo_session.events=session.events
         mongo_session.status=session.status
         mongo_session.unread_message_count=session.unread_message_count
+        mongo_session.files=session.files
         mongo_session.updated_at=datetime.now(UTC)
         await mongo_session.save()
 
@@ -69,6 +71,16 @@ class MongoSessionRepository(SessionRepository):
             SessionDocument.session_id == session_id
         ).update(
             {"$push": {"events": event}, "$set": {"updated_at": datetime.now(UTC)}}
+        )
+        if not result:
+            raise ValueError(f"Session {session_id} not found")
+
+    async def add_file(self, session_id: str, file_info: FileInfo) -> None:
+        """Add a file to a session"""
+        result = await SessionDocument.find_one(
+            SessionDocument.session_id == session_id
+        ).update(
+            {"$push": {"files": file_info}, "$set": {"updated_at": datetime.now(UTC)}}
         )
         if not result:
             raise ValueError(f"Session {session_id} not found")
@@ -130,6 +142,7 @@ class MongoSessionRepository(SessionRepository):
             updated_at=mongo_session.updated_at,
             events=mongo_session.events,
             status=mongo_session.status,
+            files=mongo_session.files,
             unread_message_count=mongo_session.unread_message_count
         )
     
@@ -147,5 +160,6 @@ class MongoSessionRepository(SessionRepository):
             updated_at=session.updated_at,
             events=session.events,
             status=session.status,
+            files=session.files,
             unread_message_count=session.unread_message_count
         )

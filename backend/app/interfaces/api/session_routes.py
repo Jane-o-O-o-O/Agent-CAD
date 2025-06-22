@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from sse_starlette.sse import EventSourceResponse
-from typing import AsyncGenerator
+from typing import AsyncGenerator, List
 from sse_starlette.event import ServerSentEvent
 from datetime import datetime
 import asyncio
@@ -14,6 +14,7 @@ from app.interfaces.schemas.response import (
     ListSessionItem, ListSessionResponse
 )
 from app.interfaces.schemas.event import SSEEventFactory
+from app.domain.models.file import FileInfo
 
 logger = logging.getLogger(__name__)
 SESSION_POLL_INTERVAL = 5
@@ -254,4 +255,12 @@ async def vnc_websocket(
         await websocket.close(code=1011, reason=f"Unable to connect to sandbox environment: {str(e)}")
     except Exception as e:
         logger.error(f"WebSocket error: {str(e)}")
-        await websocket.close(code=1011, reason=f"WebSocket error: {str(e)}") 
+        await websocket.close(code=1011, reason=f"WebSocket error: {str(e)}")
+
+@router.get("/{session_id}/files")
+async def get_session_files(
+    session_id: str,
+    agent_service: AgentService = Depends(get_agent_service)
+) -> APIResponse[List[FileInfo]]:
+    files = await agent_service.get_session_files(session_id)
+    return APIResponse.success(files)

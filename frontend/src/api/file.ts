@@ -2,29 +2,6 @@
 import { apiClient, ApiResponse } from './client';
 
 /**
- * File upload result type
- */
-export interface FileUploadResult {
-  file_id: string;
-  filename: string;
-  content_type?: string;
-  size: number;
-  upload_time: string;
-  metadata?: Record<string, any>;
-}
-
-/**
- * File download result type  
- */
-export interface FileDownloadResult {
-  file_id: string;
-  filename: string;
-  content_type?: string;
-  size: number;
-  data: Blob;
-}
-
-/**
  * File info type
  */
 export interface FileInfo {
@@ -32,7 +9,7 @@ export interface FileInfo {
   filename: string;
   content_type?: string;
   size: number;
-  upload_time: string;
+  upload_date: string;
   metadata?: Record<string, any>;
 }
 
@@ -42,7 +19,7 @@ export interface FileInfo {
  * @param metadata Optional metadata
  * @returns Upload result
  */
-export async function uploadFile(file: File, metadata?: Record<string, any>): Promise<FileUploadResult> {
+export async function uploadFile(file: File, metadata?: Record<string, any>): Promise<FileInfo> {
   const formData = new FormData();
   formData.append('file', file);
   
@@ -50,7 +27,7 @@ export async function uploadFile(file: File, metadata?: Record<string, any>): Pr
     formData.append('metadata', JSON.stringify(metadata));
   }
 
-  const response = await apiClient.post<ApiResponse<FileUploadResult>>('/files', formData, {
+  const response = await apiClient.post<ApiResponse<FileInfo>>('/files', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -63,25 +40,12 @@ export async function uploadFile(file: File, metadata?: Record<string, any>): Pr
  * @param fileId File ID
  * @returns File download result
  */
-export async function downloadFile(fileId: string): Promise<FileDownloadResult> {
+export async function downloadFile(fileId: string): Promise<Blob> {
   const response = await apiClient.get(`/files/${fileId}/download`, {
     responseType: 'blob',
   });
   
-  // Get file info from response headers
-  const contentType = response.headers['content-type'];
-  const contentDisposition = response.headers['content-disposition'];
-  const filename = contentDisposition 
-    ? contentDisposition.split('filename=')[1]?.replace(/"/g, '') 
-    : 'download';
-  
-  return {
-    file_id: fileId,
-    filename: filename || 'download',
-    content_type: contentType,
-    size: response.data.size || 0,
-    data: response.data
-  };
+  return response.data;
 }
 
 /**
