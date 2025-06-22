@@ -14,9 +14,12 @@ from app.domain.models.agent import Agent
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.search import SearchEngine
 from app.domain.external.llm import LLM
+from app.domain.external.file import FileStorage
 from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.external.task import Task
 from app.domain.utils.json_parser import JsonParser
+from app.application.services.file_service import FileService
+from app.domain.models.file import FileInfo
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -30,11 +33,13 @@ class AgentService:
         sandbox_cls: Type[Sandbox],
         task_cls: Type[Task],
         json_parser: JsonParser,
+        file_storage: FileStorage,
         search_engine: Optional[SearchEngine] = None
     ):
         logger.info("Initializing AgentService")
         self._agent_repository = agent_repository
         self._session_repository = session_repository
+        self._file_storage = file_storage
         self._agent_domain_service = AgentDomainService(
             self._agent_repository,
             self._session_repository,
@@ -42,6 +47,7 @@ class AgentService:
             sandbox_cls,
             task_cls,
             json_parser,
+            file_storage,
             search_engine,
         )
         self._llm = llm
@@ -155,9 +161,19 @@ class AgentService:
         """
         logger.info(f"Viewing shell output for session {session_id}")
         
-        sandbox = await self._get_sandbox(session_id)
-        result = await sandbox.view_shell(shell_session_id)
-        return ShellViewResponse(**result.data)
+        err = ""
+        try:
+            sandbox = await self._get_sandbox(session_id)
+            result = await sandbox.view_shell(shell_session_id)
+            if result.success:
+                return ShellViewResponse(**result.data)
+            else:
+                err = result.message
+        except Exception as e:
+            logger.exception(f"Failed to view shell output for session {session_id}: {e}")
+            err = str(e)
+        
+        return ShellViewResponse(output=f"(Failed to view shell output: {err})", session_id=session_id)
 
     async def get_vnc_url(self, session_id: str) -> str:
         """Get the VNC URL for the Agent sandbox
@@ -191,8 +207,25 @@ class AgentService:
             OperationError: When a server error occurs during execution
         """
         logger.info(f"Viewing file content for session {session_id}, file path: {path}")
+        err = ""
+        try:
+            sandbox = await self._get_sandbox(session_id)
+            result = await sandbox.file_read(path)
+            logger.info(f"File read successfully: {path}")
+            if result.success:
+                return FileViewResponse(**result.data)
+            else:
+                logger.warning(f"File read failed: {path}, error: {result.message}")
+                err = result.message
+        except Exception as e:
+            logger.exception(f"Failed to read file content for session {session_id}, file path: {path}: {e}")
+            err = str(e)
         
-        sandbox = await self._get_sandbox(session_id)
-        result = await sandbox.file_read(path)
-        logger.info(f"File read successfully: {path}")
-        return FileViewResponse(**result.data)
+        return FileViewResponse(content=f"(Failed to read file content: {err})", file=path)
+
+    async def get_session_files(self, session_id: str) -> List[FileInfo]:
+        session = await self._session_repository.find_by_id(session_id)
+        if not session:
+            logger.warning(f"Session not found: {session_id}")
+            raise NotFoundError(f"Session not found: {session_id}")
+        return session.files

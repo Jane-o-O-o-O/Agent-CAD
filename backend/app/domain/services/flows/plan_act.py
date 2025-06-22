@@ -18,6 +18,7 @@ from app.domain.external.llm import LLM
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.browser import Browser
 from app.domain.external.search import SearchEngine
+from app.domain.external.file import FileStorage
 from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.utils.json_parser import JsonParser
 from app.domain.repositories.session_repository import SessionRepository
@@ -29,6 +30,7 @@ class AgentStatus(str, Enum):
     IDLE = "idle"
     PLANNING = "planning"
     EXECUTING = "executing"
+    CONCLUDING = "concluding"
     COMPLETED = "completed"
     UPDATING = "updating"
 
@@ -119,7 +121,7 @@ class PlanActFlow(BaseFlow):
                 step = self.plan.get_next_step()
                 if not step:
                     logger.info(f"Agent {self._agent_id} has no more steps, state changed from {AgentStatus.EXECUTING} to {AgentStatus.COMPLETED}")
-                    self.status = AgentStatus.COMPLETED
+                    self.status = AgentStatus.CONCLUDING
                     continue
                 # Execute step
                 logger.info(f"Agent {self._agent_id} started executing step {step.id}: {step.description[:50]}...")
@@ -134,6 +136,13 @@ class PlanActFlow(BaseFlow):
                     yield event
                 logger.info(f"Agent {self._agent_id} plan update completed, state changed from {AgentStatus.UPDATING} to {AgentStatus.EXECUTING}")
                 self.status = AgentStatus.EXECUTING
+            elif self.status == AgentStatus.CONCLUDING:
+                # Conclusion
+                logger.info(f"Agent {self._agent_id} started concluding")
+                async for event in self.executor.conclusion():
+                    yield event
+                logger.info(f"Agent {self._agent_id} conclusion completed, state changed from {AgentStatus.CONCLUDING} to {AgentStatus.COMPLETED}")
+                self.status = AgentStatus.COMPLETED
             elif self.status == AgentStatus.COMPLETED:
                 self.plan.status = ExecutionStatus.COMPLETED
                 logger.info(f"Agent {self._agent_id} plan has been completed")

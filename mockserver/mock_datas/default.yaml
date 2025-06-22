@@ -68,6 +68,40 @@
         tool_calls:
           - type: function
             function:
+              name: file_write
+              arguments: |
+                {
+                    "file": "/home/ubuntu/example.md",
+                    "content": "## Header\n\nThis is a test\n\n### Subheader",
+                    "append": false,
+                    "leading_newline": true,
+                    "trailing_newline": true
+                }
+- choices:
+    - index: 0
+      message:
+        role: assistant
+        content: null
+        tool_calls:
+          - type: function
+            function:
+              name: file_write
+              arguments: |
+                {
+                    "file": "/home/ubuntu/example.py",
+                    "content": "print('Hello, World!')",
+                    "append": false,
+                    "leading_newline": true,
+                    "trailing_newline": true
+                }
+- choices:
+    - index: 0
+      message:
+        role: assistant
+        content: null
+        tool_calls:
+          - type: function
+            function:
               name: shell_exec
               arguments: |
                 {
@@ -99,7 +133,6 @@
 
 - id: chatcmpl
   object: chat.completion
-  model: gpt-4o
   choices:
     - index: 0
       message:
@@ -109,3 +142,17 @@
             "steps": []
           }
       finish_reason: stop
+
+- choices:
+    - index: 0
+      message:
+        role: assistant
+        content: |
+          {
+            "message": "This is a test",
+            "attachments": [
+              "/home/ubuntu/example.txt",
+              "/home/ubuntu/example.md",
+              "/home/ubuntu/example.py"
+            ]
+          }
