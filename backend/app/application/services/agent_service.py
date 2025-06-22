@@ -161,9 +161,19 @@ class AgentService:
         """
         logger.info(f"Viewing shell output for session {session_id}")
         
-        sandbox = await self._get_sandbox(session_id)
-        result = await sandbox.view_shell(shell_session_id)
-        return ShellViewResponse(**result.data)
+        err = ""
+        try:
+            sandbox = await self._get_sandbox(session_id)
+            result = await sandbox.view_shell(shell_session_id)
+            if result.success:
+                return ShellViewResponse(**result.data)
+            else:
+                err = result.message
+        except Exception as e:
+            logger.exception(f"Failed to view shell output for session {session_id}: {e}")
+            err = str(e)
+        
+        return ShellViewResponse(output=f"(Failed to view shell output: {err})", session_id=session_id)
 
     async def get_vnc_url(self, session_id: str) -> str:
         """Get the VNC URL for the Agent sandbox
@@ -197,11 +207,21 @@ class AgentService:
             OperationError: When a server error occurs during execution
         """
         logger.info(f"Viewing file content for session {session_id}, file path: {path}")
+        err = ""
+        try:
+            sandbox = await self._get_sandbox(session_id)
+            result = await sandbox.file_read(path)
+            logger.info(f"File read successfully: {path}")
+            if result.success:
+                return FileViewResponse(**result.data)
+            else:
+                logger.warning(f"File read failed: {path}, error: {result.message}")
+                err = result.message
+        except Exception as e:
+            logger.exception(f"Failed to read file content for session {session_id}, file path: {path}: {e}")
+            err = str(e)
         
-        sandbox = await self._get_sandbox(session_id)
-        result = await sandbox.file_read(path)
-        logger.info(f"File read successfully: {path}")
-        return FileViewResponse(**result.data)
+        return FileViewResponse(content=f"(Failed to read file content: {err})", file=path)
 
     async def get_session_files(self, session_id: str) -> List[FileInfo]:
         session = await self._session_repository.find_by_id(session_id)
