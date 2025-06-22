@@ -68,6 +68,23 @@
         tool_calls:
           - type: function
             function:
+              name: file_write
+              arguments: |
+                {
+                    "file": "/home/ubuntu/example.md",
+                    "content": "## Header\n\nThis is a test\n\n### Subheader",
+                    "append": false,
+                    "leading_newline": true,
+                    "trailing_newline": true
+                }
+- choices:
+    - index: 0
+      message:
+        role: assistant
+        content: null
+        tool_calls:
+          - type: function
+            function:
               name: shell_exec
               arguments: |
                 {

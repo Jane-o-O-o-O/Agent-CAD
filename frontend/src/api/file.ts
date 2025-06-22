@@ -41,7 +41,7 @@ export async function uploadFile(file: File, metadata?: Record<string, any>): Pr
  * @returns File download result
  */
 export async function downloadFile(fileId: string): Promise<Blob> {
-  const response = await apiClient.get(`/files/${fileId}/download`, {
+  const response = await apiClient.get(`/files/${fileId}`, {
     responseType: 'blob',
   });
   
