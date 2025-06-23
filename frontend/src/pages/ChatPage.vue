@@ -47,8 +47,8 @@
           </button>
           <PlanPanel :plan="plan" />
         </template>
-        <ChatBox v-model="inputMessage" :rows="1" @submit="chat(inputMessage)" :isRunning="isLoading"
-          @stop="handleStop" />
+        <ChatBox v-model="inputMessage" :rows="1" @submit="handleSubmit" :isRunning="isLoading"
+          @stop="handleStop" :attachments="attachments" />
       </div>
     </div>
     <RightPanel ref="rightPanel" :size="toolPanelSize" :sessionId="sessionId" :realTime="realTime"
@@ -81,6 +81,7 @@ import { ArrowDown, FileSearch } from 'lucide-vue-next';
 import { showErrorToast } from '../utils/toast';
 import { eventBus } from '../utils/eventBus';
 import { EVENT_SESSION_FILE_LIST_SHOW } from '../constants/event';
+import type { FileInfo } from '../api/file';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -102,6 +103,7 @@ const createInitialState = () => ({
   lastEventId: undefined as string | undefined,
   shouldAddPaddingClass: false,
   cancelCurrentChat: null as (() => void) | null,
+  attachments: [] as FileInfo[]
 });
 
 // Create reactive state
@@ -122,7 +124,8 @@ const {
   lastTool,
   lastEventId,
   shouldAddPaddingClass,
-  cancelCurrentChat
+  cancelCurrentChat,
+  attachments
 } = toRefs(state);
 
 // Non-state refs that don't need reset
@@ -238,7 +241,6 @@ const handlePlanEvent = (planData: PlanEventData) => {
 
 // Handle attachments event
 const handleAttachmentsEvent = (attachmentsData: AttachmentsEventData) => {
-  console.log(attachmentsData);
   messages.value.push({
     type: 'attachments',
     content: {
@@ -271,7 +273,11 @@ const handleEvent = (event: AgentSSEEvent) => {
   lastEventId.value = event.data.event_id;
 }
 
-const chat = async (message: string = '') => {
+const handleSubmit = () => {
+  chat(inputMessage.value, attachments.value.map((file: FileInfo) => file.file_id));
+}
+
+const chat = async (message: string = '', files: string[] = []) => {
   if (!sessionId.value) return;
 
   // Cancel any existing chat connection before starting a new one
@@ -304,6 +310,7 @@ const chat = async (message: string = '') => {
       sessionId.value,
       message,
       lastEventId.value,
+      files,
       {
         onOpen: () => {
           console.log('Chat opened');
@@ -385,9 +392,10 @@ onMounted(() => {
     sessionId.value = String(routeParams.sessionId) as string;
     // Get initial message from history.state
     const message = history.state?.message;
+    const files = history.state?.files;
     history.replaceState({}, document.title);
     if (message) {
-      chat(message);
+      chat(message, files);
     } else {
       restoreSession();
     }

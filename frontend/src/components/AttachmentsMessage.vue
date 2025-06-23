@@ -14,7 +14,7 @@
               class="text-sm text-[var(--text-primary)] text-ellipsis overflow-hidden whitespace-nowrap flex-1 min-w-0">
               {{ attachment.filename }}</div>
           </div>
-          <div class="text-xs text-[var(--text-tertiary)]">{{ t('File') }} · {{ formatFileSize(attachment.size) }}</div>
+          <div class="text-xs text-[var(--text-tertiary)]">{{ getFileTypeText(attachment.filename) }} · {{ formatFileSize(attachment.size) }}</div>
         </div>
         <div
           class="items-center justify-center cursor-pointer hover:bg-[var(--fill-tsp-gray-main)] rounded-md w-6 h-6 border border-[var(--border-main)] flex opacity-0 group-hover/attach:opacity-100">
@@ -37,7 +37,7 @@ import type { AttachmentsContent } from '../types/message';
 import type { FileInfo } from '../api/file';
 import { eventBus } from '../utils/eventBus';
 import { EVENT_SESSION_FILE_LIST_SHOW, EVENT_FILE_SHOW } from '../constants/event';
-import { formatFileSize } from '../utils/file';
+import { formatFileSize, getFileTypeText } from '../utils/fileType';
 import { getFileType } from '../utils/fileType';
 
 const { t } = useI18n();

@@ -6,7 +6,7 @@
             </div>
             <div class="flex flex-col gap-0.5 flex-1 min-w-0">
                 <div class="text-sm text-[var(--text-primary)] truncate">{{ file.filename }}</div>
-                <div class="text-xs text-[var(--text-tertiary)] truncate">{{ t('File') }}</div>
+                <div class="text-xs text-[var(--text-tertiary)] truncate">{{ getFileTypeText(file.filename) }}</div>
             </div>
         </div>
         <div class="text-sm text-center text-[var(--text-tertiary)]">{{ t('This format cannot be previewed') }}。<br>{{
@@ -26,7 +26,7 @@ import { useI18n } from 'vue-i18n';
 import { computed } from 'vue';
 import type { FileInfo } from '../../api/file';
 import { getFileDownloadUrl } from '../../api/file';
-import { getFileType } from '../../utils/fileType';
+import { getFileType, getFileTypeText } from '../../utils/fileType';
 
 const { t } = useI18n();
 

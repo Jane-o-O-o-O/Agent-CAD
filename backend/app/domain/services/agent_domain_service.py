@@ -1,4 +1,4 @@
-from typing import Optional, AsyncGenerator
+from typing import Optional, AsyncGenerator, List
 import logging
 import time
 from datetime import datetime
@@ -111,7 +111,8 @@ class AgentDomainService:
         session_id: str,
         message: Optional[str] = None,
         timestamp: Optional[datetime] = None,
-        latest_event_id: Optional[str] = None
+        latest_event_id: Optional[str] = None,
+        attachments: Optional[List[str]] = None
     ) -> AsyncGenerator[BaseEvent, None]:
         """
         Chat with an agent

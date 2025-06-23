@@ -85,11 +85,12 @@ class AgentService:
         session_id: str,
         message: Optional[str] = None,
         timestamp: Optional[datetime] = None,
-        event_id: Optional[str] = None
+        event_id: Optional[str] = None,
+        attachments: Optional[List[str]] = None
     ) -> AsyncGenerator[AgentEvent, None]:
         logger.info(f"Starting chat with session {session_id}: {message[:50]}...")
         # Directly use the domain service's chat method, which will check if the session exists
-        async for event in self._agent_domain_service.chat(session_id, message, timestamp, event_id):
+        async for event in self._agent_domain_service.chat(session_id, message, timestamp, event_id, attachments):
             logger.debug(f"Received event: {event}")
             yield event
         logger.info(f"Chat with session {session_id} completed")
