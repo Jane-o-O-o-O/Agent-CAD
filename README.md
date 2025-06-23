@@ -20,33 +20,32 @@ https://github.com/user-attachments/assets/37060a09-c647-4bcb-920c-959f7fa73ebe
 
 ### Browser Use
 
-* Task: Latest LLM papers
+- Task: Latest LLM papers
 
 <https://github.com/user-attachments/assets/4e35bc4d-024a-4617-8def-a537a94bd285>
 
 ### Code Use
 
-* Task: Write a complex Python example
+- Task: Write a complex Python example
 
 <https://github.com/user-attachments/assets/765ea387-bb1c-4dc2-b03e-716698feef77>
 
-
 ## Key Features
 
- * Deployment: Minimal deployment requires only an LLM service, with no dependency on other external services.
- * Tools: Supports Terminal, Browser, File, Web Search, and messaging tools with real-time viewing and takeover capabilities.
- * Sandbox: Each task is allocated a separate sandbox that runs in a local Docker environment.
- * Task Sessions: Session history is managed through MongoDB/Redis, supporting background tasks.
- * Conversations: Supports stopping and interrupting.
- * Multilingual: Supports both Chinese and English.
+- Deployment: Minimal deployment requires only an LLM service, with no dependency on other external services.
+- Tools: Supports Terminal, Browser, File, Web Search, and messaging tools with real-time viewing and takeover capabilities.
+- Sandbox: Each task is allocated a separate sandbox that runs in a local Docker environment.
+- Task Sessions: Session history is managed through MongoDB/Redis, supporting background tasks.
+- Conversations: Supports stopping and interrupting.
+- Multilingual: Supports both Chinese and English.
 
 ## Development Roadmap
 
- * Tools: Support for historical browser screenshot viewing, Deploy & Expose, and external MCP tool integration.
- * Conversations: Support for file upload and download.
- * Sandbox: Support for mobile and Windows computer access.
- * Deployment: Support for K8s and Docker Swarm multi-cluster deployment.
- * Authentication: User login and authentication.
+- Tools: Support for historical browser screenshot viewing, Deploy & Expose, and external MCP tool integration.
+- Conversations: Support for file upload and download.
+- Sandbox: Support for mobile and Windows computer access.
+- Deployment: Support for K8s and Docker Swarm multi-cluster deployment.
+- Authentication: User login and authentication.
 
 ### Overall Design
 
@@ -63,17 +62,19 @@ https://github.com/user-attachments/assets/37060a09-c647-4bcb-920c-959f7fa73ebe
 **When users browse tools:**
 
 - Browser:
-    1. The Sandbox's headless browser starts a VNC service through xvfb and x11vnc, and converts VNC to websocket through websockify.
-    2. Web's NoVNC component connects to the Sandbox through the Server's Websocket Forward, enabling browser viewing.
+  1. The Sandbox's headless browser starts a VNC service through xvfb and x11vnc, and converts VNC to websocket through websockify.
+  2. Web's NoVNC component connects to the Sandbox through the Server's Websocket Forward, enabling browser viewing.
 - Other tools: Other tools work on similar principles.
 
 ## Environment Requirements
 
 This project primarily relies on Docker for development and deployment, requiring a relatively new version of Docker:
+
 - Docker 20.10+
 - Docker Compose
 
 Model capability requirements:
+
 - Compatible with OpenAI interface
 - Support for FunctionCall
 - Support for Json Format output
@@ -118,7 +119,7 @@ services:
       - TEMPERATURE=0.7
       # Maximum tokens for LLM response
       - MAX_TOKENS=2000
-      
+
       # MongoDB connection URI (optional)
       #- MONGODB_URI=mongodb://mongodb:27017
       # MongoDB database name (optional)
@@ -127,7 +128,7 @@ services:
       #- MONGODB_USERNAME=
       # MongoDB password (optional)
       #- MONGODB_PASSWORD=
-      
+
       # Redis server hostname (optional)
       #- REDIS_HOST=redis
       # Redis server port (optional)
@@ -136,7 +137,7 @@ services:
       #- REDIS_DB=0
       # Redis password (optional)
       #- REDIS_PASSWORD=
-      
+
       # Sandbox server address (optional)
       #- SANDBOX_ADDRESS=
       # Docker image used for the sandbox
@@ -155,18 +156,18 @@ services:
       #- SANDBOX_HTTP_PROXY=
       # No proxy hosts for sandbox (optional)
       #- SANDBOX_NO_PROXY=
-      
+
       # Google Search API key for web search capability (optional)
       #- GOOGLE_SEARCH_API_KEY=
       # Google Custom Search Engine ID (optional)
       #- GOOGLE_SEARCH_ENGINE_ID=
-      
+
       # Application log level
       - LOG_LEVEL=INFO
 
   sandbox:
     image: simpleyyt/manus-sandbox
-    command: /bin/sh -c "exit 0"  # prevent sandbox from starting, ensure image is pulled
+    command: /bin/sh -c "exit 0" # prevent sandbox from starting, ensure image is pulled
     restart: "no"
     networks:
       - manus-network
@@ -213,24 +214,29 @@ Open your browser and visit <http://localhost:5173> to access Manus.
 
 This project consists of three independent sub-projects:
 
-* `frontend`: manus frontend
-* `backend`: Manus backend
-* `sandbox`: Manus sandbox
+- `frontend`: manus frontend
+- `backend`: Manus backend
+- `sandbox`: Manus sandbox
 
 ### Environment Setup
 
 1. Download the project:
+
 ```bash
 git clone https://github.com/simpleyyt/ai-manus.git
 cd ai-manus
 ```
 
 2. Copy the configuration file:
+
 ```bash
 cp .env.example .env
+# Copy the example configuration file for the mcp backend
+cp config.json.example config.json
 ```
 
 3. Modify the configuration file:
+
 ```
 # Model provider configuration
 API_KEY=
@@ -274,21 +280,24 @@ LOG_LEVEL=INFO
 ### Development and Debugging
 
 1. Run in debug mode:
+
 ```bash
 # Equivalent to docker compose -f docker-compose-development.yaml up
 ./dev.sh up
 ```
 
 All services will run in reload mode, and code changes will be automatically reloaded. The exposed ports are as follows:
+
 - 5173: Web frontend port
 - 8000: Server API service port
 - 8080: Sandbox API service port
 - 5900: Sandbox VNC port
 - 9222: Sandbox Chrome browser CDP port
 
-> *Note: In Debug mode, only one sandbox will be started globally*
+> _Note: In Debug mode, only one sandbox will be started globally_
 
 2. When dependencies change (requirements.txt or package.json), clean up and rebuild:
+
 ```bash
 # Clean up all related resources
 ./dev.sh down -v
@@ -311,4 +320,4 @@ export IMAGE_TAG=latest
 
 # Push to the corresponding image repository
 ./run push
-``` 
+```
