@@ -14,6 +14,7 @@ from app.domain.external.task import Task
 from app.domain.utils.json_parser import JsonParser
 from typing import Type
 from app.domain.external.file import FileStorage
+from app.domain.models.file import FileInfo
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -134,9 +135,13 @@ class AgentDomainService:
                 
                 await self._session_repository.update_latest_message(session_id, message, timestamp or datetime.now())
 
-                message_id = await task.input_stream.put(message)
-                message_event = MessageEvent(message=message, role="user", id=message_id)
-                await self._session_repository.add_event(session_id, message_event)
+                message_event = MessageEvent(
+                    message=message, 
+                    role="user", 
+                    attachments=[FileInfo(file_id=attachment) for attachment in attachments]
+                )
+
+                await task.input_stream.put(message_event.model_dump_json())
                 await task.run()
                 logger.debug(f"Put message into Session {session_id}'s event queue: {message[:50]}...")
             

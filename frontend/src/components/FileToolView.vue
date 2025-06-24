@@ -91,15 +91,15 @@ const fileName = computed(() => {
 
 // Load file content
 const loadFileContent = async () => {
+  if (cancelViewFile.value) {
+    cancelViewFile.value();
+    cancelViewFile.value = null;
+  }
   if (!props.live) {
     fileContent.value = props.toolContent.content?.content || "";
     return;
   }
   if (!filePath.value) return;
-  if (cancelViewFile.value) {
-    cancelViewFile.value();
-    cancelViewFile.value = null;
-  }
   cancelViewFile.value = await viewFile(props.sessionId, filePath.value, {
     onMessage: (event) => {
       if (event.event === "file") {
@@ -116,7 +116,7 @@ watch(filePath, (newVal) => {
   }
 });
 
-watch(() => props.toolContent.status, () => {
+watch(() => props.toolContent.timestamp, () => {
   loadFileContent();
 });
 

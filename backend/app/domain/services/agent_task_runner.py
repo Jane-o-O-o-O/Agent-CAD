@@ -1,5 +1,4 @@
 from typing import Optional, AsyncGenerator, List
-import io
 import asyncio
 import logging
 from app.domain.events.agent_events import (
@@ -10,13 +9,13 @@ from app.domain.events.agent_events import (
     DoneEvent,
     ToolEvent,
     WaitEvent,
-    RawAttachmentsEvent,
-    AttachmentsEvent,
     FileToolContent,
     ShellToolContent,
     SearchToolContent,
     BrowserToolContent,
-    ToolStatus
+    ToolStatus,
+    AgentEventFactory,
+    AgentEvent
 )
 from app.domain.services.flows.plan_act import PlanActFlow
 from app.domain.external.sandbox import Sandbox
@@ -70,17 +69,26 @@ class AgentTaskRunner(TaskRunner):
             self._search_engine,
         )
 
-    async def _put_and_add_event(self, task: Task, event: BaseEvent) -> None:
+    async def _put_and_add_event(self, task: Task, event: AgentEvent) -> None:
         event_id = await task.output_stream.put(event.model_dump_json())
         event.id = event_id
         await self._session_repository.add_event(self._session_id, event)
+    
+    async def _pop_event(self, task: Task) -> AgentEvent:
+        event_id, event_str = await task.input_stream.pop()
+        if event_str is None:
+            logger.warning(f"Agent {self._agent_id} received empty message")
+            return
+        event = AgentEventFactory.from_json(event_str)
+        event.id = event_id
+        return event
     
     async def _get_browser_screenshot(self) -> str:
         screenshot = await self._browser.screenshot()
         result = await self._file_storage.upload_file(screenshot, "screenshot.png")
         return result.file_id
 
-    async def _sync_file(self, file_path: str) -> Optional[FileInfo]:
+    async def _sync_file_to_storage(self, file_path: str) -> Optional[FileInfo]:
         """Upload or update file and return FileInfo"""
         try:
             file_info = await self._session_repository.get_file_by_path(self._session_id, file_path)
@@ -94,8 +102,47 @@ class AgentTaskRunner(TaskRunner):
             return file_info
         except Exception as e:
             logger.exception(f"Agent {self._agent_id} failed to sync file: {e}")
-
     
+    async def _sync_file_to_sandbox(self, file_id: str) -> Optional[FileInfo]:
+        """Download file from storage to sandbox"""
+        try:
+            file_data, file_info = await self._file_storage.download_file(file_id)
+            file_path = "/home/ubuntu/upload/" + file_info.filename
+            result = await self._sandbox.file_upload(file_data, file_path)
+            if result.success:
+                file_info.file_path = file_path
+                return file_info
+        except Exception as e:
+            logger.exception(f"Agent {self._agent_id} failed to sync file: {e}")
+
+    async def _sync_message_attachments_to_storage(self, event: MessageEvent) -> None:
+        """Sync message attachments and update event attachments"""
+        attachments: List[FileInfo] = []
+        try:
+            if event.attachments:
+                for attachment in event.attachments:
+                    file_info = await self._sync_file_to_storage(attachment.file_path)
+                    if file_info:
+                        attachments.append(file_info)
+            event.attachments = attachments
+        except Exception as e:
+            logger.exception(f"Agent {self._agent_id} failed to sync attachments to storage: {e}")
+    
+    async def _sync_message_attachments_to_sandbox(self, event: MessageEvent) -> None:
+        """Sync message attachments and update event attachments"""
+        attachments: List[FileInfo] = []
+        try:
+            if event.attachments:
+                for attachment in event.attachments:
+                    file_info = await self._sync_file_to_sandbox(attachment.file_id)
+                    if file_info:
+                        attachments.append(file_info)
+                        await self._session_repository.add_file(self._session_id, file_info)
+            event.attachments = attachments
+        except Exception as e:
+            logger.exception(f"Agent {self._agent_id} failed to sync attachments to event: {e}")
+    
+
     # TODO: refactor this function
     async def _gen_tool_content(self, event: ToolEvent):
         """Generate tool content"""
@@ -117,7 +164,7 @@ class AgentTaskRunner(TaskRunner):
                         file_read_result = await self._sandbox.file_read(file_path)
                         file_content: str = file_read_result.data.get("content", "")
                         event.tool_content = FileToolContent(content=file_content)
-                        await self._sync_file(file_path)
+                        await self._sync_file_to_storage(file_path)
                     else:
                         event.tool_content = FileToolContent(content="(No Content)")
                 else:
@@ -130,14 +177,19 @@ class AgentTaskRunner(TaskRunner):
         try:
             logger.info(f"Agent {self._agent_id} message processing task started")
             while not await task.input_stream.is_empty():
-                _, message = await task.input_stream.pop()
-                if message is None:
-                    logger.warning(f"Agent {self._agent_id} received empty message")
-                    return
+                event = await self._pop_event(task)
+                message = ""
+                if isinstance(event, MessageEvent):
+                    message = event.message or ""
+                    await self._sync_message_attachments_to_sandbox(event)
+                
+                await self._session_repository.add_event(self._session_id, event)
                     
                 logger.info(f"Agent {self._agent_id} received new message: {message[:50]}...")
+
+                attachments = [attachment.file_path for attachment in event.attachments]
                 
-                async for event in self._run_flow(message):
+                async for event in self._run_flow(message, attachments):
                     await self._put_and_add_event(task, event)
                     if isinstance(event, TitleEvent):
                         await self._session_repository.update_title(self._session_id, event.title)
@@ -160,27 +212,19 @@ class AgentTaskRunner(TaskRunner):
             await self._put_and_add_event(task, ErrorEvent(error=f"Task error: {str(e)}"))
             await self._session_repository.update_status(self._session_id, SessionStatus.COMPLETED)
     
-    async def _run_flow(self, message: str) -> AsyncGenerator[BaseEvent, None]:
+    async def _run_flow(self, message: str, attachments: List[str] = []) -> AsyncGenerator[BaseEvent, None]:
         """Process a single message through the agent's flow and yield events"""
         if not message:
             logger.warning(f"Agent {self._agent_id} received empty message")
             yield ErrorEvent(error="No message")
             return
 
-        async for event in self._flow.run(message):
+        async for event in self._flow.run(message, attachments):
             if isinstance(event, ToolEvent):
                 # TODO: move to tool function
                 await self._gen_tool_content(event)
-            elif isinstance(event, RawAttachmentsEvent):
-                attachments: List[FileInfo] = []
-                try:
-                    for attachment_path in event.attachments:
-                        file_info = await self._sync_file(attachment_path)
-                        if file_info:
-                            attachments.append(file_info)
-                except Exception as e:
-                    logger.exception(f"Execution agent failed to download attachments: {e}")
-                event = AttachmentsEvent(attachments=attachments)
+            elif isinstance(event, MessageEvent):
+                await self._sync_message_attachments_to_storage(event)
             yield event
 
         logger.info(f"Agent {self._agent_id} completed processing one message")

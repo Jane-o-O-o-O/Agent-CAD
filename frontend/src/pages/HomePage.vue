@@ -63,7 +63,13 @@ const handleSubmit = async () => {
       // Navigate to new route with session_id, passing initial message via state
       router.push({
         path: `/chat/${sessionId}`,
-        state: { message: message.value, files: attachments.value.map((file: FileInfo) => file.file_id) }
+        state: { message: message.value, files: attachments.value.map((file: FileInfo) => ({
+          file_id: file.file_id,
+          filename: file.filename,
+          content_type: file.content_type,
+          size: file.size,
+          upload_date: file.upload_date
+        })) }
       });
     } catch (error) {
       console.error('Failed to create session:', error);

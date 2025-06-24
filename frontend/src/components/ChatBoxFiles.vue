@@ -84,7 +84,7 @@ const props = defineProps<{
 // Extended FileInfo type to include upload status
 interface ExtendedFileInfo extends FileInfo {
     status?: 'uploading' | 'success' | 'failed';
-    file?: File; // Keep reference to original file for retry
+    file?: File | null; // Keep reference to original file for retry
 }
 
 const files = ref<ExtendedFileInfo[]>(props.attachments);
@@ -144,7 +144,8 @@ const processFileUpload = async (file: File) => {
         if (index !== -1) {
             files.value[index] = {
                 ...uploadedFile,
-                status: 'success'
+                status: 'success',
+                file: null
             };
         }
     } catch (error) {
@@ -182,7 +183,8 @@ const retryUpload = async (fileInfo: ExtendedFileInfo) => {
         if (index !== -1) {
             files.value[index] = {
                 ...uploadedFile,
-                status: 'success'
+                status: 'success',
+                file: null
             };
         }
     } catch (error) {

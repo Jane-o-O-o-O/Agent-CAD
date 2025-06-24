@@ -40,17 +40,6 @@ class ErrorEvent(BaseEvent):
     type: Literal["error"] = "error"
     error: str
 
-class RawAttachmentsEvent(BaseEvent):
-    """Raw attachments event"""
-    type: Literal["raw_attachments"] = "raw_attachments"
-    attachments: List[str]
-
-class AttachmentsEvent(BaseEvent):
-    """Attachments event"""
-    type: Literal["attachments"] = "attachments"
-    role: Literal["user", "assistant"] = "assistant"
-    attachments: List[FileInfo]
-
 class PlanEvent(BaseEvent):
     """Plan related events"""
     type: Literal["plan"] = "plan"
@@ -103,6 +92,7 @@ class MessageEvent(BaseEvent):
     type: Literal["message"] = "message"
     role: Literal["user", "assistant"] = "assistant"
     message: str
+    attachments: Optional[List[FileInfo]] = None
 
 class DoneEvent(BaseEvent):
     """Done event"""
@@ -122,7 +112,6 @@ AgentEvent = Union[
     DoneEvent,
     TitleEvent,
     WaitEvent,
-    AttachmentsEvent,
 ]
 
 

@@ -2,7 +2,7 @@
     <div class="pb-3 relative bg-[var(--background-gray-main)]">
         <div
             class="flex flex-col gap-3 rounded-[22px] transition-all relative bg-[var(--fill-input-chat)] py-3 max-h-[300px] shadow-[0px_12px_32px_0px_rgba(0,0,0,0.02)] border border-black/8 dark:border-[var(--border-main)]">
-            <ChatBoxFileList ref="chatBoxFileListRef" :attachments="attachments" />
+            <ChatBoxFiles ref="chatBoxFileListRef" :attachments="attachments" />
             <div class="overflow-y-auto pl-4 pr-2">
                 <textarea
                     class="flex rounded-md border-input focus-visible:outline-none focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden flex-1 bg-transparent p-0 pt-[1px] border-0 focus-visible:ring-0 focus-visible:ring-offset-0 w-full placeholder:text-[var(--text-disable)] text-[15px] shadow-none resize-none min-h-[40px]"
@@ -42,7 +42,7 @@
 import { ref, watch, computed } from 'vue';
 import SendIcon from './icons/SendIcon.vue';
 import { useI18n } from 'vue-i18n';
-import ChatBoxFileList from './ChatBoxFileList.vue';
+import ChatBoxFiles from './ChatBoxFiles.vue';
 import { Paperclip } from 'lucide-vue-next';
 import type { FileInfo } from '../api/file';
 

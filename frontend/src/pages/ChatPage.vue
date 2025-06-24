@@ -73,7 +73,6 @@ import {
   TitleEventData,
   PlanEventData,
   AgentSSEEvent,
-  AttachmentsEventData
 } from '../types/event';
 import RightPanel from '../components/RightPanel.vue';
 import PlanPanel from '../components/PlanPanel.vue';
@@ -168,6 +167,15 @@ const handleMessageEvent = (messageData: MessageEventData) => {
       ...messageData
     } as MessageContent,
   });
+
+  if (messageData.attachments?.length > 0) {
+    messages.value.push({
+      type: 'attachments',
+      content: {
+        ...messageData
+      } as AttachmentsContent,
+    });
+  }
 }
 
 // Handle tool event
@@ -239,16 +247,6 @@ const handlePlanEvent = (planData: PlanEventData) => {
   plan.value = planData;
 }
 
-// Handle attachments event
-const handleAttachmentsEvent = (attachmentsData: AttachmentsEventData) => {
-  messages.value.push({
-    type: 'attachments',
-    content: {
-      ...attachmentsData
-    } as AttachmentsContent,
-  });
-}
-
 // Main event handler function
 const handleEvent = (event: AgentSSEEvent) => {
   if (event.event === 'message') {
@@ -267,17 +265,15 @@ const handleEvent = (event: AgentSSEEvent) => {
     handleTitleEvent(event.data as TitleEventData);
   } else if (event.event === 'plan') {
     handlePlanEvent(event.data as PlanEventData);
-  } else if (event.event === 'attachments') {
-    handleAttachmentsEvent(event.data as AttachmentsEventData);
   }
   lastEventId.value = event.data.event_id;
 }
 
 const handleSubmit = () => {
-  chat(inputMessage.value, attachments.value.map((file: FileInfo) => file.file_id));
+  chat(inputMessage.value, attachments.value);
 }
 
-const chat = async (message: string = '', files: string[] = []) => {
+const chat = async (message: string = '', files: FileInfo[] = []) => {
   if (!sessionId.value) return;
 
   // Cancel any existing chat connection before starting a new one
@@ -297,6 +293,16 @@ const chat = async (message: string = '', files: string[] = []) => {
     });
   }
 
+  if (files.length > 0) {
+    messages.value.push({
+      type: 'attachments',
+      content: {
+        role: 'user',
+        attachments: files
+      } as AttachmentsContent,
+    });
+  }
+
   // Automatically enable follow mode when sending message
   follow.value = true;
 
@@ -310,7 +316,7 @@ const chat = async (message: string = '', files: string[] = []) => {
       sessionId.value,
       message,
       lastEventId.value,
-      files,
+      files.map((file: FileInfo) => file.file_id),
       {
         onOpen: () => {
           console.log('Chat opened');
@@ -392,7 +398,7 @@ onMounted(() => {
     sessionId.value = String(routeParams.sessionId) as string;
     // Get initial message from history.state
     const message = history.state?.message;
-    const files = history.state?.files;
+    const files: FileInfo[] = history.state?.files;
     history.replaceState({}, document.title);
     if (message) {
       chat(message, files);
