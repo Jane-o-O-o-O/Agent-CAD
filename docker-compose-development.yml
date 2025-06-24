@@ -22,7 +22,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: /Dockerfile
+      dockerfile: Dockerfile
     command: ["./dev.sh"] # Start in reload mode
     volumes:
       - ./backend:/app # Mount source code directory
