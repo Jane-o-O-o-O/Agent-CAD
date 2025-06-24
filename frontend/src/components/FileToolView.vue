@@ -93,7 +93,6 @@ const fileName = computed(() => {
 const loadFileContent = async () => {
   if (cancelViewFile.value) {
     cancelViewFile.value();
-    cancelViewFile.value = null;
   }
   if (!props.live) {
     fileContent.value = props.toolContent.content?.content || "";

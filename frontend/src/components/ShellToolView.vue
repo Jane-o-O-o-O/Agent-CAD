@@ -64,7 +64,6 @@ const updateShellContent = (console: any) => {
 const loadShellContent = async () => {
   if (cancelViewShell.value) {
     cancelViewShell.value();
-    cancelViewShell.value = null;
   }
 
   if (!props.live) {
