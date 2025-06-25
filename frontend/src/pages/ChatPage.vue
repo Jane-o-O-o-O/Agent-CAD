@@ -200,7 +200,7 @@ const handleToolEvent = (toolData: ToolEventData) => {
   if (toolContent.name !== 'message') {
     lastNoMessageTool.value = toolContent;
     if (realTime.value) {
-      rightPanel.value.showTool(toolContent, true);
+      rightPanel.value?.showTool(toolContent, true);
     }
   }
 }
@@ -379,7 +379,7 @@ const checkElementPosition = () => {
 
 onBeforeRouteUpdate((to, _, next) => {
   if (rightPanel.value) {
-    rightPanel.value.hide();
+    rightPanel.value?.hide();
   }
   resetState();
   if (to.params.sessionId) {
@@ -421,6 +421,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  if (cancelCurrentChat.value) {
+    cancelCurrentChat.value();
+    cancelCurrentChat.value = null;
+  }
   resizeObserver.value?.disconnect();
 })
 
@@ -451,7 +455,7 @@ const handleToolClick = (tool: ToolContent) => {
 const jumpToRealTime = () => {
   realTime.value = true;
   if (lastNoMessageTool.value) {
-    rightPanel.value.showTool(lastNoMessageTool.value, isLiveTool(lastNoMessageTool.value));
+    rightPanel.value?.showTool(lastNoMessageTool.value, isLiveTool(lastNoMessageTool.value));
   }
 }
 
