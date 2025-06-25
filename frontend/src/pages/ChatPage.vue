@@ -47,8 +47,8 @@
           </button>
           <PlanPanel :plan="plan" />
         </template>
-        <ChatBox v-model="inputMessage" :rows="1" @submit="chat(inputMessage)" :isRunning="isLoading"
-          @stop="handleStop" />
+        <ChatBox v-model="inputMessage" :rows="1" @submit="handleSubmit" :isRunning="isLoading"
+          @stop="handleStop" :attachments="attachments" />
       </div>
     </div>
     <RightPanel ref="rightPanel" :size="toolPanelSize" :sessionId="sessionId" :realTime="realTime"
@@ -73,7 +73,6 @@ import {
   TitleEventData,
   PlanEventData,
   AgentSSEEvent,
-  AttachmentsEventData
 } from '../types/event';
 import RightPanel from '../components/RightPanel.vue';
 import PlanPanel from '../components/PlanPanel.vue';
@@ -81,6 +80,7 @@ import { ArrowDown, FileSearch } from 'lucide-vue-next';
 import { showErrorToast } from '../utils/toast';
 import { eventBus } from '../utils/eventBus';
 import { EVENT_SESSION_FILE_LIST_SHOW } from '../constants/event';
+import type { FileInfo } from '../api/file';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -102,6 +102,7 @@ const createInitialState = () => ({
   lastEventId: undefined as string | undefined,
   shouldAddPaddingClass: false,
   cancelCurrentChat: null as (() => void) | null,
+  attachments: [] as FileInfo[]
 });
 
 // Create reactive state
@@ -122,7 +123,8 @@ const {
   lastTool,
   lastEventId,
   shouldAddPaddingClass,
-  cancelCurrentChat
+  cancelCurrentChat,
+  attachments
 } = toRefs(state);
 
 // Non-state refs that don't need reset
@@ -165,6 +167,15 @@ const handleMessageEvent = (messageData: MessageEventData) => {
       ...messageData
     } as MessageContent,
   });
+
+  if (messageData.attachments?.length > 0) {
+    messages.value.push({
+      type: 'attachments',
+      content: {
+        ...messageData
+      } as AttachmentsContent,
+    });
+  }
 }
 
 // Handle tool event
@@ -189,7 +200,7 @@ const handleToolEvent = (toolData: ToolEventData) => {
   if (toolContent.name !== 'message') {
     lastNoMessageTool.value = toolContent;
     if (realTime.value) {
-      rightPanel.value.showTool(toolContent, true);
+      rightPanel.value?.showTool(toolContent, true);
     }
   }
 }
@@ -236,17 +247,6 @@ const handlePlanEvent = (planData: PlanEventData) => {
   plan.value = planData;
 }
 
-// Handle attachments event
-const handleAttachmentsEvent = (attachmentsData: AttachmentsEventData) => {
-  console.log(attachmentsData);
-  messages.value.push({
-    type: 'attachments',
-    content: {
-      ...attachmentsData
-    } as AttachmentsContent,
-  });
-}
-
 // Main event handler function
 const handleEvent = (event: AgentSSEEvent) => {
   if (event.event === 'message') {
@@ -265,13 +265,15 @@ const handleEvent = (event: AgentSSEEvent) => {
     handleTitleEvent(event.data as TitleEventData);
   } else if (event.event === 'plan') {
     handlePlanEvent(event.data as PlanEventData);
-  } else if (event.event === 'attachments') {
-    handleAttachmentsEvent(event.data as AttachmentsEventData);
   }
   lastEventId.value = event.data.event_id;
 }
 
-const chat = async (message: string = '') => {
+const handleSubmit = () => {
+  chat(inputMessage.value, attachments.value);
+}
+
+const chat = async (message: string = '', files: FileInfo[] = []) => {
   if (!sessionId.value) return;
 
   // Cancel any existing chat connection before starting a new one
@@ -291,6 +293,16 @@ const chat = async (message: string = '') => {
     });
   }
 
+  if (files.length > 0) {
+    messages.value.push({
+      type: 'attachments',
+      content: {
+        role: 'user',
+        attachments: files
+      } as AttachmentsContent,
+    });
+  }
+
   // Automatically enable follow mode when sending message
   follow.value = true;
 
@@ -304,6 +316,7 @@ const chat = async (message: string = '') => {
       sessionId.value,
       message,
       lastEventId.value,
+      files.map((file: FileInfo) => file.file_id),
       {
         onOpen: () => {
           console.log('Chat opened');
@@ -366,7 +379,7 @@ const checkElementPosition = () => {
 
 onBeforeRouteUpdate((to, _, next) => {
   if (rightPanel.value) {
-    rightPanel.value.hide();
+    rightPanel.value?.hide();
   }
   resetState();
   if (to.params.sessionId) {
@@ -385,9 +398,10 @@ onMounted(() => {
     sessionId.value = String(routeParams.sessionId) as string;
     // Get initial message from history.state
     const message = history.state?.message;
+    const files: FileInfo[] = history.state?.files;
     history.replaceState({}, document.title);
     if (message) {
-      chat(message);
+      chat(message, files);
     } else {
       restoreSession();
     }
@@ -407,6 +421,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  if (cancelCurrentChat.value) {
+    cancelCurrentChat.value();
+    cancelCurrentChat.value = null;
+  }
   resizeObserver.value?.disconnect();
 })
 
@@ -437,7 +455,7 @@ const handleToolClick = (tool: ToolContent) => {
 const jumpToRealTime = () => {
   realTime.value = true;
   if (lastNoMessageTool.value) {
-    rightPanel.value.showTool(lastNoMessageTool.value, isLiveTool(lastNoMessageTool.value));
+    rightPanel.value?.showTool(lastNoMessageTool.value, isLiveTool(lastNoMessageTool.value));
   }
 }
 

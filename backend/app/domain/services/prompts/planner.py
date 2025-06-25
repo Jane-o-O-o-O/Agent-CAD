@@ -75,6 +75,9 @@ EXAMPLE JSON OUTPUT:
 
 User message:
 {user_message}
+
+Attachments:
+{attachments}
 """
 
 UPDATE_PLAN_PROMPT = """

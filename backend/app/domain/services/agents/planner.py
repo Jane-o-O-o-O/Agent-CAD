@@ -50,8 +50,8 @@ class PlannerAgent(BaseAgent):
         )
 
 
-    async def create_plan(self, message: Optional[str] = None) -> AsyncGenerator[BaseEvent, None]:
-        message = CREATE_PLAN_PROMPT.format(user_message=message) if message else None
+    async def create_plan(self, message: Optional[str] = None, attachments: List[str] = []) -> AsyncGenerator[BaseEvent, None]:
+        message = CREATE_PLAN_PROMPT.format(user_message=message, attachments=attachments) if message else None
         async for event in self.execute(message):
             if isinstance(event, MessageEvent):
                 logger.info(event.message)

@@ -6,7 +6,6 @@ from app.domain.models.file import FileInfo
 from app.domain.events.agent_events import ToolStatus
 from app.domain.events.agent_events import (
     AgentEvent,
-    AttachmentsEvent,
     DoneEvent,
     ErrorEvent,
     PlanEvent,
@@ -25,6 +24,7 @@ class BaseEventData(BaseModel):
 class MessageEventData(BaseEventData):
     role: Literal["user", "assistant"]
     content: str
+    attachments: Optional[List[FileInfo]] = None
 
 class ToolEventData(BaseEventData):
     tool_call_id: str
@@ -52,9 +52,6 @@ class TitleEventData(BaseEventData):
 class BaseSSEEvent(BaseModel):
     event: str
     data: Optional[Union[str, BaseEventData]]
-
-class AttachmentsEventData(BaseEventData):
-    attachments: List[FileInfo]
 
 class MessageSSEEvent(BaseSSEEvent):
     event: Literal["message"] = "message"
@@ -88,10 +85,6 @@ class PlanSSEEvent(BaseSSEEvent):
     event: Literal["plan"] = "plan"
     data: PlanEventData
 
-class AttachmentsSSEEvent(BaseSSEEvent):
-    event: Literal["attachments"] = "attachments"
-    data: AttachmentsEventData
-
 AgentSSEEvent = Union[
     BaseSSEEvent,
     PlanSSEEvent,
@@ -102,7 +95,6 @@ AgentSSEEvent = Union[
     DoneSSEEvent,
     ErrorSSEEvent,
     WaitSSEEvent,
-    AttachmentsSSEEvent
 ]
 
 class SSEEventFactory:
@@ -135,7 +127,8 @@ class SSEEventFactory:
                 data=MessageEventData(
                     **base_event.model_dump(),
                     content=event.message,
-                    role=event.role
+                    role=event.role,
+                    attachments=event.attachments
                 )
             )
         elif isinstance(event, TitleEvent):
@@ -177,10 +170,3 @@ class SSEEventFactory:
             )
         elif isinstance(event, WaitEvent):
             return WaitSSEEvent(data=base_event)
-        elif isinstance(event, AttachmentsEvent):
-            return AttachmentsSSEEvent(
-                data=AttachmentsEventData(
-                    **base_event.model_dump(),
-                    attachments=event.attachments
-                )
-            )

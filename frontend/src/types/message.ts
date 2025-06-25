@@ -32,5 +32,6 @@ export interface StepContent extends BaseContent {
 }
 
 export interface AttachmentsContent extends BaseContent {
+  role: "user" | "assistant";
   attachments: FileInfo[];
 }

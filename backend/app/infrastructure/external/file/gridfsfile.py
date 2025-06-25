@@ -1,4 +1,5 @@
 import logging
+import io
 from typing import BinaryIO, Optional, Dict, Any, Tuple
 from datetime import datetime
 from bson import ObjectId
@@ -119,8 +120,10 @@ class GridFSFileStorage(FileStorage):
             file_info = await files_collection.find_one({"_id": obj_id})
             if not file_info:
                 raise FileNotFoundError(f"File not found with ID: {file_id}")
-            
-            return await bucket.open_download_stream(obj_id), self._create_file_info(file_info, file_id)
+            stream = io.BytesIO()
+            await bucket.download_to_stream(obj_id, stream)
+            stream.seek(0)
+            return stream, self._create_file_info(file_info, file_id)
             
         except FileNotFoundError:
             raise

@@ -105,6 +105,9 @@ You are executing the following goal and step:
 User Message:
 {message}
 
+Attachments:
+{attachments}
+
 Goal:
 {goal}
 

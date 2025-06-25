@@ -4,10 +4,10 @@ from pydantic import BaseModel
 
 
 class FileInfo(BaseModel):
-    file_id: str
-    filename: str
+    file_id: Optional[str] = None
+    filename: Optional[str] = None
     file_path: Optional[str] = None
     content_type: Optional[str] = None
-    size: int
-    upload_date: datetime
+    size: Optional[int] = None
+    upload_date: Optional[datetime] = None
     metadata: Optional[Dict[str, Any]] = None

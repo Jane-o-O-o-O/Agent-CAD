@@ -19,7 +19,6 @@ from app.domain.events.agent_events import (
     ToolEvent,
     ToolStatus,
     WaitEvent,
-    RawAttachmentsEvent,
 )
 from app.domain.services.tools.shell import ShellTool
 from app.domain.services.tools.browser import BrowserTool
@@ -67,8 +66,8 @@ class ExecutionAgent(BaseAgent):
         if search_engine:
             self.tools.append(SearchTool(search_engine))
     
-    async def execute_step(self, plan: Plan, step: Step, message: str = "") -> AsyncGenerator[BaseEvent, None]:
-        message = EXECUTION_PROMPT.format(goal=plan.goal, step=step.description, message=message)
+    async def execute_step(self, plan: Plan, step: Step, message: str = "", attachments: List[str] = []) -> AsyncGenerator[BaseEvent, None]:
+        message = EXECUTION_PROMPT.format(goal=plan.goal, step=step.description, message=message, attachments=attachments)
         step.status = ExecutionStatus.RUNNING
         yield StepEvent(status=StepStatus.STARTED, step=step)
         async for event in self.execute(message):
@@ -83,7 +82,7 @@ class ExecutionAgent(BaseAgent):
             elif isinstance(event, ToolEvent):
                 if event.function_name == "message_ask_user":
                     if event.status == ToolStatus.CALLING:
-                        yield MessageEvent(message=event.function_args["text"], role="assistant")
+                        yield MessageEvent(message=event.function_args.get("text", ""))
                     elif event.status == ToolStatus.CALLED:
                         yield WaitEvent()
                         return
@@ -97,7 +96,7 @@ class ExecutionAgent(BaseAgent):
             if isinstance(event, MessageEvent):
                 logger.debug(f"Execution agent conclusion: {event.message}")
                 parsed_response = await self.json_parser.parse(event.message)
-                yield MessageEvent(message=parsed_response["message"])
-                yield RawAttachmentsEvent(attachments=parsed_response["attachments"])
+                attachments = [FileInfo(file_path=file_path) for file_path in parsed_response.get("attachments", [])]
+                yield MessageEvent(message=parsed_response.get("message", ""), attachments=attachments)
                 continue
             yield event
