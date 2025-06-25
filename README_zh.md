@@ -37,13 +37,12 @@ https://github.com/user-attachments/assets/5cb2240b-0984-4db0-8818-a24f81624b04
  * 工具：支持 Terminal、Browser、File、Web Search、消息工具，并支持实查看和接管。
  * 沙盒：每个 Task 会分配单独的一个沙盒，沙盒在本地 Dock 环境里面运行。
  * 任务会话：通过 Mongo/Redis 对会话历史进行管理，支持后台任务。
- * 对话：支持停止与打断。
+ * 对话：支持停止与打断，支持文件上传与下载。
  * 多语言：支持中文与英文。
 
 ## 开发计划
 
- * 工具：支持历史浏览器截图查看，支持 Deploy & Expose，支持外部 MCP 工具集成。
- * 对话：支持文件上传与下载。
+ * 工具：支持 Deploy & Expose，支持外部 MCP 工具集成。
  * 沙盒：支持手机与 Windows 电脑接入。
  * 部署：支持 K8s 和 Dock Swarm 多集群部署。
  * 认证：用户登录与认证。
