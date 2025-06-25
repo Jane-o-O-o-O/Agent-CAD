@@ -52,8 +52,13 @@ async def download_file(
     except FileNotFoundError:
         raise NotFoundError("File not found")
     
+    # Encode filename properly for Content-Disposition header
+    # Use URL encoding for non-ASCII characters to ensure latin-1 compatibility
+    import urllib.parse
+    encoded_filename = urllib.parse.quote(file_info.filename, safe='')
+    
     headers = {
-        'Content-Disposition': f'attachment; filename="{file_info.filename}"'
+        'Content-Disposition': f'attachment; filename*=UTF-8\'\'{encoded_filename}'
     }
     
     return StreamingResponse(
