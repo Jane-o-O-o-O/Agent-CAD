@@ -31,7 +31,7 @@ services:
       - TEMPERATURE=0.7
       # Maximum tokens for LLM response
       - MAX_TOKENS=2000
-      
+
       # MongoDB connection URI
       #- MONGODB_URI=mongodb://mongodb:27017
       # MongoDB database name
@@ -40,7 +40,7 @@ services:
       #- MONGODB_USERNAME=
       # MongoDB password (optional)
       #- MONGODB_PASSWORD=
-      
+
       # Redis server hostname
       #- REDIS_HOST=redis
       # Redis server port
@@ -49,7 +49,7 @@ services:
       #- REDIS_DB=0
       # Redis password (optional)
       #- REDIS_PASSWORD=
-      
+
       # Sandbox server address (optional)
       #- SANDBOX_ADDRESS=
       # Docker image used for the sandbox
@@ -68,18 +68,21 @@ services:
       #- SANDBOX_HTTP_PROXY=
       # No proxy hosts for sandbox (optional)
       #- SANDBOX_NO_PROXY=
-      
+
       # Google Search API key for web search capability (optional)
       #- GOOGLE_SEARCH_API_KEY=
       # Google Custom Search Engine ID (optional)
       #- GOOGLE_SEARCH_ENGINE_ID=
-      
+
+      # MCP configuration file path
+      - MCP_CONFIG_PATH=/app/mcp.json
+
       # Application log level
       - LOG_LEVEL=INFO
 
   sandbox:
     image: simpleyyt/manus-sandbox
-    command: /bin/sh -c "exit 0"  # prevent sandbox from starting, ensure image is pulled
+    command: /bin/sh -c "exit 0" # prevent sandbox from starting, ensure image is pulled
     restart: "no"
     networks:
       - manus-network
@@ -108,3 +111,4 @@ networks:
   manus-network:
     name: manus-network
     driver: bridge
+

@@ -20,6 +20,7 @@ from app.infrastructure.external.task.redis_task import RedisStreamTask
 from app.interfaces.api.routes import get_agent_service
 from app.infrastructure.models.documents import AgentDocument, SessionDocument
 from app.infrastructure.utils.llm_json_parser import LLMJsonParser
+from app.infrastructure.external.mcp.file_mcp_config_provider import FileMCPConfigProvider
 from beanie import init_beanie
 
 # Initialize logging system
@@ -42,6 +43,10 @@ def create_agent_service() -> AgentService:
     else:
         logger.warning("Google Search Engine not initialized: missing API key or engine ID")
 
+    # Create MCP config provider
+    mcp_config_provider = FileMCPConfigProvider(settings.mcp_config_path)
+    logger.info(f"Initializing MCP config provider with path: {settings.mcp_config_path}")
+
     return AgentService(
         llm=OpenAILLM(),
         agent_repository=MongoAgentRepository(),
@@ -50,6 +55,7 @@ def create_agent_service() -> AgentService:
         task_cls=RedisStreamTask,
         json_parser=LLMJsonParser(),
         search_engine=search_engine,
+        mcp_config_provider=mcp_config_provider,
     )
 
 # Create agent service instance

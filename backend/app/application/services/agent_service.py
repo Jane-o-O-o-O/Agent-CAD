@@ -17,6 +17,7 @@ from app.domain.external.llm import LLM
 from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.external.task import Task
 from app.domain.utils.json_parser import JsonParser
+from app.domain.external.mcp_config import MCPConfigProvider
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -30,7 +31,8 @@ class AgentService:
         sandbox_cls: Type[Sandbox],
         task_cls: Type[Task],
         json_parser: JsonParser,
-        search_engine: Optional[SearchEngine] = None
+        search_engine: Optional[SearchEngine] = None,
+        mcp_config_provider: Optional[MCPConfigProvider] = None
     ):
         logger.info("Initializing AgentService")
         self._agent_repository = agent_repository
@@ -43,6 +45,7 @@ class AgentService:
             task_cls,
             json_parser,
             search_engine,
+            mcp_config_provider,
         )
         self._llm = llm
         self._search_engine = search_engine

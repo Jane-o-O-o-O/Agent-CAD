@@ -20,6 +20,7 @@ from app.domain.external.sandbox import Sandbox
 from app.domain.external.browser import Browser
 from app.domain.external.search import SearchEngine
 from app.domain.external.llm import LLM
+from app.domain.external.mcp_config import MCPConfigProvider
 from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.external.task import TaskRunner, Task
 from app.domain.repositories.session_repository import SessionRepository
@@ -41,6 +42,7 @@ class AgentTaskRunner(TaskRunner):
         session_repository: SessionRepository,
         json_parser: JsonParser,
         search_engine: Optional[SearchEngine] = None,
+        mcp_config_provider: Optional[MCPConfigProvider] = None,
     ):
         self._session_id = session_id
         self._agent_id = agent_id
@@ -51,6 +53,7 @@ class AgentTaskRunner(TaskRunner):
         self._repository = agent_repository
         self._session_repository = session_repository
         self._json_parser = json_parser
+        self._mcp_config_provider = mcp_config_provider
         self._flow = PlanActFlow(
             self._agent_id,
             self._repository,
@@ -61,6 +64,7 @@ class AgentTaskRunner(TaskRunner):
             self._browser,
             self._json_parser,
             self._search_engine,
+            self._mcp_config_provider,
         )
 
     async def _put_and_add_event(self, task: Task, event: BaseEvent) -> None:
