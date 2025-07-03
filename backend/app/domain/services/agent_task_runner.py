@@ -25,13 +25,14 @@ from app.domain.external.browser import Browser
 from app.domain.external.search import SearchEngine
 from app.domain.external.llm import LLM
 from app.domain.external.file import FileStorage
-from app.domain.external.mcp_config import MCPConfigProvider
 from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.external.task import TaskRunner, Task
 from app.domain.repositories.session_repository import SessionRepository
+from app.domain.repositories.mcp_repository import MCPRepository
 from app.domain.models.session import SessionStatus
 from app.domain.models.file import FileInfo
 from app.domain.utils.json_parser import JsonParser
+from app.domain.services.tools.mcp import MCPTool
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +49,8 @@ class AgentTaskRunner(TaskRunner):
         session_repository: SessionRepository,
         json_parser: JsonParser,
         file_storage: FileStorage,
+        mcp_repository: MCPRepository,
         search_engine: Optional[SearchEngine] = None,
-        mcp_config_provider: Optional[MCPConfigProvider] = None,
     ):
         self._session_id = session_id
         self._agent_id = agent_id
@@ -61,7 +62,8 @@ class AgentTaskRunner(TaskRunner):
         self._session_repository = session_repository
         self._json_parser = json_parser
         self._file_storage = file_storage
-        self._mcp_config_provider = mcp_config_provider
+        self._mcp_repository = mcp_repository
+        self._mcp_tool = MCPTool()
         self._flow = PlanActFlow(
             self._agent_id,
             self._repository,
@@ -71,8 +73,8 @@ class AgentTaskRunner(TaskRunner):
             self._sandbox,
             self._browser,
             self._json_parser,
+            self._mcp_tool,
             self._search_engine,
-            self._mcp_config_provider,
         )
 
     async def _put_and_add_event(self, task: Task, event: AgentEvent) -> None:
@@ -204,6 +206,7 @@ class AgentTaskRunner(TaskRunner):
         try:
             logger.info(f"Agent {self._agent_id} message processing task started")
             await self._sandbox.ensure_sandbox()
+            await self._mcp_tool.initialized(await self._mcp_repository.get_mcp_config())
             while not await task.input_stream.is_empty():
                 event = await self._pop_event(task)
                 message = ""
@@ -267,17 +270,13 @@ class AgentTaskRunner(TaskRunner):
         """Destroy the task and release resources"""
         logger.info(f"Starting to destroy agent task")
         
-        # Cleanup flow resources (including MCP tools)
-        if self._flow and hasattr(self._flow, 'cleanup'):
-            try:
-                await self._flow.cleanup()
-                logger.debug(f"Agent {self._agent_id} flow resources cleaned up")
-            except Exception as e:
-                logger.error(f"Agent {self._agent_id} flow cleanup failed: {e}")
-        
         # Destroy sandbox environment
         if self._sandbox:
             logger.debug(f"Destroying Agent {self._agent_id}'s sandbox environment")
             await self._sandbox.destroy()
+        
+        if self._mcp_tool:
+            logger.debug(f"Destroying Agent {self._agent_id}'s MCP tool")
+            await self._mcp_tool.cleanup()
         
         logger.debug(f"Agent {self._agent_id} has been fully closed and resources cleared")

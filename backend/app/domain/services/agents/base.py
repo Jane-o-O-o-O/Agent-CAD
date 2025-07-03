@@ -32,6 +32,7 @@ class BaseAgent(ABC):
     max_iterations: int = 100
     max_retries: int = 3
     retry_interval: float = 1.0
+    tool_choice: Optional[str] = None
 
     def __init__(
         self,
@@ -53,19 +54,6 @@ class BaseAgent(ABC):
         available_tools = []
         for tool in self.tools:
             available_tools.extend(tool.get_tools())
-        return available_tools
-    
-    async def get_available_tools_async(self) -> Optional[List[Dict[str, Any]]]:
-        """Get all available tools list (async version for MCP tools)"""
-        available_tools = []
-        for tool in self.tools:
-            if hasattr(tool, 'get_tools_async'):
-                # 支持异步工具获取的工具（如 MCP 工具）
-                tools = await tool.get_tools_async()
-                available_tools.extend(tools)
-            else:
-                # 普通同步工具
-                available_tools.extend(tool.get_tools())
         return available_tools
     
     def get_tool(self, function_name: str) -> BaseTool:
@@ -166,11 +154,10 @@ class BaseAgent(ABC):
         if format:
             response_format = {"type": format}
 
-        # 使用异步工具获取方法
-        tools = await self.get_available_tools_async()
         message = await self.llm.ask(self.memory.get_messages(), 
-                                     tools=tools, 
-                                     response_format=response_format)
+                                     tools=self.get_available_tools(), 
+                                     response_format=response_format,
+                                     tool_choice=self.tool_choice)
         if message.get("tool_calls"):
             message["tool_calls"] = message["tool_calls"][:1]
         await self._add_to_memory([message])

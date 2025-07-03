@@ -77,14 +77,14 @@ services:
       #- GOOGLE_SEARCH_ENGINE_ID=
 
       # MCP configuration file path
-      - MCP_CONFIG_PATH=/app/mcp.json
+      #- MCP_CONFIG_PATH=/etc/mcp.json
 
       # Application log level
       - LOG_LEVEL=INFO
 
   sandbox:
     image: simpleyyt/manus-sandbox
-    command: /bin/sh -c "exit 0" # prevent sandbox from starting, ensure image is pulled
+    command: /bin/sh -c "exit 0"  # prevent sandbox from starting, ensure image is pulled
     restart: "no"
     networks:
       - manus-network
@@ -113,4 +113,3 @@ networks:
   manus-network:
     name: manus-network
     driver: bridge
-

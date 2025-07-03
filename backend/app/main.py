@@ -18,13 +18,13 @@ from app.infrastructure.external.sandbox.docker_sandbox import DockerSandbox
 from app.infrastructure.external.file.gridfsfile import GridFSFileStorage
 from app.infrastructure.repositories.mongo_agent_repository import MongoAgentRepository
 from app.infrastructure.repositories.mongo_session_repository import MongoSessionRepository
+from app.infrastructure.repositories.file_mcp_repository import FileMCPRepository
 from app.infrastructure.external.task.redis_task import RedisStreamTask
 from app.interfaces.api.routes import get_agent_service
 from app.interfaces.api.file_routes import get_file_service
 from app.application.services.file_service import FileService
 from app.infrastructure.models.documents import AgentDocument, SessionDocument
 from app.infrastructure.utils.llm_json_parser import LLMJsonParser
-from app.infrastructure.external.mcp.file_mcp_config_provider import FileMCPConfigProvider
 from beanie import init_beanie
 
 # Initialize logging system
@@ -57,10 +57,6 @@ def create_agent_service() -> AgentService:
     else:
         logger.warning(f"Unknown search provider: {settings.search_provider}")
 
-    # Create MCP config provider
-    mcp_config_provider = FileMCPConfigProvider(settings.mcp_config_path)
-    logger.info(f"Initializing MCP config provider with path: {settings.mcp_config_path}")
-
     return AgentService(
         llm=OpenAILLM(),
         agent_repository=MongoAgentRepository(),
@@ -70,7 +66,7 @@ def create_agent_service() -> AgentService:
         json_parser=LLMJsonParser(),
         file_storage=file_storage,
         search_engine=search_engine,
-        mcp_config_provider=mcp_config_provider,
+        mcp_repository=FileMCPRepository(),
     )
 
 # Create agent service instance

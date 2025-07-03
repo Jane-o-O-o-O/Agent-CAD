@@ -35,11 +35,7 @@ export const TOOL_FUNCTION_MAP: {[key: string]: string} = {
   
   // Message tools
   "message_notify_user": "Sending notification",
-  "message_ask_user": "Asking question",
-  
-  // MCP tools - 通用处理所有以mcp_开头的工具
-  "list_mcp_servers": "Listing MCP servers",
-  "list_mcp_tools": "Listing MCP tools"
+  "message_ask_user": "Asking question"
 };
 
 /**

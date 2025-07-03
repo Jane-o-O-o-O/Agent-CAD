@@ -9,7 +9,6 @@
       ],
       "transport": "stdio",
       "enabled": true,
-      "auto_connect": true,
       "description": "Access to local filesystem"
     },
     "github": {
@@ -19,8 +18,7 @@
         "@modelcontextprotocol/server-github"
       ],
       "transport": "stdio",
-      "enabled": false,
-      "auto_connect": true,
+      "enabled": true,
       "description": "GitHub API integration",
       "env": {
         "GITHUB_TOKEN": "your-github-token"
@@ -29,8 +27,7 @@
     "example-http": {
       "url": "http://localhost:8080/mcp",
       "transport": "sse",
-      "enabled": false,
-      "auto_connect": true,
+      "enabled": true,
       "description": "Example HTTP MCP server",
       "headers": {
         "Authorization": "Bearer your-token"
@@ -39,8 +36,7 @@
     "example-streamable": {
       "url": "http://localhost:9090/mcp",
       "transport": "streamable-http",
-      "enabled": false,
-      "auto_connect": true,
+      "enabled": true,
       "description": "Example streamable HTTP MCP server"
     }
   }

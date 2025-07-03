@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     google_search_engine_id: str | None = None
     
     # MCP configuration
-    mcp_config_path: str = "/app/mcp.json"
+    mcp_config_path: str = "/etc/mcp.json"
     
     # Logging configuration
     log_level: str = "INFO"

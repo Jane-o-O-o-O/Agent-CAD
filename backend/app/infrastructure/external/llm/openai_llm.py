@@ -33,8 +33,9 @@ class OpenAILLM(LLM):
         return self._max_tokens
     
     async def ask(self, messages: List[Dict[str, str]], 
-                            tools: Optional[List[Dict[str, Any]]] = None,
-                            response_format: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                tools: Optional[List[Dict[str, Any]]] = None,
+                response_format: Optional[Dict[str, Any]] = None,
+                tool_choice: Optional[str] = None) -> Dict[str, Any]:
         """Send chat request to OpenAI API"""
         response = None
         try:
@@ -47,6 +48,7 @@ class OpenAILLM(LLM):
                     messages=messages,
                     tools=tools,
                     response_format=response_format,
+                    tool_choice=tool_choice
                 )
             else:
                 logger.debug(f"Sending request to OpenAI without tools, model: {self._model_name}")
