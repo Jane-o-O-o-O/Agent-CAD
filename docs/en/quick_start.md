@@ -51,6 +51,7 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      #- ./mcp.json:/etc/mcp.json # Mount MCP servers directory
     networks:
       - manus-network
     environment:

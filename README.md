@@ -34,7 +34,7 @@ https://github.com/user-attachments/assets/37060a09-c647-4bcb-920c-959f7fa73ebe
 ## Key Features
 
  * Deployment: Minimal deployment requires only an LLM service, with no dependency on other external services.
- * Tools: Supports Terminal, Browser, File, Web Search, and messaging tools with real-time viewing and takeover capabilities.
+ * Tools: Supports Terminal, Browser, File, Web Search, and messaging tools with real-time viewing and takeover capabilities, supports external MCP tool integration.
  * Sandbox: Each task is allocated a separate sandbox that runs in a local Docker environment.
  * Task Sessions: Session history is managed through MongoDB/Redis, supporting background tasks.
  * Conversations: Supports stopping and interrupting, file upload and download.
@@ -42,7 +42,7 @@ https://github.com/user-attachments/assets/37060a09-c647-4bcb-920c-959f7fa73ebe
 
 ## Development Roadmap
 
- * Tools: Support for Deploy & Expose, and external MCP tool integration.
+ * Tools: Support for Deploy & Expose.
  * Sandbox: Support for mobile and Windows computer access.
  * Deployment: Support for K8s and Docker Swarm multi-cluster deployment.
  * Authentication: User login and authentication.
@@ -105,6 +105,7 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      #- ./mcp.json:/etc/mcp.json # Mount MCP servers directory
     networks:
       - manus-network
     environment:
