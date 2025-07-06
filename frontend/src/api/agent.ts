@@ -79,15 +79,12 @@ export const chatWithSession = async (
  * @param shellSessionId Shell session ID
  * @returns Shell session output content
  */
-export async function viewShellSession(sessionId: string, shellSessionId: string, callbacks?: SSECallbacks<ShellViewResponse>): Promise<() => void> {
-  return createSSEConnection<ShellViewResponse>(
+export async function viewShellSession(sessionId: string, shellSessionId: string): Promise<ShellViewResponse> {
+  const response = await apiClient.post<ApiResponse<ShellViewResponse>>(
     `/sessions/${sessionId}/shell`,
-    {
-      method: 'POST',
-      body: { session_id: shellSessionId }
-    },
-    callbacks
+    { session_id: shellSessionId }
   );
+  return response.data.data;
 }
 
 /**
@@ -96,15 +93,12 @@ export async function viewShellSession(sessionId: string, shellSessionId: string
  * @param file File path
  * @returns File content
  */
-export async function viewFile(sessionId: string, file: string, callbacks?: SSECallbacks<FileViewResponse>): Promise<() => void> {
-  return createSSEConnection<FileViewResponse>(
+export async function viewFile(sessionId: string, file: string): Promise<FileViewResponse> {
+  const response = await apiClient.post<ApiResponse<FileViewResponse>>(
     `/sessions/${sessionId}/file`,
-    {
-      method: 'POST',
-      body: { file }
-    },
-    callbacks
+    { file }
   );
+  return response.data.data;
 }
 
 export async function getSessionFiles(sessionId: string): Promise<FileInfo[]> {

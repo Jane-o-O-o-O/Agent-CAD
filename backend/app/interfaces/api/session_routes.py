@@ -11,14 +11,13 @@ from app.application.services.agent_service import AgentService
 from app.interfaces.schemas.request import ChatRequest, FileViewRequest, ShellViewRequest
 from app.interfaces.schemas.response import (
     APIResponse, CreateSessionResponse, GetSessionResponse, 
-    ListSessionItem, ListSessionResponse
+    ListSessionItem, ListSessionResponse, ShellViewResponse, FileViewResponse
 )
 from app.interfaces.schemas.event import SSEEventFactory
 from app.domain.models.file import FileInfo
 
 logger = logging.getLogger(__name__)
 SESSION_POLL_INTERVAL = 5
-TOOL_POLL_INTERVAL = 5
 
 def get_agent_service() -> AgentService:
     # Placeholder for dependency injection
@@ -136,7 +135,7 @@ async def view_shell(
     session_id: str,
     request: ShellViewRequest,
     agent_service: AgentService = Depends(get_agent_service)
-) -> EventSourceResponse:
+) -> APIResponse[ShellViewResponse]:
     """View shell session output
     
     If the agent does not exist or fails to get shell output, an appropriate exception will be thrown and handled by the global exception handler
@@ -146,24 +145,17 @@ async def view_shell(
         request: Shell view request containing session ID
         
     Returns:
-        EventSourceResponse with shell output updates
+        APIResponse with shell output
     """
-    async def event_generator() -> AsyncGenerator[ServerSentEvent, None]:
-        while True:
-            result = await agent_service.shell_view(session_id, request.session_id)
-            yield ServerSentEvent(
-                event="shell",
-                data=result.model_dump_json()
-            )
-            await asyncio.sleep(TOOL_POLL_INTERVAL)
-    return EventSourceResponse(event_generator())
+    result = await agent_service.shell_view(session_id, request.session_id)
+    return APIResponse.success(result)
 
 @router.post("/{session_id}/file")
 async def view_file(
     session_id: str,
     request: FileViewRequest,
     agent_service: AgentService = Depends(get_agent_service)
-) -> EventSourceResponse:
+) -> APIResponse[FileViewResponse]:
     """View file content
     
     If the agent does not exist or fails to get file content, an appropriate exception will be thrown and handled by the global exception handler
@@ -173,17 +165,10 @@ async def view_file(
         request: File view request containing file path
         
     Returns:
-        EventSourceResponse with file content updates
+        APIResponse with file content
     """
-    async def event_generator() -> AsyncGenerator[ServerSentEvent, None]:
-        while True:
-            result = await agent_service.file_view(session_id, request.file)
-            yield ServerSentEvent(
-                event="file",
-                data=result.model_dump_json()
-            )
-            await asyncio.sleep(TOOL_POLL_INTERVAL)
-    return EventSourceResponse(event_generator())
+    result = await agent_service.file_view(session_id, request.file)
+    return APIResponse.success(result)
 
 @router.websocket("/{session_id}/vnc")
 async def vnc_websocket(

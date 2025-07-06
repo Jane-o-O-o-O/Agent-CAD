@@ -73,7 +73,7 @@ defineExpose({
 });
 
 const fileContent = ref("");
-const cancelViewFile = ref<(() => void) | null>(null);
+const refreshTimer = ref<number | null>(null);
 
 const filePath = computed(() => {
   if (props.toolContent && props.toolContent.args.file) {
@@ -91,27 +91,49 @@ const fileName = computed(() => {
 
 // Load file content
 const loadFileContent = async () => {
-  if (cancelViewFile.value) {
-    cancelViewFile.value();
-  }
   if (!props.live) {
     fileContent.value = props.toolContent.content?.content || "";
     return;
   }
+  
   if (!filePath.value) return;
-  cancelViewFile.value = await viewFile(props.sessionId, filePath.value, {
-    onMessage: (event) => {
-      if (event.event === "file") {
-        fileContent.value = event.data.content;
-      }
-    }
-  })
+  
+  try {
+    const response = await viewFile(props.sessionId, filePath.value);
+    fileContent.value = response.content;
+  } catch (error) {
+    console.error("Failed to load file content:", error);
+  }
+};
+
+// Start auto-refresh timer
+const startAutoRefresh = () => {
+  if (refreshTimer.value) {
+    clearInterval(refreshTimer.value);
+  }
+  
+  if (props.live && filePath.value) {
+    refreshTimer.value = setInterval(() => {
+      loadFileContent();
+    }, 5000);
+  }
+};
+
+// Stop auto-refresh timer
+const stopAutoRefresh = () => {
+  if (refreshTimer.value) {
+    clearInterval(refreshTimer.value);
+    refreshTimer.value = null;
+  }
 };
 
 // Watch for filename changes to reload content
-watch(filePath, (newVal) => {
+watch(filePath, (newVal: string) => {
   if (newVal) {
     loadFileContent();
+    startAutoRefresh();
+  } else {
+    stopAutoRefresh();
   }
 });
 
@@ -119,15 +141,23 @@ watch(() => props.toolContent.timestamp, () => {
   loadFileContent();
 });
 
+// Watch for live prop changes
+watch(() => props.live, (live: boolean) => {
+  if (live) {
+    loadFileContent();
+    startAutoRefresh();
+  } else {
+    stopAutoRefresh();
+  }
+});
+
 // Load content when component is mounted
 onMounted(() => {
   loadFileContent();
+  startAutoRefresh();
 });
 
 onUnmounted(() => {
-  if (cancelViewFile.value) {
-    cancelViewFile.value();
-    cancelViewFile.value = null;
-  }
+  stopAutoRefresh();
 });
 </script>

@@ -1,6 +1,7 @@
 from typing import AsyncGenerator, Optional, List
 from app.domain.models.plan import Plan, Step, ExecutionStatus
 from app.domain.models.file import FileInfo
+from app.domain.models.message import Message
 from app.domain.services.agents.base import BaseAgent
 from app.domain.external.llm import LLM
 from app.domain.external.sandbox import Sandbox
@@ -8,7 +9,8 @@ from app.domain.external.browser import Browser
 from app.domain.external.search import SearchEngine
 from app.domain.external.file import FileStorage
 from app.domain.repositories.agent_repository import AgentRepository
-from app.domain.services.prompts.execution import EXECUTION_SYSTEM_PROMPT, EXECUTION_PROMPT, CONCLUSION_PROMPT
+from app.domain.services.prompts.system import SYSTEM_PROMPT
+from app.domain.services.prompts.execution import EXECUTION_PROMPT, SUMMARIZE_PROMPT
 from app.domain.events.agent_events import (
     BaseEvent,
     StepEvent,
@@ -38,7 +40,8 @@ class ExecutionAgent(BaseAgent):
     """
 
     name: str = "execution"
-    system_prompt: str = EXECUTION_SYSTEM_PROMPT
+    system_prompt: str = SYSTEM_PROMPT
+    format: str = "json_object"
 
     def __init__(
         self,
@@ -56,8 +59,13 @@ class ExecutionAgent(BaseAgent):
             tools=tools
         )
     
-    async def execute_step(self, plan: Plan, step: Step, message: str = "", attachments: List[str] = []) -> AsyncGenerator[BaseEvent, None]:
-        message = EXECUTION_PROMPT.format(goal=plan.goal, step=step.description, message=message, attachments=attachments)
+    async def execute_step(self, plan: Plan, step: Step, message: Message) -> AsyncGenerator[BaseEvent, None]:
+        message = EXECUTION_PROMPT.format(
+            step=step.description, 
+            message=message.message,
+            attachments="\n".join(message.attachments),
+            language=plan.language
+        )
         step.status = ExecutionStatus.RUNNING
         yield StepEvent(status=StepStatus.STARTED, step=step)
         async for event in self.execute(message):
@@ -67,8 +75,15 @@ class ExecutionAgent(BaseAgent):
                 yield StepEvent(status=StepStatus.FAILED, step=step)
             elif isinstance(event, MessageEvent):
                 step.status = ExecutionStatus.COMPLETED
-                step.result = event.message
+                parsed_response = await self.json_parser.parse(event.message)
+                new_step = Step.model_validate(parsed_response)
+                step.success = new_step.success
+                step.result = new_step.result
+                step.attachments = new_step.attachments
                 yield StepEvent(status=StepStatus.COMPLETED, step=step)
+                if step.result:
+                    yield MessageEvent(message=step.result)
+                continue
             elif isinstance(event, ToolEvent):
                 if event.function_name == "message_ask_user":
                     if event.status == ToolStatus.CALLING:
@@ -80,13 +95,14 @@ class ExecutionAgent(BaseAgent):
             yield event
         step.status = ExecutionStatus.COMPLETED
 
-    async def conclusion(self) -> AsyncGenerator[BaseEvent, None]:
-        message = CONCLUSION_PROMPT
-        async for event in self.execute(message, format="json_object"):
+    async def summarize(self) -> AsyncGenerator[BaseEvent, None]:
+        message = SUMMARIZE_PROMPT
+        async for event in self.execute(message):
             if isinstance(event, MessageEvent):
-                logger.debug(f"Execution agent conclusion: {event.message}")
+                logger.debug(f"Execution agent summary: {event.message}")
                 parsed_response = await self.json_parser.parse(event.message)
-                attachments = [FileInfo(file_path=file_path) for file_path in parsed_response.get("attachments", [])]
-                yield MessageEvent(message=parsed_response.get("message", ""), attachments=attachments)
+                message = Message.model_validate(parsed_response)
+                attachments = [FileInfo(file_path=file_path) for file_path in message.attachments]
+                yield MessageEvent(message=message.message, attachments=attachments)
                 continue
             yield event

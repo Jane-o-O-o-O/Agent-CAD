@@ -36,7 +36,7 @@ class MessageTool(BaseTool):
         """
             
         # Return success result, actual UI display logic implemented by caller
-        return ToolResult(success=True)
+        return ToolResult(success=True, data="Continue")
     
     @tool(
         name="message_ask_user",

@@ -188,15 +188,12 @@ export const createSSEConnection = async <T = any>(
     });
   };
 
-  // 开始连接
   createConnection().catch((error) => {
-    // 只处理非取消错误
     if (!abortController.signal.aborted) {
       console.error('SSE connection failed:', error);
     }
   });
 
-  // 返回取消函数
   return () => {
     abortController.abort();
   };

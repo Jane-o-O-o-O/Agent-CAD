@@ -1,6 +1,7 @@
 from typing import Optional, AsyncGenerator, List
 import asyncio
 import logging
+from app.domain.models.message import Message
 from app.domain.events.agent_events import (
     BaseEvent,
     ErrorEvent,
@@ -218,9 +219,9 @@ class AgentTaskRunner(TaskRunner):
                     
                 logger.info(f"Agent {self._agent_id} received new message: {message[:50]}...")
 
-                attachments = [attachment.file_path for attachment in event.attachments]
+                message_obj = Message(message=message, attachments=[attachment.file_path for attachment in event.attachments])
                 
-                async for event in self._run_flow(message, attachments):
+                async for event in self._run_flow(message_obj):
                     await self._put_and_add_event(task, event)
                     if isinstance(event, TitleEvent):
                         await self._session_repository.update_title(self._session_id, event.title)
@@ -243,14 +244,14 @@ class AgentTaskRunner(TaskRunner):
             await self._put_and_add_event(task, ErrorEvent(error=f"Task error: {str(e)}"))
             await self._session_repository.update_status(self._session_id, SessionStatus.COMPLETED)
     
-    async def _run_flow(self, message: str, attachments: List[str] = []) -> AsyncGenerator[BaseEvent, None]:
+    async def _run_flow(self, message: Message) -> AsyncGenerator[BaseEvent, None]:
         """Process a single message through the agent's flow and yield events"""
-        if not message:
+        if not message.message:
             logger.warning(f"Agent {self._agent_id} received empty message")
             yield ErrorEvent(error="No message")
             return
 
-        async for event in self._flow.run(message, attachments):
+        async for event in self._flow.run(message):
             if isinstance(event, ToolEvent):
                 # TODO: move to tool function
                 await self._gen_tool_content(event)

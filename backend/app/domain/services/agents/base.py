@@ -7,6 +7,7 @@ from typing import List, Dict, Any, Optional, AsyncGenerator
 from app.domain.external.llm import LLM
 from app.domain.models.agent import Agent
 from app.domain.models.memory import Memory
+from app.domain.models.message import Message
 from app.domain.services.tools.base import BaseTool
 from app.domain.models.tool_result import ToolResult
 from app.domain.events.agent_events import (
@@ -122,6 +123,7 @@ class BaseAgent(ABC):
 
                 tool_response = {
                     "role": "tool",
+                    "name": function_name,
                     "tool_call_id": tool_call_id,
                     "content": result.model_dump_json()
                 }
@@ -145,6 +147,11 @@ class BaseAgent(ABC):
                 "role": "system", "content": self.system_prompt,
             })
         self.memory.add_messages(messages)
+        await self._repository.save_memory(self._agent_id, self.name, self.memory)
+    
+    async def _roll_back_memory(self) -> None:
+        await self._ensure_memory()
+        self.memory.roll_back()
         await self._repository.save_memory(self._agent_id, self.name, self.memory)
 
     async def ask_with_messages(self, messages: List[Dict[str, Any]], format: Optional[str] = None) -> Dict[str, Any]:
@@ -170,20 +177,28 @@ class BaseAgent(ABC):
             }
         ], format)
     
-    async def roll_back(self):
+    async def roll_back(self, message: Message):
         await self._ensure_memory()
         last_message = self.memory.get_last_message()
-        if not last_message:
+        if (not last_message or 
+            not last_message.get("tool_calls") or 
+            len(last_message.get("tool_calls")) == 0):
             return
-        if not last_message.get("tool_calls"):
-            return
-        tool_responses = []
-        for tool_call in last_message.get("tool_calls"):
-            tool_call_id = tool_call["id"] or str(uuid.uuid4())
-            tool_responses.append({
+        tool_call = last_message.get("tool_calls")[0]
+        function_name = tool_call.get("function", {}).get("name")
+        tool_call_id = tool_call.get("id")
+        if function_name == "message_ask_user":
+            self.memory.add_message({
                 "role": "tool",
                 "tool_call_id": tool_call_id,
-                "content": ToolResult(success=False).model_dump_json()
+                "name": function_name,
+                "content": message.model_dump_json()
             })
-        await self._add_to_memory(tool_responses)
+        else:
+            self.memory.roll_back()
+        await self._repository.save_memory(self._agent_id, self.name, self.memory)
+    
+    async def compact_memory(self) -> None:
+        await self._ensure_memory()
+        self.memory.compact()
         await self._repository.save_memory(self._agent_id, self.name, self.memory)
