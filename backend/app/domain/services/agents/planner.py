@@ -9,7 +9,8 @@ from app.domain.external.llm import LLM
 from app.domain.services.prompts.system import SYSTEM_PROMPT
 from app.domain.services.prompts.planner import (
     CREATE_PLAN_PROMPT, 
-    UPDATE_PLAN_PROMPT
+    UPDATE_PLAN_PROMPT,
+    PLANNER_SYSTEM_PROMPT
 )
 from app.domain.events.agent_events import (
     BaseEvent,
@@ -34,7 +35,7 @@ class PlannerAgent(BaseAgent):
     """
 
     name: str = "planner"
-    system_prompt: str = SYSTEM_PROMPT
+    system_prompt: str = SYSTEM_PROMPT + PLANNER_SYSTEM_PROMPT
     format: Optional[str] = "json_object"
     tool_choice: Optional[str] = "none"
 

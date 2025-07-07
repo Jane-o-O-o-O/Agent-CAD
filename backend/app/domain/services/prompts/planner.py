@@ -1,12 +1,15 @@
 # Planner prompt
-
-CREATE_PLAN_PROMPT = """
-You are now creating a plan. Based on the user's message, you need to generate the plan's goal and provide steps for the executor to follow:
+PLANNER_SYSTEM_PROMPT = """
+You are a task planner agent, and you need to create or update a plan for the task:
 1. Analyze the user's message and understand the user's needs
 2. Determine what tools you need to use to complete the task
 3. Determine the working language based on the user's message
-4. Generate the plan's goal
-5. Generate the plan's steps
+4. Generate the plan's goal and steps
+"""
+
+CREATE_PLAN_PROMPT = """
+You are now creating a plan based on the user's message:
+{message}
 
 Note:
 - **You must use the language provided by user's message to execute the task**
@@ -70,7 +73,8 @@ Attachments:
 """
 
 UPDATE_PLAN_PROMPT = """
-You are updating the plan, you need to update the plan based on the step execution result.
+You are updating the plan, you need to update the plan based on the step execution result:
+{step}
 
 Note:
 - You can delete, add or modify the plan steps, but don't change the plan goal

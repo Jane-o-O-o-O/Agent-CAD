@@ -10,7 +10,7 @@ from app.domain.external.search import SearchEngine
 from app.domain.external.file import FileStorage
 from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.services.prompts.system import SYSTEM_PROMPT
-from app.domain.services.prompts.execution import EXECUTION_PROMPT, SUMMARIZE_PROMPT
+from app.domain.services.prompts.execution import EXECUTION_SYSTEM_PROMPT, EXECUTION_PROMPT, SUMMARIZE_PROMPT
 from app.domain.events.agent_events import (
     BaseEvent,
     StepEvent,
@@ -40,7 +40,7 @@ class ExecutionAgent(BaseAgent):
     """
 
     name: str = "execution"
-    system_prompt: str = SYSTEM_PROMPT
+    system_prompt: str = SYSTEM_PROMPT + EXECUTION_SYSTEM_PROMPT
     format: str = "json_object"
 
     def __init__(
