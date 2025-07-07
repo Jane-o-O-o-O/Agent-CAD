@@ -117,21 +117,6 @@
         tool_calls:
           - type: function
             function:
-              name: shell_exec
-              arguments: |
-                {
-                    "id": "shell-1",
-                    "exec_dir": "/home/ubuntu",
-                    "command": "sudo apt update"
-                }
-- choices:
-    - index: 0
-      message:
-        role: assistant
-        content: null
-        tool_calls:
-          - type: function
-            function:
               name: browser_navigate
               arguments: |
                 {
@@ -143,11 +128,17 @@
       message:
         role: assistant
         content: |
-          test end
+          {
+            "success": true,
+            "result": "test end",
+            "attachments": [
+              "/home/ubuntu/example.txt",
+              "/home/ubuntu/example.md",
+              "/home/ubuntu/example.py"
+            ]
+          }
 
-- id: chatcmpl
-  object: chat.completion
-  choices:
+- choices:
     - index: 0
       message:
         role: assistant
