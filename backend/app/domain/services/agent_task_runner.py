@@ -1,6 +1,7 @@
 from typing import Optional, AsyncGenerator, List
 import asyncio
 import logging
+from pydantic import TypeAdapter
 from app.domain.models.message import Message
 from app.domain.events.agent_events import (
     BaseEvent,
@@ -15,7 +16,6 @@ from app.domain.events.agent_events import (
     SearchToolContent,
     BrowserToolContent,
     ToolStatus,
-    AgentEventFactory,
     AgentEvent,
     McpToolContent,
     ToolStatus
@@ -88,7 +88,7 @@ class AgentTaskRunner(TaskRunner):
         if event_str is None:
             logger.warning(f"Agent {self._agent_id} received empty message")
             return
-        event = AgentEventFactory.from_json(event_str)
+        event = TypeAdapter(AgentEvent).validate_json(event_str)
         event.id = event_id
         return event
     
