@@ -13,7 +13,7 @@ from app.interfaces.schemas.response import (
     APIResponse, CreateSessionResponse, GetSessionResponse, 
     ListSessionItem, ListSessionResponse, ShellViewResponse, FileViewResponse
 )
-from app.interfaces.schemas.event import SSEEventFactory
+from app.interfaces.schemas.event import EventMapper
 from app.domain.models.file import FileInfo
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ async def get_session(
     return APIResponse.success(GetSessionResponse(
         session_id=session.id,
         title=session.title,
-        events=SSEEventFactory.from_events(session.events)
+        events=EventMapper.events_to_sse_events(session.events)
     ))
 
 @router.delete("/{session_id}", response_model=APIResponse[None])
@@ -120,7 +120,7 @@ async def chat(
             attachments=request.attachments
         ):
             logger.debug(f"Received event from chat: {event}")
-            sse_event = SSEEventFactory.from_event(event)
+            sse_event = EventMapper.event_to_sse_event(event)
             logger.debug(f"Received event: {sse_event}")
             if sse_event:
                 yield ServerSentEvent(

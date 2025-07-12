@@ -113,7 +113,6 @@ class WaitEvent(BaseEvent):
     type: Literal["wait"] = "wait"
 
 AgentEvent = Union[
-    BaseEvent,
     ErrorEvent,
     PlanEvent, 
     ToolEvent,

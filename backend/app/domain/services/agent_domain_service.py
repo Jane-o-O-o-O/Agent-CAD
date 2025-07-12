@@ -6,7 +6,7 @@ from app.domain.models.session import Session, SessionStatus
 from app.domain.external.llm import LLM
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.search import SearchEngine
-from app.domain.events.agent_events import BaseEvent, ErrorEvent, DoneEvent, PlanEvent, StepEvent, ToolEvent, MessageEvent, WaitEvent, AgentEvent
+from app.domain.events.agent_events import BaseEvent, ErrorEvent, DoneEvent, MessageEvent, WaitEvent, AgentEvent
 from pydantic import TypeAdapter
 from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.repositories.session_repository import SessionRepository
