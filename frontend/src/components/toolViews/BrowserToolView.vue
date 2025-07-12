@@ -28,14 +28,14 @@
 </template>
 
 <script setup lang="ts">
-import { ToolContent } from '../types/message';
+import { ToolContent } from '@/types/message';
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { getVNCUrl } from '../api/agent';
-import { getFileDownloadUrl } from '../api/file';
+import { getVNCUrl } from '@/api/agent';
+import { getFileDownloadUrl } from '@/api/file';
 // @ts-ignore
 import RFB from '@novnc/novnc/lib/rfb';
-import TakeOverIcon from './icons/TakeOverIcon.vue';
+import TakeOverIcon from '@/components/icons/TakeOverIcon.vue';
 
 const props = defineProps<{
   sessionId: string;

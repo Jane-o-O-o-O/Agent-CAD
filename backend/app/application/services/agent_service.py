@@ -7,7 +7,7 @@ from app.domain.repositories.session_repository import SessionRepository
 from app.interfaces.schemas.response import ShellViewResponse, FileViewResponse, GetSessionResponse
 from app.domain.models.agent import Agent
 from app.domain.services.agent_domain_service import AgentDomainService
-from app.domain.events.agent_events import AgentEvent
+from app.domain.models.event import AgentEvent
 from app.application.errors.exceptions import NotFoundError
 from typing import Type
 from app.domain.models.agent import Agent

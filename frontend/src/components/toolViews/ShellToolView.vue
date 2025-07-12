@@ -21,9 +21,9 @@
 
 <script setup lang="ts">
 import { onMounted, ref, computed, watch, onUnmounted } from 'vue';
-import { viewShellSession } from '../api/agent';
-import { ToolContent } from '../types/message';
-//import { showErrorToast } from '../utils/toast';
+import { viewShellSession } from '@/api/agent';
+import { ToolContent } from '@/types/message';
+//import { showErrorToast } from '@/utils/toast';
 
 const props = defineProps<{
   sessionId: string;

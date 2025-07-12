@@ -4,7 +4,7 @@ from beanie import Document
 from pydantic import BaseModel
 from app.domain.models.agent import Agent
 from app.domain.models.memory import Memory
-from app.domain.events.agent_events import AgentEvent
+from app.domain.models.event import AgentEvent
 from app.domain.models.session import Session, SessionStatus
 from app.domain.models.file import FileInfo
 

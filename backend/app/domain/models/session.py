@@ -3,7 +3,7 @@ from datetime import datetime, UTC
 from typing import List, Optional
 from enum import Enum
 import uuid
-from app.domain.events.agent_events import PlanEvent, AgentEvent
+from app.domain.models.event import PlanEvent, AgentEvent
 from app.domain.models.plan import Plan
 from app.domain.models.file import FileInfo
 

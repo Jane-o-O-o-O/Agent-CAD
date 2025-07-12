@@ -52,9 +52,9 @@
 
 <script setup lang="ts">
 import { onMounted, ref, computed, watch, onUnmounted } from "vue";
-import { ToolContent } from "../types/message";
-import { viewFile } from "../api/agent";
-import MonacoEditor from "./MonacoEditor.vue";
+import { ToolContent } from "@/types/message";
+import { viewFile } from "@/api/agent";
+import MonacoEditor from "@/components/MonacoEditor.vue";
 //import { showErrorToast } from "../utils/toast";
 //import { useI18n } from "vue-i18n";
 

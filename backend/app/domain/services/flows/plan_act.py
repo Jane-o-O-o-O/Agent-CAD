@@ -4,7 +4,7 @@ from app.domain.models.agent import Agent
 from app.domain.models.message import Message
 from typing import AsyncGenerator, Optional, List
 from enum import Enum
-from app.domain.events.agent_events import (
+from app.domain.models.event import (
     BaseEvent,
     PlanEvent,
     PlanStatus,

@@ -11,7 +11,7 @@ from app.domain.external.file import FileStorage
 from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.services.prompts.system import SYSTEM_PROMPT
 from app.domain.services.prompts.execution import EXECUTION_SYSTEM_PROMPT, EXECUTION_PROMPT, SUMMARIZE_PROMPT
-from app.domain.events.agent_events import (
+from app.domain.models.event import (
     BaseEvent,
     StepEvent,
     StepStatus,

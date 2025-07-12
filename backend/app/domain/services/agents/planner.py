@@ -12,7 +12,7 @@ from app.domain.services.prompts.planner import (
     UPDATE_PLAN_PROMPT,
     PLANNER_SYSTEM_PROMPT
 )
-from app.domain.events.agent_events import (
+from app.domain.models.event import (
     BaseEvent,
     PlanEvent,
     PlanStatus,

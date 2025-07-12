@@ -2,7 +2,7 @@ from typing import Optional, Protocol, List
 from datetime import datetime
 from app.domain.models.session import Session, SessionStatus
 from app.domain.models.file import FileInfo
-from app.domain.events.agent_events import BaseEvent
+from app.domain.models.event import BaseEvent
 
 class SessionRepository(Protocol):
     """Repository interface for Session aggregate"""

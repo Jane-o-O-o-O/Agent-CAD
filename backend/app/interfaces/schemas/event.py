@@ -4,8 +4,8 @@ from datetime import datetime
 from dataclasses import dataclass
 from app.domain.models.plan import ExecutionStatus, Step
 from app.domain.models.file import FileInfo
-from app.domain.events.agent_events import ToolStatus
-from app.domain.events.agent_events import (
+from app.domain.models.event import ToolStatus
+from app.domain.models.event import (
     AgentEvent,
     ErrorEvent,
     PlanEvent,

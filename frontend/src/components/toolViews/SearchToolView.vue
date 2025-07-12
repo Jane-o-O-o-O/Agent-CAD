@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { ToolContent } from '../types/message';
+import { ToolContent } from '@/types/message';
 
 defineProps<{
   sessionId: string;

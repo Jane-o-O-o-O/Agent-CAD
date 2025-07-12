@@ -10,7 +10,7 @@ from app.domain.models.memory import Memory
 from app.domain.models.message import Message
 from app.domain.services.tools.base import BaseTool
 from app.domain.models.tool_result import ToolResult
-from app.domain.events.agent_events import (
+from app.domain.models.event import (
     BaseEvent,
     ToolEvent,
     ToolStatus,

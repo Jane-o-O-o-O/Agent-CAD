@@ -3,7 +3,7 @@ import asyncio
 import logging
 from pydantic import TypeAdapter
 from app.domain.models.message import Message
-from app.domain.events.agent_events import (
+from app.domain.models.event import (
     BaseEvent,
     ErrorEvent,
     TitleEvent,

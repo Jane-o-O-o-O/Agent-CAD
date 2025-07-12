@@ -3,7 +3,7 @@ from datetime import datetime, UTC
 from app.domain.models.session import Session, SessionStatus
 from app.domain.models.file import FileInfo
 from app.domain.repositories.session_repository import SessionRepository
-from app.domain.events.agent_events import BaseEvent
+from app.domain.models.event import BaseEvent
 from app.infrastructure.models.documents import SessionDocument
 import logging
 
