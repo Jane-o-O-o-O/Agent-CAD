@@ -28,12 +28,13 @@ class Sandbox(Protocol):
         """
         ...
     
-    async def view_shell(self, session_id: str) -> ToolResult:
+    async def view_shell(self, session_id: str, console: bool = False) -> ToolResult:
         """View shell status
         
         Args:
             session_id: Session ID
-            
+            console: Whether to return console records
+
         Returns:
             Shell status information
         """

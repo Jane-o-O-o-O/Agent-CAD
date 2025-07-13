@@ -151,7 +151,7 @@ class PlanActFlow(BaseFlow):
                 async for event in self.executor.execute_step(self.plan, step, message):
                     yield event
                 logger.info(f"Agent {self._agent_id} completed step {step.id}, state changed from {AgentStatus.EXECUTING} to {AgentStatus.UPDATING}")
-                #await self.executor.compact_memory()
+                await self.executor.compact_memory()
                 logger.debug(f"Agent {self._agent_id} compacted memory")
                 self.status = AgentStatus.UPDATING
             elif self.status == AgentStatus.UPDATING:

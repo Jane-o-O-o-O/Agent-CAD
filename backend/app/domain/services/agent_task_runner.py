@@ -163,7 +163,7 @@ class AgentTaskRunner(TaskRunner):
                     event.tool_content = SearchToolContent(results=event.function_result.data.get("results", []))
                 elif event.tool_name == "shell":
                     if "id" in event.function_args:
-                        shell_result = await self._sandbox.view_shell(event.function_args["id"])
+                        shell_result = await self._sandbox.view_shell(event.function_args["id"], console=True)
                         event.tool_content = ShellToolContent(console=shell_result.data.get("console", []))
                     else:
                         event.tool_content = ShellToolContent(console="(No Console)")

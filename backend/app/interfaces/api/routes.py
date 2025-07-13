@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 from . import session_routes, file_routes
-from .session_routes import get_agent_service
 
 def create_api_router() -> APIRouter:
     """Create and configure the main API router"""

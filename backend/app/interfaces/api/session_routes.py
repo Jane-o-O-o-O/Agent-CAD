@@ -8,6 +8,7 @@ import websockets
 import logging
 
 from app.application.services.agent_service import AgentService
+from app.interfaces.dependencies import get_agent_service
 from app.interfaces.schemas.request import ChatRequest, FileViewRequest, ShellViewRequest
 from app.interfaces.schemas.response import (
     APIResponse, CreateSessionResponse, GetSessionResponse, 
@@ -18,10 +19,6 @@ from app.domain.models.file import FileInfo
 
 logger = logging.getLogger(__name__)
 SESSION_POLL_INTERVAL = 5
-
-def get_agent_service() -> AgentService:
-    # Placeholder for dependency injection
-    return None
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 

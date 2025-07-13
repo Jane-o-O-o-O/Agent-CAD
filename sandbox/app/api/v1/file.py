@@ -21,7 +21,8 @@ async def read_file(request: FileReadRequest):
         file=request.file,
         start_line=request.start_line,
         end_line=request.end_line,
-        sudo=request.sudo
+        sudo=request.sudo,
+        max_length=request.max_length
     )
     
     # Construct response

@@ -5,18 +5,12 @@ import logging
 
 from app.application.services.file_service import FileService
 from app.application.errors.exceptions import NotFoundError
-from app.infrastructure.external.file.gridfsfile import GridFSFileStorage
-from app.infrastructure.storage.mongodb import get_mongodb
+from app.interfaces.dependencies import get_file_service
 from app.interfaces.schemas.response import (
     APIResponse, FileUploadResponse, FileInfoResponse,
 )
 
 logger = logging.getLogger(__name__)
-
-def get_file_service() -> FileService:
-    """Create FileService instance with GridFS file storage"""
-    file_storage = GridFSFileStorage(mongodb=get_mongodb())
-    return FileService(file_storage=file_storage)
 
 router = APIRouter(prefix="/files", tags=["files"])
 

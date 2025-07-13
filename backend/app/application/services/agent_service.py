@@ -168,7 +168,7 @@ class AgentService:
         err = ""
         try:
             sandbox = await self._get_sandbox(session_id)
-            result = await sandbox.view_shell(shell_session_id)
+            result = await sandbox.view_shell(shell_session_id, console=True)
             if result.success:
                 return ShellViewResponse(**result.data)
             else:

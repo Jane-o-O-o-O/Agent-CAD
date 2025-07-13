@@ -52,11 +52,13 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
         
     def validate(self):
+        """Validate configuration settings"""
         if not self.api_key:
             raise ValueError("API key is required")
 
 @lru_cache()
 def get_settings() -> Settings:
+    """Get application settings"""
     settings = Settings()
     settings.validate()
     return settings 

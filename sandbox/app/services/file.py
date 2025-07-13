@@ -20,7 +20,7 @@ class FileService:
     """File Operation Service"""
 
     async def read_file(self, file: str, start_line: Optional[int] = None, 
-                 end_line: Optional[int] = None, sudo: bool = False) -> FileReadResult:
+                 end_line: Optional[int] = None, sudo: bool = False, max_length: Optional[int] = 10000) -> FileReadResult:
         """
         Asynchronously read file content
         
@@ -69,6 +69,9 @@ class FileService:
                 start = start_line if start_line is not None else 0
                 end = end_line if end_line is not None else len(lines)
                 content = '\n'.join(lines[start:end])
+            
+            if max_length is not None and max_length > 0 and len(content) > max_length:
+                content = content[:max_length] + "(truncated)"
             
             return FileReadResult(
                 content=content,

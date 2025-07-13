@@ -187,10 +187,13 @@ class DockerSandbox(Sandbox):
         )
         return ToolResult(**response.json())
 
-    async def view_shell(self, session_id: str) -> ToolResult:
+    async def view_shell(self, session_id: str, console: bool = False) -> ToolResult:
         response = await self.client.post(
             f"{self.base_url}/api/v1/shell/view",
-            json={"id": session_id}
+            json={
+                "id": session_id,
+                "console": console
+            }
         )
         return ToolResult(**response.json())
 

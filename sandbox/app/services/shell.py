@@ -11,7 +11,7 @@ import asyncio
 import re
 from typing import Dict, Any, Optional, List, Tuple
 from app.models.shell import (
-    ShellCommandResult, ShellViewResult, ShellWaitResult,
+    ShellExecResult, ShellViewResult, ShellWaitResult,
     ShellWriteResult, ShellKillResult, ShellTask, ConsoleRecord
 )
 from app.core.exceptions import AppException, ResourceNotFoundException, BadRequestException
@@ -87,7 +87,7 @@ class ShellService:
         
         logger.debug(f"Output reader for session {session_id} has finished")
 
-    async def exec_command(self, session_id: str, exec_dir: Optional[str], command: str) -> ShellCommandResult:
+    async def exec_command(self, session_id: str, exec_dir: Optional[str], command: str) -> ShellExecResult:
         """
         Asynchronously execute a command in the specified shell session
         """
@@ -155,13 +155,12 @@ class ShellService:
                     logger.debug(f"Process completed with code: {wait_result.returncode}")
                     view_result = await self.view_shell(session_id)
                     
-                    return ShellCommandResult(
+                    return ShellExecResult(
                         session_id=session_id,
                         command=command,
                         status="completed",
                         returncode=wait_result.returncode,
                         output=view_result.output,
-                        console=view_result.console
                     )
             except BadRequestException:
                 # Wait timeout, process still running
@@ -175,11 +174,10 @@ class ShellService:
             # Get current console records
             console = self.get_console_records(session_id)
             
-            return ShellCommandResult(
+            return ShellExecResult(
                 session_id=session_id,
                 command=command,
                 status="running",
-                console=console
             )
         except Exception as e:
             logger.error(f"Command execution failed: {str(e)}", exc_info=True)
@@ -188,7 +186,7 @@ class ShellService:
                 data={"session_id": session_id, "command": command}
             )
 
-    async def view_shell(self, session_id: str) -> ShellViewResult:
+    async def view_shell(self, session_id: str, console: bool = False) -> ShellViewResult:
         """
         Asynchronously view the content of the specified shell session
         """
@@ -204,7 +202,10 @@ class ShellService:
         clean_output = self._remove_ansi_escape_codes(raw_output)
         
         # Get command console records with filtered output
-        console = self.get_console_records(session_id)
+        if console:
+            console = self.get_console_records(session_id)
+        else:
+            console = None
         
         return ShellViewResult(
             output=clean_output,

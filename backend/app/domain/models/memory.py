@@ -1,5 +1,10 @@
+import logging
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
+from app.domain.models.tool_result import ToolResult
+
+
+logger = logging.getLogger(__name__)
 
 class Memory(BaseModel):
     """
@@ -37,7 +42,9 @@ class Memory(BaseModel):
         """Compact memory"""
         for message in self.messages:
             if message.get("role") == "tool":
-                message["content"] = "(Content removed)"
+                if message.get("function_name") in ["browser_view", "browser_navigate"]:
+                    message["content"] = ToolResult(success=True, data='(removed)').model_dump_json()
+                    logger.debug(f"Removed tool result from memory: {message['function_name']}")
 
     @property
     def empty(self) -> bool:

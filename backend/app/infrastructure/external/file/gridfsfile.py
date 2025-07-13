@@ -9,6 +9,7 @@ from app.domain.external.file import FileStorage
 from app.domain.models.file import FileInfo
 from app.infrastructure.storage.mongodb import MongoDB
 from app.infrastructure.config import get_settings
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
@@ -178,3 +179,9 @@ class GridFSFileStorage(FileStorage):
         except Exception as e:
             logger.error(f"Failed to get file info {file_id}: {str(e)}")
             return None
+
+@lru_cache()
+def get_file_storage() -> FileStorage:
+    """Get file storage instance"""
+    from app.infrastructure.storage.mongodb import get_mongodb
+    return GridFSFileStorage(mongodb=get_mongodb())

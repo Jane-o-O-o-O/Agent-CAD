@@ -1,5 +1,4 @@
 from redis.asyncio import Redis
-from functools import lru_cache
 import logging
 from app.infrastructure.config import get_settings
 
@@ -37,16 +36,19 @@ class RedisClient:
             await self._client.close()
             self._client = None
             logger.info("Disconnected from Redis")
+                # Clear cache for this module
         get_redis.cache_clear()
     
     @property
     def client(self) -> Redis:
-        """Get Redis client instance."""
+        """Return initialized Redis client"""
         if self._client is None:
-            raise RuntimeError("Redis client not initialized")
+            raise RuntimeError("Redis client not initialized. Call initialize() first.")
         return self._client
 
-@lru_cache
+from functools import lru_cache
+
+@lru_cache()
 def get_redis() -> RedisClient:
     """Get the Redis client instance."""
     return RedisClient() 
