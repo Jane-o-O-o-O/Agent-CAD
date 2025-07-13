@@ -117,6 +117,4 @@ coverage/
 .env*.local 
 .vite/
 docker-compose-test.yml
-*.code-workspace
-mcp_servers/config.json
 mcp.json

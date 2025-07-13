@@ -21,6 +21,11 @@ class BadRequestError(AppException):
         super().__init__(code=400, msg=msg, status_code=400)
 
 
+class ValidationError(AppException):
+    def __init__(self, msg: str = "Validation error"):
+        super().__init__(code=422, msg=msg, status_code=422)
+
+
 class ServerError(AppException):
     def __init__(self, msg: str = "Internal server error"):
         super().__init__(code=500, msg=msg, status_code=500)

@@ -41,6 +41,20 @@ class Settings(BaseSettings):
     google_search_api_key: str | None = None
     google_search_engine_id: str | None = None
     
+    # Auth configuration
+    auth_provider: str = "password"  # "password", "none", "local"
+    password_salt: str | None = None
+    password_hash_rounds: int = 10
+    password_hash_algorithm: str = "pbkdf2_sha256"
+    local_auth_email: str = "admin@localhost"
+    local_auth_password: str = "admin"
+    
+    # JWT configuration
+    jwt_secret_key: str = "your-secret-key-here"  # Should be set in production
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 30
+    jwt_refresh_token_expire_days: int = 7
+    
     # MCP configuration
     mcp_config_path: str = "/etc/mcp.json"
     

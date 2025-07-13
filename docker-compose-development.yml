@@ -12,7 +12,8 @@ services:
       - "5173:5173"  # Vite default development port
     environment:
       - NODE_ENV=development
-      - VITE_API_URL=http://127.0.0.1:8000
+      #- VITE_API_URL=http://127.0.0.1:8000
+      - BACKEND_URL=http://backend:8000
     depends_on:
       - backend
     restart: unless-stopped

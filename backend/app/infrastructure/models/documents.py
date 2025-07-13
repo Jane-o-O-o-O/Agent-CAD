@@ -7,6 +7,8 @@ from app.domain.models.memory import Memory
 from app.domain.models.event import AgentEvent
 from app.domain.models.session import Session, SessionStatus
 from app.domain.models.file import FileInfo
+from app.domain.models.user import User, UserRole
+from pymongo import IndexModel, ASCENDING
 
 T = TypeVar('T', bound=BaseModel)
 
@@ -41,6 +43,26 @@ class BaseDocument(Document, Generic[T]):
         data[cls._ID_FIELD] = data.pop('id')
         return cls.model_validate(data)
 
+class UserDocument(BaseDocument[User], id_field="user_id", domain_model_class=User):
+    """MongoDB document for User"""
+    user_id: str
+    fullname: str
+    email: str  # Now required field for login
+    password_hash: Optional[str] = None
+    role: UserRole = UserRole.USER
+    is_active: bool = True
+    created_at: datetime = datetime.now(timezone.utc)
+    updated_at: datetime = datetime.now(timezone.utc)
+    last_login_at: Optional[datetime] = None
+
+    class Settings:
+        name = "users"
+        indexes = [
+            "user_id",
+            "fullname",  # Keep fullname index but not unique
+            IndexModel([("email", ASCENDING)], unique=True),  # Email as unique index
+        ]
+
 class AgentDocument(BaseDocument[Agent], id_field="agent_id", domain_model_class=Agent):
     """MongoDB document for Agent"""
     agent_id: str
@@ -61,6 +83,7 @@ class AgentDocument(BaseDocument[Agent], id_field="agent_id", domain_model_class
 class SessionDocument(BaseDocument[Session], id_field="session_id", domain_model_class=Session):
     """MongoDB model for Session"""
     session_id: str
+    user_id: str  # User ID that owns this session
     sandbox_id: Optional[str] = None
     agent_id: str
     task_id: Optional[str] = None
@@ -77,4 +100,5 @@ class SessionDocument(BaseDocument[Session], id_field="session_id", domain_model
         name = "sessions"
         indexes = [
             "session_id",
+            "user_id",  # Add index for user_id for efficient queries
         ]
