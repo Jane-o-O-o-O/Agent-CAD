@@ -26,3 +26,4 @@ Each service and tool in AI Manus includes a Built-in version that can be fully 
  * **Task Sessions:** Manages session history through Mongo/Redis, supports background tasks.
  * **Conversations:** Supports stopping and interruption, supports file upload and download.
  * **Multi-language:** Supports Chinese and English. 
+ * **Authentication:** User login and authentication.

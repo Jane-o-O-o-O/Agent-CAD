@@ -43,8 +43,8 @@
 <script setup lang="ts">
 import { toRef } from 'vue';
 import { Minimize2, PlayIcon } from 'lucide-vue-next';
-import type { ToolContent } from '../types/message';
-import { useToolInfo } from '../composables/useTool';
+import type { ToolContent } from '@/types/message';
+import { useToolInfo } from '@/composables/useTool';
 
 const props = defineProps<{
   sessionId?: string;

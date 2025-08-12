@@ -2,15 +2,17 @@ from typing import Dict, Any, List, AsyncGenerator, Optional
 import json
 import logging
 from app.domain.models.plan import Plan, Step
+from app.domain.models.message import Message
 from app.domain.services.agents.base import BaseAgent
 from app.domain.models.memory import Memory
 from app.domain.external.llm import LLM
+from app.domain.services.prompts.system import SYSTEM_PROMPT
 from app.domain.services.prompts.planner import (
-    PLANNER_SYSTEM_PROMPT, 
     CREATE_PLAN_PROMPT, 
-    UPDATE_PLAN_PROMPT
+    UPDATE_PLAN_PROMPT,
+    PLANNER_SYSTEM_PROMPT
 )
-from app.domain.events.agent_events import (
+from app.domain.models.event import (
     BaseEvent,
     PlanEvent,
     PlanStatus,
@@ -33,7 +35,7 @@ class PlannerAgent(BaseAgent):
     """
 
     name: str = "planner"
-    system_prompt: str = PLANNER_SYSTEM_PROMPT
+    system_prompt: str = SYSTEM_PROMPT + PLANNER_SYSTEM_PROMPT
     format: Optional[str] = "json_object"
     tool_choice: Optional[str] = "none"
 
@@ -54,25 +56,28 @@ class PlannerAgent(BaseAgent):
         )
 
 
-    async def create_plan(self, message: Optional[str] = None, attachments: List[str] = []) -> AsyncGenerator[BaseEvent, None]:
-        message = CREATE_PLAN_PROMPT.format(user_message=message, attachments=attachments) if message else None
+    async def create_plan(self, message: Message) -> AsyncGenerator[BaseEvent, None]:
+        message = CREATE_PLAN_PROMPT.format(
+            message=message.message,
+            attachments="\n".join(message.attachments)
+        )
         async for event in self.execute(message):
             if isinstance(event, MessageEvent):
                 logger.info(event.message)
                 parsed_response = await self.json_parser.parse(event.message)
-                steps = [Step(id=step["id"], description=step["description"]) for step in parsed_response["steps"]]
-                plan = Plan(id=f"plan_{len(steps)}", goal=parsed_response["goal"], title=parsed_response["title"], steps=steps, message=parsed_response["message"], todo=parsed_response.get("todo", ""))
+                plan = Plan.model_validate(parsed_response)
                 yield PlanEvent(status=PlanStatus.CREATED, plan=plan)
             else:
                 yield event
 
-    async def update_plan(self, plan: Plan) -> AsyncGenerator[BaseEvent, None]:
-        message = UPDATE_PLAN_PROMPT.format(plan=plan.model_dump_json(include={"steps"}), goal=plan.goal)
+    async def update_plan(self, plan: Plan, step: Step) -> AsyncGenerator[BaseEvent, None]:
+        message = UPDATE_PLAN_PROMPT.format(plan=plan.dump_json(), step=step.model_dump_json())
         async for event in self.execute(message):
             if isinstance(event, MessageEvent):
                 logger.debug(f"Planner agent update plan: {event.message}")
                 parsed_response = await self.json_parser.parse(event.message)
-                new_steps = [Step(id=step["id"], description=step["description"]) for step in parsed_response["steps"]]
+                updated_plan = Plan.model_validate(parsed_response)
+                new_steps = [Step.model_validate(step) for step in updated_plan.steps]
                 
                 # Find the index of the first pending step
                 first_pending_index = None

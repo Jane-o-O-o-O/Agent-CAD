@@ -8,9 +8,10 @@ import getpass
 import socket
 import logging
 import asyncio
+import re
 from typing import Dict, Any, Optional, List, Tuple
 from app.models.shell import (
-    ShellCommandResult, ShellViewResult, ShellWaitResult,
+    ShellExecResult, ShellViewResult, ShellWaitResult,
     ShellWriteResult, ShellKillResult, ShellTask, ConsoleRecord
 )
 from app.core.exceptions import AppException, ResourceNotFoundException, BadRequestException
@@ -24,6 +25,12 @@ class ShellService:
     
     # Store shell tasks
     shell_tasks: Dict[str, ShellTask] = {}
+
+    def _remove_ansi_escape_codes(self, text: str) -> str:
+        """Remove ANSI escape codes from text"""
+        # Pattern to match ANSI escape sequences
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        return ansi_escape.sub('', text)
 
     def _get_display_path(self, path: str) -> str:
         """Get the path for display, replacing user home directory with ~"""
@@ -45,6 +52,7 @@ class ShellService:
         logger.debug(f"Creating process for command: {command} in directory: {exec_dir}")
         return await asyncio.create_subprocess_shell(
             command,
+            executable="/bin/bash",
             cwd=exec_dir,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,  # Redirect stderr to stdout
@@ -79,7 +87,7 @@ class ShellService:
         
         logger.debug(f"Output reader for session {session_id} has finished")
 
-    async def exec_command(self, session_id: str, exec_dir: Optional[str], command: str) -> ShellCommandResult:
+    async def exec_command(self, session_id: str, exec_dir: Optional[str], command: str) -> ShellExecResult:
         """
         Asynchronously execute a command in the specified shell session
         """
@@ -146,20 +154,13 @@ class ShellService:
                     # Process has completed, get the output
                     logger.debug(f"Process completed with code: {wait_result.returncode}")
                     view_result = await self.view_shell(session_id)
-                    # Update the output of the latest console record
-                    if self.active_shells[session_id]["console"]:
-                        self.active_shells[session_id]["console"][-1].output = view_result.output
                     
-                    # Get command console records
-                    console = self.get_console_records(session_id)
-                    
-                    return ShellCommandResult(
+                    return ShellExecResult(
                         session_id=session_id,
                         command=command,
                         status="completed",
                         returncode=wait_result.returncode,
                         output=view_result.output,
-                        console=console
                     )
             except BadRequestException:
                 # Wait timeout, process still running
@@ -173,11 +174,10 @@ class ShellService:
             # Get current console records
             console = self.get_console_records(session_id)
             
-            return ShellCommandResult(
+            return ShellExecResult(
                 session_id=session_id,
                 command=command,
                 status="running",
-                console=console
             )
         except Exception as e:
             logger.error(f"Command execution failed: {str(e)}", exc_info=True)
@@ -186,7 +186,7 @@ class ShellService:
                 data={"session_id": session_id, "command": command}
             )
 
-    async def view_shell(self, session_id: str) -> ShellViewResult:
+    async def view_shell(self, session_id: str, console: bool = False) -> ShellViewResult:
         """
         Asynchronously view the content of the specified shell session
         """
@@ -197,14 +197,18 @@ class ShellService:
         
         shell = self.active_shells[session_id]
         
-        # Directly use the stored output
-        output = shell["output"]
+        # Get raw output and filter ANSI escape codes
+        raw_output = shell["output"]
+        clean_output = self._remove_ansi_escape_codes(raw_output)
         
-        # Get command console records
-        console = self.get_console_records(session_id)
+        # Get command console records with filtered output
+        if console:
+            console = self.get_console_records(session_id)
+        else:
+            console = None
         
         return ShellViewResult(
-            output=output,
+            output=clean_output,
             session_id=session_id,
             console=console
         )
@@ -218,7 +222,18 @@ class ShellService:
             logger.error(f"Session ID not found: {session_id}")
             raise ResourceNotFoundException(f"Session ID does not exist: {session_id}")
         
-        return self.active_shells[session_id]["console"]
+        # Get raw console records and filter ANSI escape codes
+        raw_console = self.active_shells[session_id]["console"]
+        clean_console = []
+        for record in raw_console:
+            clean_record = ConsoleRecord(
+                ps1=record.ps1,
+                command=record.command,
+                output=self._remove_ansi_escape_codes(record.output)
+            )
+            clean_console.append(clean_record)
+        
+        return clean_console
 
     async def wait_for_process(self, session_id: str, seconds: Optional[int] = None) -> ShellWaitResult:
         """

@@ -7,7 +7,7 @@ import logging
 import asyncio
 import io
 from async_lru import alru_cache
-from app.infrastructure.config import get_settings
+from app.core.config import get_settings
 from app.domain.models.tool_result import ToolResult
 from app.domain.external.sandbox import Sandbox
 from app.infrastructure.external.browser.playwright_browser import PlaywrightBrowser
@@ -174,7 +174,8 @@ class DockerSandbox(Sandbox):
         # If we reach here, we've exhausted all retries
         error_message = f"Sandbox services failed to start after {max_retries} attempts ({max_retries * retry_interval} seconds)"
         logger.error(error_message)
-        raise Exception(error_message)
+        # TODO: find a way to handle this
+        #raise Exception(error_message)
 
     async def exec_command(self, session_id: str, exec_dir: str, command: str) -> ToolResult:
         response = await self.client.post(
@@ -187,10 +188,13 @@ class DockerSandbox(Sandbox):
         )
         return ToolResult(**response.json())
 
-    async def view_shell(self, session_id: str) -> ToolResult:
+    async def view_shell(self, session_id: str, console: bool = False) -> ToolResult:
         response = await self.client.post(
             f"{self.base_url}/api/v1/shell/view",
-            json={"id": session_id}
+            json={
+                "id": session_id,
+                "console": console
+            }
         )
         return ToolResult(**response.json())
 

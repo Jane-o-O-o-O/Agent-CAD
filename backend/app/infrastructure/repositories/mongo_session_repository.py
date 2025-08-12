@@ -3,7 +3,7 @@ from datetime import datetime, UTC
 from app.domain.models.session import Session, SessionStatus
 from app.domain.models.file import FileInfo
 from app.domain.repositories.session_repository import SessionRepository
-from app.domain.events.agent_events import BaseEvent
+from app.domain.models.event import BaseEvent
 from app.infrastructure.models.documents import SessionDocument
 import logging
 
@@ -19,17 +19,12 @@ class MongoSessionRepository(SessionRepository):
         )
         
         if not mongo_session:
-            mongo_session = self._to_mongo_session(session)
+            mongo_session = SessionDocument.from_domain(session)
             await mongo_session.save()
             return
         
         # Update fields from session domain model
-        session_data = session.model_dump(exclude={'id', 'created_at'})
-        session_data['session_id'] = session.id
-        session_data['updated_at'] = datetime.now(UTC)
-        
-        for field, value in session_data.items():
-            setattr(mongo_session, field, value)
+        mongo_session.update_from_domain(session)
         await mongo_session.save()
 
 
@@ -38,7 +33,22 @@ class MongoSessionRepository(SessionRepository):
         mongo_session = await SessionDocument.find_one(
             SessionDocument.session_id == session_id
         )
-        return self._to_domain_session(mongo_session) if mongo_session else None
+        return mongo_session.to_domain() if mongo_session else None
+    
+    async def find_by_user_id(self, user_id: str) -> List[Session]:
+        """Find all sessions for a specific user"""
+        mongo_sessions = await SessionDocument.find(
+            SessionDocument.user_id == user_id
+        ).sort("-latest_message_at").to_list()
+        return [mongo_session.to_domain() for mongo_session in mongo_sessions]
+    
+    async def find_by_id_and_user_id(self, session_id: str, user_id: str) -> Optional[Session]:
+        """Find a session by ID and user ID (for authorization)"""
+        mongo_session = await SessionDocument.find_one(
+            SessionDocument.session_id == session_id,
+            SessionDocument.user_id == user_id
+        )
+        return mongo_session.to_domain() if mongo_session else None
     
     async def update_title(self, session_id: str, title: str) -> None:
         """Update the title of a session"""
@@ -65,21 +75,21 @@ class MongoSessionRepository(SessionRepository):
         result = await SessionDocument.find_one(
             SessionDocument.session_id == session_id
         ).update(
-            {"$push": {"events": event}, "$set": {"updated_at": datetime.now(UTC)}}
+            {"$push": {"events": event.model_dump()}, "$set": {"updated_at": datetime.now(UTC)}}
         )
         if not result:
             raise ValueError(f"Session {session_id} not found")
-
+    
     async def add_file(self, session_id: str, file_info: FileInfo) -> None:
         """Add a file to a session"""
         result = await SessionDocument.find_one(
             SessionDocument.session_id == session_id
         ).update(
-            {"$push": {"files": file_info}, "$set": {"updated_at": datetime.now(UTC)}}
+            {"$push": {"files": file_info.model_dump()}, "$set": {"updated_at": datetime.now(UTC)}}
         )
         if not result:
             raise ValueError(f"Session {session_id} not found")
-
+    
     async def remove_file(self, session_id: str, file_id: str) -> None:
         """Remove a file from a session"""
         result = await SessionDocument.find_one(
@@ -115,7 +125,7 @@ class MongoSessionRepository(SessionRepository):
     async def get_all(self) -> List[Session]:
         """Get all sessions"""
         mongo_sessions = await SessionDocument.find().sort("-latest_message_at").to_list()
-        return [self._to_domain_session(mongo_session) for mongo_session in mongo_sessions]
+        return [mongo_session.to_domain() for mongo_session in mongo_sessions]
     
     async def update_status(self, session_id: str, status: SessionStatus) -> None:
         """Update the status of a session"""
@@ -157,16 +167,3 @@ class MongoSessionRepository(SessionRepository):
         if not result:
             raise ValueError(f"Session {session_id} not found")
 
-    def _to_domain_session(self, mongo_session: SessionDocument) -> Session:
-        """Convert MongoDB document to domain model"""
-        # Convert to dict and map session_id to id field
-        session_data = mongo_session.model_dump(exclude={'id'})
-        session_data['id'] = session_data.pop('session_id')
-        return Session.model_validate(session_data)
-    
-    def _to_mongo_session(self, session: Session) -> SessionDocument:
-        """Convert domain session to MongoDB document"""
-        # Convert to dict and map id to session_id field
-        session_data = session.model_dump()
-        session_data['session_id'] = session_data.pop('id')
-        return SessionDocument.model_validate(session_data)

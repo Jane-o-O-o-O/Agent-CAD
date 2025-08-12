@@ -39,13 +39,13 @@ https://github.com/user-attachments/assets/37060a09-c647-4bcb-920c-959f7fa73ebe
  * Task Sessions: Session history is managed through MongoDB/Redis, supporting background tasks.
  * Conversations: Supports stopping and interrupting, file upload and download.
  * Multilingual: Supports both Chinese and English.
+ * Authentication: User login and authentication.
 
 ## Development Roadmap
 
  * Tools: Support for Deploy & Expose.
  * Sandbox: Support for mobile and Windows computer access.
  * Deployment: Support for K8s and Docker Swarm multi-cluster deployment.
- * Authentication: User login and authentication.
 
 ### Overall Design
 
@@ -164,6 +164,25 @@ services:
       # Google Custom Search Engine ID (only needed when SEARCH_PROVIDER=google)
       #- GOOGLE_SEARCH_ENGINE_ID=
 
+      # Auth configuration
+      # Options: password, none, local
+      - AUTH_PROVIDER=password
+
+      # Password auth configuration, only used when AUTH_PROVIDER=password
+      - PASSWORD_SALT=
+      - PASSWORD_HASH_ROUNDS=10
+      - PASSWORD_HASH_ALGORITHM=pbkdf2_sha256
+
+      # Local auth configuration, only used when AUTH_PROVIDER=local
+      #LOCAL_AUTH_EMAIL=admin@example.com
+      #LOCAL_AUTH_PASSWORD=admin
+
+      # JWT configuration
+      - JWT_SECRET_KEY=your-secret-key-here
+      - JWT_ALGORITHM=HS256
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
+
       # MCP configuration file path
       #- MCP_CONFIG_PATH=/etc/mcp.json
 
@@ -279,6 +298,25 @@ SEARCH_PROVIDER=baidu
 # Optional: Google search configuration (only needed when SEARCH_PROVIDER=google)
 #GOOGLE_SEARCH_API_KEY=
 #GOOGLE_SEARCH_ENGINE_ID=
+
+# Auth configuration
+# Options: password, none, local
+AUTH_PROVIDER=password
+
+# Password auth configuration, only used when AUTH_PROVIDER=password
+PASSWORD_SALT=
+PASSWORD_HASH_ROUNDS=10
+PASSWORD_HASH_ALGORITHM=pbkdf2_sha256
+
+# Local auth configuration, only used when AUTH_PROVIDER=local
+#LOCAL_AUTH_EMAIL=admin@example.com
+#LOCAL_AUTH_PASSWORD=admin
+
+# JWT configuration
+JWT_SECRET_KEY=your-secret-key-here
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 
 # MCP configuration
 #MCP_CONFIG_PATH=/etc/mcp.json

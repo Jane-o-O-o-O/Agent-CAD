@@ -6,7 +6,8 @@ from app.domain.models.session import Session, SessionStatus
 from app.domain.external.llm import LLM
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.search import SearchEngine
-from app.domain.events.agent_events import BaseEvent, ErrorEvent, DoneEvent, PlanEvent, StepEvent, ToolEvent, MessageEvent, WaitEvent, AgentEventFactory
+from app.domain.models.event import BaseEvent, ErrorEvent, DoneEvent, MessageEvent, WaitEvent, AgentEvent
+from pydantic import TypeAdapter
 from app.domain.repositories.agent_repository import AgentRepository
 from app.domain.repositories.session_repository import SessionRepository
 from app.domain.services.agent_task_runner import AgentTaskRunner
@@ -74,6 +75,7 @@ class AgentDomainService:
         task_runner = AgentTaskRunner(
             session_id=session.id,
             agent_id=session.agent_id,
+            user_id=session.user_id,
             llm=self._llm,
             sandbox=sandbox,
             browser=browser,
@@ -114,6 +116,7 @@ class AgentDomainService:
     async def chat(
         self,
         session_id: str,
+        user_id: str,
         message: Optional[str] = None,
         timestamp: Optional[datetime] = None,
         latest_event_id: Optional[str] = None,
@@ -124,9 +127,9 @@ class AgentDomainService:
         """
 
         try:
-            session = await self._session_repository.find_by_id(session_id)
+            session = await self._session_repository.find_by_id_and_user_id(session_id, user_id)
             if not session:
-                logger.error(f"Attempted to chat with non-existent Session {session_id}")
+                logger.error(f"Attempted to chat with non-existent Session {session_id} for user {user_id}")
                 raise RuntimeError("Session not found")
 
             task = await self._get_task(session)
@@ -158,7 +161,7 @@ class AgentDomainService:
                 if event_str is None:
                     logger.debug(f"No event found in Session {session_id}'s event queue")
                     continue
-                event = AgentEventFactory.from_json(event_str)
+                event = TypeAdapter(AgentEvent).validate_json(event_str)
                 event.id = event_id
                 logger.debug(f"Got event from Session {session_id}'s event queue: {type(event).__name__}")
                 await self._session_repository.update_unread_message_count(session_id, 0)

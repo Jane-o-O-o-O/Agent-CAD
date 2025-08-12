@@ -39,7 +39,7 @@ async def view_shell(request: ShellViewRequest):
     if not request.id or request.id == "":
         raise BadRequestException("Session ID not provided")
         
-    result = await shell_service.view_shell(session_id=request.id)
+    result = await shell_service.view_shell(session_id=request.id, console=request.console)
     
     # Construct response
     return Response(

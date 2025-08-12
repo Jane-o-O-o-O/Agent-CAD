@@ -39,13 +39,13 @@ https://github.com/user-attachments/assets/5cb2240b-0984-4db0-8818-a24f81624b04
  * 任务会话：通过 Mongo/Redis 对会话历史进行管理，支持后台任务。
  * 对话：支持停止与打断，支持文件上传与下载。
  * 多语言：支持中文与英文。
+ * 认证：用户登录与认证。
 
 ## 开发计划
 
  * 工具：支持 Deploy & Expose。
  * 沙盒：支持手机与 Windows 电脑接入。
  * 部署：支持 K8s 和 Dock Swarm 多集群部署。
- * 认证：用户登录与认证。
 
 ## 环境要求
 
@@ -145,6 +145,25 @@ services:
       #- GOOGLE_SEARCH_API_KEY=
       # Google Custom Search Engine ID (only needed when SEARCH_PROVIDER=google)
       #- GOOGLE_SEARCH_ENGINE_ID=
+
+      # Auth configuration
+      # Options: password, none, local
+      - AUTH_PROVIDER=password
+
+      # Password auth configuration, only used when AUTH_PROVIDER=password
+      - PASSWORD_SALT=
+      - PASSWORD_HASH_ROUNDS=10
+      - PASSWORD_HASH_ALGORITHM=pbkdf2_sha256
+
+      # Local auth configuration, only used when AUTH_PROVIDER=local
+      #LOCAL_AUTH_EMAIL=admin@example.com
+      #LOCAL_AUTH_PASSWORD=admin
+
+      # JWT configuration
+      - JWT_SECRET_KEY=your-secret-key-here
+      - JWT_ALGORITHM=HS256
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 
       # MCP configuration file path
       #- MCP_CONFIG_PATH=/etc/mcp.json
@@ -280,6 +299,25 @@ SEARCH_PROVIDER=baidu
 # Optional: Google search configuration (only needed when SEARCH_PROVIDER=google)
 #GOOGLE_SEARCH_API_KEY=
 #GOOGLE_SEARCH_ENGINE_ID=
+
+# Auth configuration
+# Options: password, none, local
+AUTH_PROVIDER=password
+
+# Password auth configuration, only used when AUTH_PROVIDER=password
+PASSWORD_SALT=
+PASSWORD_HASH_ROUNDS=10
+PASSWORD_HASH_ALGORITHM=pbkdf2_sha256
+
+# Local auth configuration, only used when AUTH_PROVIDER=local
+#LOCAL_AUTH_EMAIL=admin@example.com
+#LOCAL_AUTH_PASSWORD=admin
+
+# JWT configuration
+JWT_SECRET_KEY=your-secret-key-here
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 
 # MCP configuration
 #MCP_CONFIG_PATH=/etc/mcp.json

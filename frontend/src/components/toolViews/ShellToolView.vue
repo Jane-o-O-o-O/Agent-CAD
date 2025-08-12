@@ -21,9 +21,9 @@
 
 <script setup lang="ts">
 import { onMounted, ref, computed, watch, onUnmounted } from 'vue';
-import { viewShellSession } from '../api/agent';
-import { ToolContent } from '../types/message';
-//import { showErrorToast } from '../utils/toast';
+import { viewShellSession } from '@/api/agent';
+import { ToolContent } from '@/types/message';
+//import { showErrorToast } from '@/utils/toast';
 
 const props = defineProps<{
   sessionId: string;
@@ -38,7 +38,7 @@ defineExpose({
 });
 
 const shell = ref('');
-const cancelViewShell = ref<(() => void) | null>(null);
+const refreshTimer = ref<number | null>(null);
 
 // Get shellSessionId from toolContent
 const shellSessionId = computed(() => {
@@ -62,43 +62,64 @@ const updateShellContent = (console: any) => {
 
 // Function to load Shell session content
 const loadShellContent = async () => {
-  if (cancelViewShell.value) {
-    cancelViewShell.value();
-  }
-
   if (!props.live) {
     updateShellContent(props.toolContent.content?.console);
     return;
   }
+  
   if (!shellSessionId.value) return;
 
-  cancelViewShell.value = await viewShellSession(props.sessionId, shellSessionId.value, {
-    onMessage: (event) => {
-      if (event.event === "shell") {
-        updateShellContent(event.data.console);
-      }
-    }
-  })
+  try {
+    const response = await viewShellSession(props.sessionId, shellSessionId.value);
+    updateShellContent(response.console);
+  } catch (error) {
+    console.error("Failed to load shell content:", error);
+  }
 };
 
-watch(shellSessionId, () => {
-  loadShellContent();
-});
+// Start auto-refresh timer
+const startAutoRefresh = () => {
+  if (refreshTimer.value) {
+    clearInterval(refreshTimer.value);
+  }
+  
+  if (props.live && shellSessionId.value) {
+    refreshTimer.value = setInterval(() => {
+      loadShellContent();
+    }, 5000);
+  }
+};
+
+// Stop auto-refresh timer
+const stopAutoRefresh = () => {
+  if (refreshTimer.value) {
+    clearInterval(refreshTimer.value);
+    refreshTimer.value = null;
+  }
+};
 
 watch(() => props.toolContent.timestamp, () => {
   loadShellContent();
 });
 
+// Watch for live prop changes
+watch(() => props.live, (live: boolean) => {
+  if (live) {
+    loadShellContent();
+    startAutoRefresh();
+  } else {
+    stopAutoRefresh();
+  }
+});
+
 // Load content and set up refresh timer when component is mounted
 onMounted(() => {
   loadShellContent();
+  startAutoRefresh();
 });
 
 // Clear timer when component is unmounted
 onUnmounted(() => {
-  if (cancelViewShell.value) {
-    cancelViewShell.value();
-    cancelViewShell.value = null;
-  }
+  stopAutoRefresh();
 });
 </script>

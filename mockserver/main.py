@@ -73,6 +73,10 @@ async def chat_completions(request: ChatCompletionRequest):
         current_index = 0
         logger.error("No mock data available")
         raise HTTPException(status_code=500, detail="No mock data available")
+
+    if len(request.messages) == 2 and current_index > 1:
+        current_index = 0
+        logger.info("Reset index to 0")
     
     delay = float(os.getenv("MOCK_DELAY", "1"))
     if delay > 0:

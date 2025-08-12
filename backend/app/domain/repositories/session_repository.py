@@ -2,7 +2,7 @@ from typing import Optional, Protocol, List
 from datetime import datetime
 from app.domain.models.session import Session, SessionStatus
 from app.domain.models.file import FileInfo
-from app.domain.events.agent_events import BaseEvent
+from app.domain.models.event import BaseEvent
 
 class SessionRepository(Protocol):
     """Repository interface for Session aggregate"""
@@ -13,6 +13,14 @@ class SessionRepository(Protocol):
     
     async def find_by_id(self, session_id: str) -> Optional[Session]:
         """Find a session by its ID"""
+        ...
+    
+    async def find_by_user_id(self, user_id: str) -> List[Session]:
+        """Find all sessions for a specific user"""
+        ...
+    
+    async def find_by_id_and_user_id(self, session_id: str, user_id: str) -> Optional[Session]:
+        """Find a session by ID and user ID (for authorization)"""
         ...
     
     async def update_title(self, session_id: str, title: str) -> None:
@@ -57,7 +65,7 @@ class SessionRepository(Protocol):
     
     async def delete(self, session_id: str) -> None:
         """Delete a session"""
-        ... 
+        ...
     
     async def get_all(self) -> List[Session]:
         """Get all sessions"""

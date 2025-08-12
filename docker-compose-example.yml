@@ -77,6 +77,25 @@ services:
       # Google Custom Search Engine ID (only needed when SEARCH_PROVIDER=google)
       #- GOOGLE_SEARCH_ENGINE_ID=
 
+      # Auth configuration
+      # Options: password, none, local
+      - AUTH_PROVIDER=password
+
+      # Password auth configuration, only used when AUTH_PROVIDER=password
+      - PASSWORD_SALT=
+      - PASSWORD_HASH_ROUNDS=10
+      - PASSWORD_HASH_ALGORITHM=pbkdf2_sha256
+
+      # Local auth configuration, only used when AUTH_PROVIDER=local
+      #LOCAL_AUTH_EMAIL=admin@example.com
+      #LOCAL_AUTH_PASSWORD=admin
+
+      # JWT configuration
+      - JWT_SECRET_KEY=your-secret-key-here
+      - JWT_ALGORITHM=HS256
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
+
       # MCP configuration file path
       #- MCP_CONFIG_PATH=/etc/mcp.json
 

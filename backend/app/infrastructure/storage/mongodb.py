@@ -2,8 +2,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import ConnectionFailure
 from typing import Optional
 import logging
+from app.core.config import get_settings
 from functools import lru_cache
-from app.infrastructure.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -47,15 +47,18 @@ class MongoDB:
             self._client.close()
             self._client = None
             logger.info("Disconnected from MongoDB")
+                # Clear cache for this module
         get_mongodb.cache_clear()
     
     @property
     def client(self) -> AsyncIOMotorClient:
-        """Get the MongoDB client."""
+        """Return initialized MongoDB client"""
+        if self._client is None:
+            raise RuntimeError("MongoDB client not initialized. Call initialize() first.")
         return self._client
-            
 
-@lru_cache
+
+@lru_cache()
 def get_mongodb() -> MongoDB:
     """Get the MongoDB instance."""
     return MongoDB()
