@@ -27,6 +27,7 @@ class CreateSessionResponse(BaseModel):
 class GetSessionResponse(BaseModel):
     session_id: str
     title: Optional[str] = None
+    status: SessionStatus
     events: List[AgentSSEEvent] = []
 
 class ListSessionItem(BaseModel):

@@ -49,6 +49,7 @@ async def get_session(
     return APIResponse.success(GetSessionResponse(
         session_id=session.id,
         title=session.title,
+        status=session.status,
         events=EventMapper.events_to_sse_events(session.events)
     ))
 

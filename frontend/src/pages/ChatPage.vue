@@ -91,6 +91,7 @@ import type { FileInfo } from '../api/file';
 import { useLeftPanel } from '../composables/useLeftPanel'
 import { useSessionFileList } from '../composables/useSessionFileList'
 import { useFilePanel } from '../composables/useFilePanel'
+import { SessionStatus } from '../types/response';
 
 const router = useRouter()
 const { t } = useI18n()
@@ -374,7 +375,9 @@ const restoreSession = async () => {
     handleEvent(event);
   }
   realTime.value = true;
-  await chat();
+  if (session.status === SessionStatus.RUNNING || session.status === SessionStatus.PENDING) {
+    await chat();
+  }
 }
 
 
