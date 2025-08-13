@@ -14,6 +14,7 @@ export interface CreateSessionResponse {
 export interface GetSessionResponse {
     session_id: string;
     title: string | null;
+    status: SessionStatus;
     events: AgentSSEEvent[];
 }
 
