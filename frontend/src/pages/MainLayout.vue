@@ -14,7 +14,6 @@
   <ContextMenu />
   <CustomDialog />
   <SessionFileList />
-  <UserMenu />
 </template>
 
 <script setup lang="ts">
@@ -24,5 +23,4 @@ import ContextMenu from '@/components/ContextMenu.vue';
 import TakeOverView from '@/components/TakeOverView.vue';
 import SessionFileList from '@/components/SessionFileList.vue';
 import FilePanel from '@/components/FilePanel.vue';
-import UserMenu from '@/components/UserMenu.vue';
 </script>
