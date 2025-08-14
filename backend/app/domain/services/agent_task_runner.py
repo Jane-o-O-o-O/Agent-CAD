@@ -34,6 +34,8 @@ from app.domain.models.session import SessionStatus
 from app.domain.models.file import FileInfo
 from app.domain.utils.json_parser import JsonParser
 from app.domain.services.tools.mcp import MCPTool
+from app.domain.models.tool_result import ToolResult
+from app.domain.models.search import SearchResults
 
 logger = logging.getLogger(__name__)
 
@@ -155,14 +157,16 @@ class AgentTaskRunner(TaskRunner):
     
 
     # TODO: refactor this function
-    async def _gen_tool_content(self, event: ToolEvent):
+    async def _handle_tool_event(self, event: ToolEvent):
         """Generate tool content"""
         try:
             if event.status == ToolStatus.CALLED:
                 if event.tool_name == "browser":
                     event.tool_content = BrowserToolContent(screenshot=await self._get_browser_screenshot())
                 elif event.tool_name == "search":
-                    event.tool_content = SearchToolContent(results=event.function_result.data.get("results", []))
+                    search_results: ToolResult[SearchResults] = event.function_result
+                    logger.debug(f"Search tool results: {search_results}")
+                    event.tool_content = SearchToolContent(results=search_results.data.results)
                 elif event.tool_name == "shell":
                     if "id" in event.function_args:
                         shell_result = await self._sandbox.view_shell(event.function_args["id"], console=True)
@@ -256,7 +260,7 @@ class AgentTaskRunner(TaskRunner):
         async for event in self._flow.run(message):
             if isinstance(event, ToolEvent):
                 # TODO: move to tool function
-                await self._gen_tool_content(event)
+                await self._handle_tool_event(event)
             elif isinstance(event, MessageEvent):
                 await self._sync_message_attachments_to_storage(event)
             yield event

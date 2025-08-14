@@ -57,7 +57,7 @@
 
 | 配置项 | 默认值 | 是否必需 | 说明 |
 |--------|--------|----------|------|
-| `SEARCH_PROVIDER` | `baidu` | 否 | 搜索引擎提供商 (`baidu` 或 `google`) |
+| `SEARCH_PROVIDER` | `baidu` | 否 | 搜索引擎提供商 (`baidu`、`google` 或 `bing`) |
 
 #### Google 搜索配置
 
