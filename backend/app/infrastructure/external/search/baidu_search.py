@@ -5,6 +5,7 @@ import re
 from urllib.parse import quote
 from bs4 import BeautifulSoup
 from app.domain.models.tool_result import ToolResult
+from app.domain.models.search import SearchResults, SearchResultItem
 from app.domain.external.search import SearchEngine
 
 logger = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ class BaiduSearchEngine(SearchEngine):
         self, 
         query: str, 
         date_range: Optional[str] = None
-    ) -> ToolResult:
+    ) -> ToolResult[SearchResults]:
         """Search web pages using Baidu web search
         
         Args:
@@ -146,48 +147,49 @@ class BaiduSearchEngine(SearchEngine):
                             link = 'https://www.baidu.com' + link
                         
                         if title and link:
-                            search_results.append({
-                                "title": title,
-                                "link": link,
-                                "snippet": snippet,
-                            })
+                            search_results.append(SearchResultItem(
+                                title=title,
+                                link=link,
+                                snippet=snippet
+                            ))
                     except Exception as e:
                         logger.warning(f"Failed to parse search result: {e}")
                         continue
                 
                 # Extract total results count
-                total_results = "0"
+                total_results = 0
                 results_nums = soup.find_all(string=re.compile(r'百度为您找到相关结果约'))
                 if results_nums:
                     match = re.search(r'约([\d,]+)个结果', results_nums[0])
                     if match:
-                        total_results = match.group(1).replace(',', '')
+                        try:
+                            total_results = int(match.group(1).replace(',', ''))
+                        except ValueError:
+                            total_results = 0
                 
                 # Build return result
-                results = {
-                    "query": query,
-                    "date_range": date_range,
-                    "search_info": {
-                        "searchTime": "N/A",
-                        "formattedTotalResults": total_results,
-                        "totalResults": total_results
-                    },
-                    "results": search_results,
-                    "total_results": total_results
-                }
+                results = SearchResults(
+                    query=query,
+                    date_range=date_range,
+                    total_results=total_results,
+                    results=search_results
+                )
                 
                 return ToolResult(success=True, data=results)
                 
         except Exception as e:
             logger.error(f"Baidu Search failed: {e}")
+            error_results = SearchResults(
+                query=query,
+                date_range=date_range,
+                total_results=0,
+                results=[]
+            )
+            
             return ToolResult(
                 success=False,
                 message=f"Baidu Search failed: {e}",
-                data={
-                    "query": query,
-                    "date_range": date_range,
-                    "results": []
-                }
+                data=error_results
             )
 
 
@@ -200,10 +202,10 @@ if __name__ == "__main__":
         result = await search_engine.search("Python 编程")
         
         if result.success:
-            print(f"Search successful! Found {len(result.data['results'])} results")
-            for i, item in enumerate(result.data['results'][:3]):
-                print(f"{i+1}. {item['title']}")
-                print(f"   {item['link']}")
+            print(f"Search successful! Found {len(result.data.results)} results")
+            for i, item in enumerate(result.data.results[:3]):
+                print(f"{i+1}. {item.title}")
+                print(f"   {item.link}")
                 print()
         else:
             print(f"Search failed: {result.message}")

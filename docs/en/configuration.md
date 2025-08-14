@@ -57,7 +57,7 @@
 
 | Configuration | Default Value | Required | Description |
 |---------------|---------------|----------|-------------|
-| `SEARCH_PROVIDER` | `baidu` | No | Search engine provider (`baidu` or `google`) |
+| `SEARCH_PROVIDER` | `baidu` | No | Search engine provider (`baidu`, `google`, or `bing`) |
 
 #### Google Search Configuration
 

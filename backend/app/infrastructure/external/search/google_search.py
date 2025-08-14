@@ -2,6 +2,7 @@ from typing import Optional
 import logging
 import httpx
 from app.domain.models.tool_result import ToolResult
+from app.domain.models.search import SearchResults, SearchResultItem
 from app.domain.external.search import SearchEngine
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ class GoogleSearchEngine(SearchEngine):
         self, 
         query: str, 
         date_range: Optional[str] = None
-    ) -> ToolResult:
+    ) -> ToolResult[SearchResults]:
         """Search web pages using Google API
         
         Args:
@@ -64,31 +65,42 @@ class GoogleSearchEngine(SearchEngine):
                 search_results = []
                 if "items" in data:
                     for item in data["items"]:
-                        search_results.append({
-                            "title": item.get("title", ""),
-                            "link": item.get("link", ""),
-                            "snippet": item.get("snippet", ""),
-                        })
+                        search_results.append(SearchResultItem(
+                            title=item.get("title", ""),
+                            link=item.get("link", ""),
+                            snippet=item.get("snippet", "")
+                        ))
                 
                 # Build return result
-                results = {
-                    "query": query,
-                    "date_range": date_range,
-                    "search_info": data.get("searchInformation", {}),
-                    "results": search_results,
-                    "total_results": data.get("searchInformation", {}).get("totalResults", "0")
-                }
+                search_info_data = data.get("searchInformation", {})
+                
+                # Convert total_results to int
+                total_results_str = search_info_data.get("totalResults", "0")
+                try:
+                    total_results = int(total_results_str)
+                except (ValueError, TypeError):
+                    total_results = 0
+                
+                results = SearchResults(
+                    query=query,
+                    date_range=date_range,
+                    total_results=total_results,
+                    results=search_results
+                )
                 
                 return ToolResult(success=True, data=results)
                 
         except Exception as e:
             logger.error(f"Google Search API call failed: {e}")
+            error_results = SearchResults(
+                query=query,
+                date_range=date_range,
+                total_results=0,
+                results=[]
+            )
+            
             return ToolResult(
                 success=False,
                 message=f"Google Search API call failed: {e}",
-                data={
-                    "query": query,
-                    "date_range": date_range,
-                    "results": []
-                }
+                data=error_results
             )

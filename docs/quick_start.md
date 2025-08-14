@@ -104,11 +104,12 @@ services:
       # No proxy hosts for sandbox (optional)
       #- SANDBOX_NO_PROXY=
       
-      # Search engine configuration (options: baidu, google)
+      # Search engine configuration
+      # Options: baidu, google, bing
       - SEARCH_PROVIDER=baidu
-      # Google Search API key for web search capability (only needed when SEARCH_PROVIDER=google)
+
+      # Google search configuration, only used when SEARCH_PROVIDER=google
       #- GOOGLE_SEARCH_API_KEY=
-      # Google Custom Search Engine ID (only needed when SEARCH_PROVIDER=google)
       #- GOOGLE_SEARCH_ENGINE_ID=
 
       # Auth configuration
@@ -121,8 +122,8 @@ services:
       - PASSWORD_HASH_ALGORITHM=pbkdf2_sha256
 
       # Local auth configuration, only used when AUTH_PROVIDER=local
-      #LOCAL_AUTH_EMAIL=admin@example.com
-      #LOCAL_AUTH_PASSWORD=admin
+      #- LOCAL_AUTH_EMAIL=admin@example.com
+      #- LOCAL_AUTH_PASSWORD=admin
 
       # JWT configuration
       - JWT_SECRET_KEY=your-secret-key-here

@@ -12,6 +12,7 @@ def get_search_engine() -> Optional[SearchEngine]:
     """Get search engine instance based on configuration"""
     from app.infrastructure.external.search.google_search import GoogleSearchEngine
     from app.infrastructure.external.search.baidu_search import BaiduSearchEngine
+    from app.infrastructure.external.search.bing_search import BingSearchEngine
     
     settings = get_settings()
     if settings.search_provider == "google":
@@ -26,6 +27,9 @@ def get_search_engine() -> Optional[SearchEngine]:
     elif settings.search_provider == "baidu":
         logger.info("Initializing Baidu Search Engine")
         return BaiduSearchEngine()
+    elif settings.search_provider == "bing":
+        logger.info("Initializing Bing Search Engine")
+        return BingSearchEngine()
     else:
         logger.warning(f"Unknown search provider: {settings.search_provider}")
     
