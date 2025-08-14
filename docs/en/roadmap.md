@@ -1,6 +1,6 @@
 # 📅 Development Roadmap
 
-> Currently under development: Multi-user support
+> Currently under development: Settings
 
 ## Tools
 
@@ -10,7 +10,7 @@
 
 ## User Authentication
 
- * [ ] Support multi-user
+ * [x] Support multi-user
 
 ## Deployment
 
@@ -19,7 +19,7 @@
 
 ## UI
 
- * [ ] Support multiple themes and multi-language settings
+ * [ ] Support settings
  * [ ] Support timeline playback
 
 ## Task Sessions
