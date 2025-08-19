@@ -7,10 +7,9 @@ from app.application.services.token_service import TokenService
 from app.application.errors.exceptions import NotFoundError, UnauthorizedError
 from app.interfaces.dependencies import get_file_service, get_current_user, get_token_service, get_optional_current_user
 from app.domain.models.user import User
-from app.interfaces.schemas.response import (
-    APIResponse, FileUploadResponse, FileInfoResponse, SignedUrlResponse
-)
-from app.interfaces.schemas.request import AccessTokenRequest
+from app.interfaces.schemas.base import APIResponse
+from app.interfaces.schemas.file import FileUploadResponse, FileInfoResponse
+from app.interfaces.schemas.resource import AccessTokenRequest, SignedUrlResponse
 
 logger = logging.getLogger(__name__)
 

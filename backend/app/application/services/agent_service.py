@@ -4,7 +4,8 @@ from datetime import datetime
 from app.domain.models.session import Session
 from app.domain.repositories.session_repository import SessionRepository
 
-from app.interfaces.schemas.response import ShellViewResponse, FileViewResponse
+from app.interfaces.schemas.session import ShellViewResponse
+from app.interfaces.schemas.file import FileViewResponse
 from app.domain.models.agent import Agent
 from app.domain.services.agent_domain_service import AgentDomainService
 from app.domain.models.event import AgentEvent
