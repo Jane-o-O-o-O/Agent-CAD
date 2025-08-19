@@ -9,13 +9,12 @@ from app.application.errors.exceptions import (
     UnauthorizedError, NotFoundError, BadRequestError
 )
 from app.interfaces.dependencies import get_auth_service, get_current_user, get_file_service, get_agent_service, get_token_service
-from app.interfaces.schemas.response import APIResponse, ResourceAccessTokenResponse
+from app.interfaces.schemas.base import APIResponse
 from app.interfaces.schemas.auth import (
     LoginRequest, RegisterRequest, ChangePasswordRequest, RefreshTokenRequest,
     LoginResponse, RegisterResponse, AuthStatusResponse, RefreshTokenResponse,
     UserResponse
 )
-from app.interfaces.schemas.request import AccessTokenRequest
 from app.core.config import get_settings
 from app.domain.models.user import User
 

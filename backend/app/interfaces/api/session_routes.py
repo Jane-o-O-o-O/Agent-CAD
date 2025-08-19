@@ -11,11 +11,13 @@ from app.application.services.agent_service import AgentService
 from app.application.services.token_service import TokenService
 from app.application.errors.exceptions import NotFoundError, UnauthorizedError
 from app.interfaces.dependencies import get_agent_service, get_current_user, get_token_service
-from app.interfaces.schemas.request import ChatRequest, FileViewRequest, ShellViewRequest, AccessTokenRequest
-from app.interfaces.schemas.response import (
-    APIResponse, CreateSessionResponse, GetSessionResponse, 
-    ListSessionItem, ListSessionResponse, ShellViewResponse, FileViewResponse, SignedUrlResponse
+from app.interfaces.schemas.base import APIResponse
+from app.interfaces.schemas.session import (
+    ChatRequest, ShellViewRequest, CreateSessionResponse, GetSessionResponse,
+    ListSessionItem, ListSessionResponse, ShellViewResponse
 )
+from app.interfaces.schemas.file import FileViewRequest, FileViewResponse
+from app.interfaces.schemas.resource import AccessTokenRequest, SignedUrlResponse
 from app.interfaces.schemas.event import EventMapper
 from app.domain.models.file import FileInfo
 from app.domain.models.user import User

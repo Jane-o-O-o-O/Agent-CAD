@@ -4,7 +4,7 @@ import logging
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.application.errors.exceptions import AppException
-from app.interfaces.schemas.response import APIResponse
+from app.interfaces.schemas.base import APIResponse
 
 logger = logging.getLogger(__name__)
 
