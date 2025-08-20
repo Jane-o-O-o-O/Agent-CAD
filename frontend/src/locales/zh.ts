@@ -125,5 +125,26 @@ export default {
   // User Menu
   'Logout': '退出登录',
   'Unknown User': '未知用户',
-  'No email': '无邮箱'
+  'No email': '无邮箱',
+  // Settings Dialog
+  'Settings': '设置',
+  'Account': '账户',
+  'General': '通用',
+  'Language': '语言',
+  'Profile': '个人资料',
+  // Profile Settings
+  'Name': '名称',
+  'Full name updated successfully': '姓名修改成功',
+  'Failed to update full name': '姓名修改失败',
+  'Update Password': '更新密码',
+  // Change Password Dialog
+  'Current Password': '当前密码',
+  'New Password': '新密码',
+  'Confirm New Password': '确认新密码',
+  'Enter current password': '请输入当前密码',
+  'Enter new password': '请输入新密码',
+  'Enter new password again': '请再次输入新密码',
+  'Password change successful': '密码修改成功',
+  'Password change failed': '密码修改失败',
+  'Passwords do not match': '密码不匹配'
 } 

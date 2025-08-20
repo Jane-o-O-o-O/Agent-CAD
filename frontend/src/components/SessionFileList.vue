@@ -1,5 +1,5 @@
 <template>
-    <div v-if="visible" class="absolute z-[1000] pointer-events-auto">
+    <div class="absolute z-[1000] pointer-events-auto" v-if="visible">
         <div class="w-full h-full bg-black/60 backdrop-blur-[4px] fixed inset-0 data-[state=open]:animate-dialog-bg-fade-in data-[state=closed]:animate-dialog-bg-fade-out"
             style="position: fixed; overflow: auto; inset: 0px;" @click="hideSessionFileList"></div>
         <div role="dialog"

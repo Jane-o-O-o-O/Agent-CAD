@@ -20,7 +20,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import MonacoEditor from '../MonacoEditor.vue';
+import MonacoEditor from '@/components/ui/MonacoEditor.vue';
 import type { FileInfo } from '../../api/file';
 import { downloadFile } from '../../api/file';
 

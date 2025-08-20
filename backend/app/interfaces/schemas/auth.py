@@ -72,6 +72,18 @@ class ChangePasswordRequest(BaseModel):
         return v
 
 
+class ChangeFullnameRequest(BaseModel):
+    """Change fullname request schema"""
+    fullname: str
+    
+    @field_validator('fullname')
+    @classmethod
+    def validate_fullname(cls, v):
+        if not v or len(v.strip()) < 2:
+            raise ValueError("Full name must be at least 2 characters long")
+        return v.strip()
+
+
 class RefreshTokenRequest(BaseModel):
     """Refresh token request schema"""
     refresh_token: str

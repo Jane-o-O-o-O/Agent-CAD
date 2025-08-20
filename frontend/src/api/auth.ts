@@ -66,6 +66,13 @@ export interface ChangePasswordRequest {
 }
 
 /**
+ * Change fullname request type
+ */
+export interface ChangeFullnameRequest {
+  fullname: string;
+}
+
+/**
  * Refresh token request type
  */
 export interface RefreshTokenRequest {
@@ -146,6 +153,16 @@ export async function getAuthStatus(): Promise<AuthStatusResponse> {
  */
 export async function changePassword(request: ChangePasswordRequest): Promise<{}> {
   const response = await apiClient.post<ApiResponse<{}>>('/auth/change-password', request);
+  return response.data.data;
+}
+
+/**
+ * Change user fullname
+ * @param request Change fullname data
+ * @returns Updated user data
+ */
+export async function changeFullname(request: ChangeFullnameRequest): Promise<User> {
+  const response = await apiClient.post<ApiResponse<User>>('/auth/change-fullname', request);
   return response.data.data;
 }
 

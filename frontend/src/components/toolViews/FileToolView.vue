@@ -54,7 +54,7 @@
 import { onMounted, ref, computed, watch, onUnmounted } from "vue";
 import { ToolContent } from "@/types/message";
 import { viewFile } from "@/api/agent";
-import MonacoEditor from "@/components/MonacoEditor.vue";
+import MonacoEditor from "@/components/ui/MonacoEditor.vue";
 //import { showErrorToast } from "../utils/toast";
 //import { useI18n } from "vue-i18n";
 
@@ -73,7 +73,7 @@ defineExpose({
 });
 
 const fileContent = ref("");
-const refreshTimer = ref<number | null>(null);
+const refreshTimer = ref<NodeJS.Timeout | null>(null);
 
 const filePath = computed(() => {
   if (props.toolContent && props.toolContent.args.file) {

@@ -46,9 +46,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import ErrorIcon from './icons/ErrorIcon.vue';
-import InfoIcon from './icons/InfoIcon.vue';
-import SuccessIcon from './icons/SuccessIcon.vue';
+import ErrorIcon from '@/components/icons/ErrorIcon.vue';
+import InfoIcon from '@/components/icons/InfoIcon.vue';
+import SuccessIcon from '@/components/icons/SuccessIcon.vue';
 
 interface Toast {
   id: number;

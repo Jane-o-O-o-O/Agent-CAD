@@ -274,6 +274,31 @@ class AuthService:
         logger.info(f"Password changed successfully for user: {user_id}")
         return True
     
+    async def change_fullname(self, user_id: str, new_fullname: str) -> User:
+        """Change user fullname"""
+        logger.info(f"Changing fullname for user: {user_id}")
+        
+        # Get user
+        user = await self.user_repository.get_user_by_id(user_id)
+        if not user:
+            raise ValidationError("User not found")
+        
+        if not user.is_active:
+            raise UnauthorizedError("User account is inactive")
+        
+        # Validate new fullname
+        if not new_fullname or len(new_fullname.strip()) < 2:
+            raise ValidationError("Full name must be at least 2 characters long")
+        
+        # Update user fullname
+        user.fullname = new_fullname.strip()
+        user.updated_at = datetime.utcnow()
+        
+        updated_user = await self.user_repository.update_user(user)
+        
+        logger.info(f"Fullname changed successfully for user: {user_id}")
+        return updated_user
+    
     async def get_user_by_id(self, user_id: str) -> Optional[User]:
         """Get user by ID"""
         return await self.user_repository.get_user_by_id(user_id)

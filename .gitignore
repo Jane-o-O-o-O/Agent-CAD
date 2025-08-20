@@ -118,3 +118,6 @@ coverage/
 .vite/
 docker-compose-test.yml
 mcp.json
+
+# Frontend whitelist
+!frontend/src/lib/
