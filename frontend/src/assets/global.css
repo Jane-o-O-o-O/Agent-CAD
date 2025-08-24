@@ -24,6 +24,15 @@ body,html {
   user-select: none;
 }
 
+/* Remove focus outline/blue border */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: none;
+}
+
 .ltr\:border-l {
   border-left-width: 1px;
 }

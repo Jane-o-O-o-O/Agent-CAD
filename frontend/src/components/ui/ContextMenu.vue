@@ -41,7 +41,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
-import { useContextMenu } from '../composables/useContextMenu';
+import { useContextMenu } from '@/composables/useContextMenu';
 
 const { 
     contextMenuVisible, 

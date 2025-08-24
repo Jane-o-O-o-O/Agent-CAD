@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { useDialog } from '../composables/useDialog'
+import { useDialog } from '@/composables/useDialog'
 
 // Use dialog composable directly
 const { dialogVisible, dialogConfig, handleConfirm, handleCancel } = useDialog()

@@ -125,5 +125,26 @@ export default {
   // User Menu
   'Logout': 'Logout',
   'Unknown User': 'Unknown User',
-  'No email': 'No email'
+  'No email': 'No email',
+  // Settings Dialog
+  'Settings': 'Settings',
+  'Account': 'Account',
+  'General': 'General',
+  'Language': 'Language',
+  'Profile': 'Profile',
+  // Profile Settings
+  'Name': 'Name',
+  'Full name updated successfully': 'Full name updated successfully',
+  'Failed to update full name': 'Failed to update full name',
+  'Update Password': 'Update Password',
+  // Change Password Dialog
+  'Current Password': 'Current Password',
+  'New Password': 'New Password',
+  'Confirm New Password': 'Confirm New Password',
+  'Enter current password': 'Enter current password',
+  'Enter new password': 'Enter new password',
+  'Enter new password again': 'Enter new password again',
+  'Password change successful': 'Password change successful',
+  'Password change failed': 'Password change failed',
+  'Passwords do not match': 'Passwords do not match'
 } 

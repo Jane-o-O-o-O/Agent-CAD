@@ -11,7 +11,7 @@ from app.application.errors.exceptions import (
 from app.interfaces.dependencies import get_auth_service, get_current_user, get_file_service, get_agent_service, get_token_service
 from app.interfaces.schemas.base import APIResponse
 from app.interfaces.schemas.auth import (
-    LoginRequest, RegisterRequest, ChangePasswordRequest, RefreshTokenRequest,
+    LoginRequest, RegisterRequest, ChangePasswordRequest, ChangeFullnameRequest, RefreshTokenRequest,
     LoginResponse, RegisterResponse, AuthStatusResponse, RefreshTokenResponse,
     UserResponse
 )
@@ -91,6 +91,19 @@ async def change_password(
     await auth_service.change_password(current_user.id, request.old_password, request.new_password)
     
     return APIResponse.success({})
+
+
+@router.post("/change-fullname", response_model=APIResponse[UserResponse])
+async def change_fullname(
+    request: ChangeFullnameRequest,
+    current_user: User = Depends(get_current_user),
+    auth_service: AuthService = Depends(get_auth_service)
+) -> APIResponse[UserResponse]:
+    """Change user fullname endpoint"""
+    # Change fullname for current user
+    updated_user = await auth_service.change_fullname(current_user.id, request.fullname)
+    
+    return APIResponse.success(UserResponse.from_user(updated_user))
 
 
 @router.get("/me", response_model=APIResponse[UserResponse])

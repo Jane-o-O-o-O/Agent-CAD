@@ -44,7 +44,7 @@
             fontFamily:
               'ui-serif, Georgia, Cambria, &quot;Times New Roman&quot;, Times, serif',
           }">
-            {{ $t('Hello') }},
+            {{ $t('Hello') }}, {{ currentUser?.fullname }}
             <br />
             <span class="text-[var(--text-tertiary)]">
               {{ $t('What can I do for you?') }}
