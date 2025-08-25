@@ -102,12 +102,23 @@
 | `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | 否 | 访问令牌过期时间（分钟） |
 | `JWT_REFRESH_TOKEN_EXPIRE_DAYS` | `7` | 否 | 刷新令牌过期时间（天） |
 
+### 邮箱配置
+
+仅当 `AUTH_PROVIDER=password` 时使用：
+
+| 配置项 | 默认值 | 是否必需 | 说明 |
+|--------|--------|----------|------|
+| `EMAIL_HOST` | - | 否 | SMTP 服务器地址 |
+| `EMAIL_PORT` | `587` | 否 | SMTP 服务器端口 |
+| `EMAIL_USERNAME` | - | 否 | 邮箱用户名 |
+| `EMAIL_PASSWORD` | - | 否 | 邮箱密码 |
+| `EMAIL_FROM` | - | 否 | 发件人邮箱地址 |
+
 ### MCP 配置
 
 | 配置项 | 默认值 | 是否必需 | 说明 |
 |--------|--------|----------|------|
 | `MCP_CONFIG_PATH` | `/etc/mcp.json` | 否 | MCP 配置文件路径 |
-
 
 ### 日志配置
 | 配置项 | 默认值 | 是否必需 | 说明 |
