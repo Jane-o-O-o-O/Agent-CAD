@@ -375,9 +375,7 @@ const restoreSession = async () => {
     handleEvent(event);
   }
   realTime.value = true;
-  if (session.status === SessionStatus.RUNNING || session.status === SessionStatus.PENDING) {
-    await chat();
-  }
+  await chat();
 }
 
 
