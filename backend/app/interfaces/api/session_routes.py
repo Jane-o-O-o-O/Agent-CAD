@@ -73,6 +73,15 @@ async def stop_session(
     await agent_service.stop_session(session_id, current_user.id)
     return APIResponse.success()
 
+@router.post("/{session_id}/clear_unread_message_count", response_model=APIResponse[None])
+async def clear_unread_message_count(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    agent_service: AgentService = Depends(get_agent_service)
+) -> APIResponse[None]:
+    await agent_service.clear_unread_message_count(session_id, current_user.id)
+    return APIResponse.success()
+
 @router.get("", response_model=APIResponse[ListSessionResponse])
 async def get_all_sessions(
     current_user: User = Depends(get_current_user),

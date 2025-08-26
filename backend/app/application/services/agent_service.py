@@ -135,6 +135,12 @@ class AgentService:
         await self._agent_domain_service.stop_session(session_id)
         logger.info(f"Session {session_id} stopped successfully")
 
+    async def clear_unread_message_count(self, session_id: str, user_id: str) -> None:
+        """Clear the unread message count for a session, ensuring it belongs to the user"""
+        logger.info(f"Clearing unread message count for session {session_id} for user {user_id}")
+        await self._session_repository.update_unread_message_count(session_id, 0)
+        logger.info(f"Unread message count cleared for session {session_id}")
+
     async def shutdown(self):
         logger.info("Closing all agents and cleaning up resources")
         # Clean up all Agents and their associated sandboxes

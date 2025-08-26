@@ -378,6 +378,7 @@ const restoreSession = async () => {
   if (session.status === SessionStatus.RUNNING || session.status === SessionStatus.PENDING) {
     await chat();
   }
+  agentApi.clearUnreadMessageCount(sessionId.value);
 }
 
 
