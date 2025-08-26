@@ -134,3 +134,7 @@ export async function getSessionFiles(sessionId: string): Promise<FileInfo[]> {
   const response = await apiClient.get<ApiResponse<FileInfo[]>>(`/sessions/${sessionId}/files`);
   return response.data.data;
 }
+
+export async function clearUnreadMessageCount(sessionId: string): Promise<void> {
+  await apiClient.post<ApiResponse<void>>(`/sessions/${sessionId}/clear_unread_message_count`);
+}

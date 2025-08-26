@@ -220,8 +220,6 @@ class AgentTaskRunner(TaskRunner):
                 if isinstance(event, MessageEvent):
                     message = event.message or ""
                     await self._sync_message_attachments_to_sandbox(event)
-                
-                await self._session_repository.add_event(self._session_id, event)
                     
                 logger.info(f"Agent {self._agent_id} received new message: {message[:50]}...")
 

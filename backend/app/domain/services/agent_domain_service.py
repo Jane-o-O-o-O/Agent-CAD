@@ -148,7 +148,11 @@ class AgentDomainService:
                     attachments=[FileInfo(file_id=attachment) for attachment in attachments]
                 )
 
-                await task.input_stream.put(message_event.model_dump_json())
+                event_id = await task.input_stream.put(message_event.model_dump_json())
+
+                message_event.id = event_id
+                await self._session_repository.add_event(session_id, message_event)
+                
                 await task.run()
                 logger.debug(f"Put message into Session {session_id}'s event queue: {message[:50]}...")
             
