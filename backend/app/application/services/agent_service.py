@@ -131,8 +131,7 @@ class AgentService:
         if not session:
             logger.error(f"Session {session_id} not found for user {user_id}")
             raise RuntimeError("Session not found")
-        
-        await self._session_repository.update_status(session_id, SessionStatus.COMPLETED)
+        await self._agent_domain_service.stop_session(session_id)
         logger.info(f"Session {session_id} stopped successfully")
 
     async def shutdown(self):
