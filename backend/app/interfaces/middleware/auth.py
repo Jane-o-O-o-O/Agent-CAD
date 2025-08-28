@@ -80,11 +80,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
             # Add user to request state
             request.state.user = user
             
-            return await call_next(request)
-            
         except Exception as e:
             logger.error(f"Authentication error: {e}")
             return self._unauthorized_response("Authentication failed")
+            
+        return await call_next(request)
     
     async def _handle_basic_auth(self, auth_header: str) -> Optional[User]:
         """Handle HTTP Basic Authentication"""

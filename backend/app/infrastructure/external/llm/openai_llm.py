@@ -48,7 +48,8 @@ class OpenAILLM(LLM):
                     messages=messages,
                     tools=tools,
                     response_format=response_format,
-                    tool_choice=tool_choice
+                    tool_choice=tool_choice,
+                    parallel_tool_calls=False
                 )
             else:
                 logger.debug(f"Sending request to OpenAI without tools, model: {self._model_name}")
@@ -57,8 +58,10 @@ class OpenAILLM(LLM):
                     temperature=self._temperature,
                     max_tokens=self._max_tokens,
                     messages=messages,
-                    response_format=response_format
+                    response_format=response_format,
+                    parallel_tool_calls=False
                 )
+            logger.debug(f"Response from OpenAI: {response.model_dump()}")
             return response.choices[0].message.model_dump()
         except Exception as e:
             logger.error(f"Error calling OpenAI API: {str(e)}")
