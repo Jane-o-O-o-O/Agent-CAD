@@ -80,8 +80,7 @@ class BaseAgent(ABC):
                     logger.exception(f"Tool execution failed, {function_name}, {arguments}")
                     break
         
-        #raise ValueError(f"Tool execution failed, retried {self.max_retries} times: {last_error}")
-        return ToolResult(success=False, error=last_error)
+        return ToolResult(success=False, message=last_error)
     
     async def execute(self, request: str, format: Optional[str] = None) -> AsyncGenerator[BaseEvent, None]:
         format = format or self.format
@@ -160,15 +159,32 @@ class BaseAgent(ABC):
         response_format = None
         if format:
             response_format = {"type": format}
+        
+        for _ in range(self.max_retries):
+            message = await self.llm.ask(self.memory.get_messages(), 
+                                            tools=self.get_available_tools(), 
+                                            response_format=response_format,
+                                            tool_choice=self.tool_choice)
 
-        message = await self.llm.ask(self.memory.get_messages(), 
-                                     tools=self.get_available_tools(), 
-                                     response_format=response_format,
-                                     tool_choice=self.tool_choice)
-        if message.get("tool_calls"):
-            message["tool_calls"] = message["tool_calls"][:1]
-        await self._add_to_memory([message])
-        return message
+            if message.get("role") == "assistant":
+                if not message.get("content"):
+                    logger.warning(f"Assistant message has no content, retry")
+                    if message.get("reasoning_content"):
+                        await self._add_to_memory([
+                            {"role": "assistant", "content": message.get("reasoning_content")}
+                        ])
+                    await self._add_to_memory([
+                        {"role": "user", "content": "continue"}
+                    ])
+                    continue
+            if message.get("tool_calls"):
+                message["tool_calls"] = message["tool_calls"][:1]
+            if message.get("reasoning_content"):
+                del message["reasoning_content"] # remove reasoning content from message
+            
+            await self._add_to_memory([message])
+            return message
+        raise Exception(f"Empty response from LLM after {self.max_retries} retries")
 
     async def ask(self, request: str, format: Optional[str] = None) -> Dict[str, Any]:
         return await self.ask_with_messages([
