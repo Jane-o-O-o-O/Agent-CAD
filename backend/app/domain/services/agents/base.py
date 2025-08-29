@@ -166,24 +166,27 @@ class BaseAgent(ABC):
                                             response_format=response_format,
                                             tool_choice=self.tool_choice)
 
+            filtered_message = {}
             if message.get("role") == "assistant":
                 if not message.get("content"):
                     logger.warning(f"Assistant message has no content, retry")
-                    if message.get("reasoning_content"):
-                        await self._add_to_memory([
-                            {"role": "assistant", "content": message.get("reasoning_content")}
-                        ])
                     await self._add_to_memory([
-                        {"role": "user", "content": "continue"}
+                        {"role": "assistant", "content": ""},
+                        {"role": "user", "content": "no thinking, please continue"}
                     ])
                     continue
-            if message.get("tool_calls"):
-                message["tool_calls"] = message["tool_calls"][:1]
-            if message.get("reasoning_content"):
-                del message["reasoning_content"] # remove reasoning content from message
+                filtered_message = {
+                    "role": "assistant",
+                    "content": message.get("content"),
+                }
+                if message.get("tool_calls"):
+                    filtered_message["tool_calls"] = message.get("tool_calls")[:1]
+            else:
+                logger.warning(f"Unknown message role: {message.get('role')}")
+                filtered_message = message
             
-            await self._add_to_memory([message])
-            return message
+            await self._add_to_memory([filtered_message])
+            return filtered_message
         raise Exception(f"Empty response from LLM after {self.max_retries} retries")
 
     async def ask(self, request: str, format: Optional[str] = None) -> Dict[str, Any]:
