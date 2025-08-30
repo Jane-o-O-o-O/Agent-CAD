@@ -168,7 +168,7 @@ class BaseAgent(ABC):
 
             filtered_message = {}
             if message.get("role") == "assistant":
-                if not message.get("content"):
+                if not message.get("content") and not message.get("tool_calls"):
                     logger.warning(f"Assistant message has no content, retry")
                     await self._add_to_memory([
                         {"role": "assistant", "content": ""},
