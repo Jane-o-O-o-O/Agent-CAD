@@ -102,12 +102,23 @@ Used only when `AUTH_PROVIDER=local`:
 | `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | No | Access token expiration time in minutes |
 | `JWT_REFRESH_TOKEN_EXPIRE_DAYS` | `7` | No | Refresh token expiration time in days |
 
+### Email Configuration
+
+Used only when `AUTH_PROVIDER=password`:
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `EMAIL_HOST` | - | No | SMTP server address |
+| `EMAIL_PORT` | `587` | No | SMTP server port |
+| `EMAIL_USERNAME` | - | No | Email username |
+| `EMAIL_PASSWORD` | - | No | Email password |
+| `EMAIL_FROM` | - | No | Sender email address |
+
 ### MCP Configuration
 
 | Configuration | Default Value | Required | Description |
 |---------------|---------------|----------|-------------|
 | `MCP_CONFIG_PATH` | `/etc/mcp.json` | No | MCP configuration file path |
-
 
 ### Log Configuration
 | Configuration | Default Value | Required | Description |

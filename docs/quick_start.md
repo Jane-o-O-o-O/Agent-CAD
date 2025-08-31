@@ -106,7 +106,7 @@ services:
       
       # Search engine configuration
       # Options: baidu, google, bing
-      - SEARCH_PROVIDER=baidu
+      - SEARCH_PROVIDER=bing
 
       # Google search configuration, only used when SEARCH_PROVIDER=google
       #- GOOGLE_SEARCH_API_KEY=
@@ -130,6 +130,14 @@ services:
       - JWT_ALGORITHM=HS256
       - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
       - JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
+
+      # Email configuration
+      # Only used when AUTH_PROVIDER=password
+      #- EMAIL_HOST=smtp.gmail.com
+      #- EMAIL_PORT=587
+      #- EMAIL_USERNAME=your-email@gmail.com
+      #- EMAIL_PASSWORD=your-password
+      #- EMAIL_FROM=your-email@gmail.com
 
       # MCP configuration file path
       #- MCP_CONFIG_PATH=/etc/mcp.json
