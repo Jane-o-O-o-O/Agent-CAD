@@ -82,7 +82,6 @@ Used only when `AUTH_PROVIDER=password`:
 |---------------|---------------|----------|-------------|
 | `PASSWORD_SALT` | - | No | Password encryption salt |
 | `PASSWORD_HASH_ROUNDS` | `10` | No | Password hash rounds |
-| `PASSWORD_HASH_ALGORITHM` | `pbkdf2_sha256` | No | Password hash algorithm |
 
 #### Local Authentication Configuration
 

@@ -21,16 +21,11 @@ class AuthService:
         self.settings = get_settings()
         self.token_service = token_service
     
-    def _hash_password(self, password: str, salt: str = None) -> str:
+    def _hash_password(self, password: str) -> str:
         """Hash password using configured algorithm"""
-        if salt is None:
-            salt = self.settings.password_salt or secrets.token_hex(32)
+        salt = self.settings.password_salt or ''
         
-        # Support for different hash algorithms
-        if self.settings.password_hash_algorithm == "pbkdf2_sha256":
-            return self._pbkdf2_sha256(password, salt)
-        else:
-            raise ValueError(f"Unsupported hash algorithm: {self.settings.password_hash_algorithm}")
+        return self._pbkdf2_sha256(password, salt)
     
     def _pbkdf2_sha256(self, password: str, salt: str) -> str:
         """PBKDF2 with SHA-256 implementation"""
@@ -38,7 +33,7 @@ class AuthService:
         salt_bytes = salt.encode('utf-8')
         
         # Use configured rounds
-        rounds = self.settings.password_hash_rounds
+        rounds = self.settings.password_hash_rounds or 10
         
         # Generate hash
         hash_bytes = hashlib.pbkdf2_hmac('sha256', password_bytes, salt_bytes, rounds)
@@ -52,14 +47,11 @@ class AuthService:
             return False
         
         try:
-            # Extract salt from hash (first 64 chars for 32-byte salt)
-            salt = password_hash[:64]
-            expected_hash = password_hash[64:]
-            
             # Generate hash with extracted salt
-            generated_hash = self._pbkdf2_sha256(password, salt)[64:]
-            
-            return generated_hash == expected_hash
+            generated_hash = self._hash_password(password)
+
+            logger.info(f"Generated hash: {generated_hash} vs expected hash: {password_hash}")
+            return generated_hash == password_hash
         except Exception as e:
             logger.error(f"Password verification error: {e}")
             return False
