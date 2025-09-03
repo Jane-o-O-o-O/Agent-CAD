@@ -82,7 +82,6 @@
 |--------|--------|----------|------|
 | `PASSWORD_SALT` | - | 否 | 密码加密盐值 |
 | `PASSWORD_HASH_ROUNDS` | `10` | 否 | 密码哈希轮数 |
-| `PASSWORD_HASH_ALGORITHM` | `pbkdf2_sha256` | 否 | 密码哈希算法 |
 
 #### 本地认证配置
 

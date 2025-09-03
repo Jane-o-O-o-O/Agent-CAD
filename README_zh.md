@@ -154,7 +154,6 @@ services:
       # Password auth configuration, only used when AUTH_PROVIDER=password
       - PASSWORD_SALT=
       - PASSWORD_HASH_ROUNDS=10
-      - PASSWORD_HASH_ALGORITHM=pbkdf2_sha256
 
       # Local auth configuration, only used when AUTH_PROVIDER=local
       #- LOCAL_AUTH_EMAIL=admin@example.com
@@ -317,7 +316,6 @@ AUTH_PROVIDER=password
 # Password auth configuration, only used when AUTH_PROVIDER=password
 PASSWORD_SALT=
 PASSWORD_HASH_ROUNDS=10
-PASSWORD_HASH_ALGORITHM=pbkdf2_sha256
 
 # Local auth configuration, only used when AUTH_PROVIDER=local
 #LOCAL_AUTH_EMAIL=admin@example.com
