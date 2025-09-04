@@ -1,6 +1,6 @@
 # AI Manus
 
-[English](README.md) | 中文 | [文档](https://docs.ai-manus.com)
+[English](README.md) | 中文 | [官方网站](https://app.ai-manus.com) | [文档](https://docs.ai-manus.com)
 
 [![GitHub stars](https://img.shields.io/github/stars/simpleyyt/ai-manus?style=social)](https://github.com/simpleyyt/ai-manus/stargazers)
 &ensp;
@@ -11,6 +11,8 @@ AI Manus 是一个通用的 AI Agent 系统，支持在沙盒环境中运行各�
 用 AI Manus 开启你的智能体之旅吧！
 
 👏 欢迎加入 [QQ群(1005477581)](https://qun.qq.com/universal-share/share?ac=1&authKey=p4X3Da5iMpR4liAenxwvhs7IValPKiCFtUevRlJouz9qSTSZsMnPJc3hzsJjgQYv&busi_data=eyJncm91cENvZGUiOiIxMDA1NDc3NTgxIiwidG9rZW4iOiJNZmUrTmQ0UzNDZDNqNDFVdjVPS1VCRkJGRWVlV0R3RFJSRVFoZDAwRjFDeUdUM0t6aUIyczlVdzRjV1BYN09IIiwidWluIjoiMzQyMjExODE1In0%3D&data=C3B-E6BlEbailV32co77iXL5vxPIhtD9y_itWLSq50hKqosO_55_isOZym2Faaq4hs9-517tUY8GSWaDwPom-A&svctype=4&tempid=h5_group_info)
+
+❤️ 喜欢 AI Manus? 点亮小星星 🌟 或 [赞助开发者](docs/sponsor.md)! ❤️
 
 ## 示例
 
@@ -384,3 +386,7 @@ export IMAGE_TAG=latest
 # 推送到相应的镜像仓库
 ./run push
 ```
+
+## ⭐️ Star 记录
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Simpleyyt/ai-manus&type=Date)](https://www.star-history.com/#Simpleyyt/ai-manus&Date)

@@ -1,6 +1,6 @@
 # AI Manus
 
-English | [中文](README_zh.md) | [Documents](https://docs.ai-manus.com/#/en/)
+English | [中文](README_zh.md) | [Official Site](https://app.ai-manus.com) | [Documents](https://docs.ai-manus.com/#/en/)
 
 [![GitHub stars](https://img.shields.io/github/stars/simpleyyt/ai-manus?style=social)](https://github.com/simpleyyt/ai-manus/stargazers)
 &ensp;
@@ -11,6 +11,8 @@ AI Manus is a general-purpose AI Agent system that supports running various tool
 Enjoy your own agent with AI Manus!
 
 👏 Join [QQ Group(1005477581)](https://qun.qq.com/universal-share/share?ac=1&authKey=p4X3Da5iMpR4liAenxwvhs7IValPKiCFtUevRlJouz9qSTSZsMnPJc3hzsJjgQYv&busi_data=eyJncm91cENvZGUiOiIxMDA1NDc3NTgxIiwidG9rZW4iOiJNZmUrTmQ0UzNDZDNqNDFVdjVPS1VCRkJGRWVlV0R3RFJSRVFoZDAwRjFDeUdUM0t6aUIyczlVdzRjV1BYN09IIiwidWluIjoiMzQyMjExODE1In0%3D&data=C3B-E6BlEbailV32co77iXL5vxPIhtD9y_itWLSq50hKqosO_55_isOZym2Faaq4hs9-517tUY8GSWaDwPom-A&svctype=4&tempid=h5_group_info)
+
+❤️ Like AI Manus? Give it a star 🌟 or [Sponsor](docs/sponsor.md) to support the development!
 
 ## Demos
 
@@ -383,3 +385,8 @@ export IMAGE_TAG=latest
 # Push to the corresponding image repository
 ./run push
 ``` 
+##
+
+## ⭐️ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Simpleyyt/ai-manus&type=Date)](https://www.star-history.com/#Simpleyyt/ai-manus&Date)
