@@ -14,6 +14,8 @@ Enjoy your own agent with AI Manus!
 
 ❤️ Like AI Manus? Give it a star 🌟 or [Sponsor](docs/sponsor.md) to support the development!
 
+🚀 [Try a Demo](https://app.ai-manus.com)
+
 ## Demos
 
 ### Basic Features
