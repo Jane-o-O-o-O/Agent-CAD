@@ -27,6 +27,7 @@
     "tailwind-merge": "^1.14.0",
     "tw-animate-css": "^1.3.7",
     "vue": "^3.3.4",
+    "vue-gtag": "^3.5.2",
     "vue-i18n": "^9.14.4",
     "vue-router": "^4.5.1"
   },

@@ -12,6 +12,11 @@ import HomePage from './pages/HomePage.vue'
 import ChatPage from './pages/ChatPage.vue'
 import LoginPage from './pages/LoginPage.vue'
 import MainLayout from './pages/MainLayout.vue'
+import { configure } from "vue-gtag";
+
+configure({
+  tagId: 'G-XCRZ3HH31S' // Replace with your own Google Analytics tag ID
+})
 
 // Create router
 export const router = createRouter({
