@@ -17,9 +17,15 @@
             </div>
           </div>
           <div class="flex items-center gap-2">
+            <a href="https://github.com/simpleyyt/ai-manus" 
+               target="_blank"
+               class="items-center justify-center whitespace-nowrap font-medium transition-colors hover:opacity-90 active:opacity-80 px-[12px] gap-[6px] text-sm min-w-16 outline outline-1 -outline-offset-1 hover:bg-[var(--fill-tsp-white-light)] text-[var(--text-primary)] outline-[var(--border-btn-main)] bg-transparent clickable hidden sm:flex rounded-[100px] relative h-[32px] group"
+               title="Visit GitHub Repository">
+              <Github class="size-[18px]" />
+              GitHub
+            </a>
             <div class="relative flex items-center" aria-expanded="false" aria-haspopup="dialog"
-                 @mouseenter="handleUserMenuEnter" 
-                 @mouseleave="handleUserMenuLeave">
+              @mouseenter="handleUserMenuEnter" @mouseleave="handleUserMenuLeave">
               <div class="relative flex items-center justify-center font-bold cursor-pointer flex-shrink-0">
                 <div
                   class="relative flex items-center justify-center font-bold flex-shrink-0 rounded-full overflow-hidden"
@@ -27,10 +33,8 @@
                   {{ avatarLetter }}</div>
               </div>
               <!-- User Menu -->
-              <div v-if="showUserMenu" 
-                   @mouseenter="handleUserMenuEnter" 
-                   @mouseleave="handleUserMenuLeave"
-                   class="absolute top-full right-0 mt-1 mr-[-15px] z-50">
+              <div v-if="showUserMenu" @mouseenter="handleUserMenuEnter" @mouseleave="handleUserMenuLeave"
+                class="absolute top-full right-0 mt-1 mr-[-15px] z-50">
                 <UserMenu />
               </div>
             </div>
@@ -71,7 +75,7 @@ import { useI18n } from 'vue-i18n';
 import ChatBox from '../components/ChatBox.vue';
 import { createSession } from '../api/agent';
 import { showErrorToast } from '../utils/toast';
-import { Bot, PanelLeft } from 'lucide-vue-next';
+import { Bot, PanelLeft, Github } from 'lucide-vue-next';
 import ManusLogoTextIcon from '../components/icons/ManusLogoTextIcon.vue';
 import type { FileInfo } from '../api/file';
 import { useLeftPanel } from '../composables/useLeftPanel';
