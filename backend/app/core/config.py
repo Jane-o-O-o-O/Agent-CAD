@@ -123,6 +123,13 @@ class Settings(BaseSettings):
 
     # MCP configuration
     mcp_config_path: str = "/etc/mcp.json"
+
+    # Codex-style skills configuration
+    skills_enabled: bool = True
+    skills_paths: str = "~/.codex/skills"
+    skills_include_system: bool = True
+    skills_max_selected: int = 3
+    skills_max_body_chars: int = 20000
     
     # Logging configuration
     log_level: str = "INFO"

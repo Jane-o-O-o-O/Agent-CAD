@@ -13,6 +13,7 @@ from app.core.config import get_settings
 # Import all required services
 from app.application.services.agent_service import AgentService
 from app.application.services.file_service import FileService
+from app.application.services.cad_service import CADService
 from app.application.services.auth_service import AuthService
 from app.application.services.token_service import TokenService
 from app.application.services.email_service import EmailService
@@ -85,6 +86,13 @@ def get_file_service() -> FileService:
         file_storage=file_storage,
         token_service=token_service,
     )
+
+
+@lru_cache()
+def get_cad_service() -> CADService:
+    """Get CAD service instance."""
+    logger.info("Creating CADService instance")
+    return CADService()
 
 
 @lru_cache()

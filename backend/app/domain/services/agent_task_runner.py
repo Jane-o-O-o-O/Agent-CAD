@@ -35,6 +35,8 @@ from app.domain.models.file import FileInfo
 from app.domain.services.tools.mcp import MCPToolkit
 from app.domain.models.tool_result import ToolResult
 from app.domain.models.search import SearchResults
+from app.domain.services.skills import SkillRegistry
+from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +66,14 @@ class AgentTaskRunner(TaskRunner):
         self._file_storage = file_storage
         self._mcp_repository = mcp_repository
         self._mcp_tool = MCPToolkit()
+        settings = get_settings()
+        skill_registry = None
+        if settings.skills_enabled:
+            skill_registry = SkillRegistry(
+                roots=[path.strip() for path in settings.skills_paths.split(":")],
+                include_system=settings.skills_include_system,
+                max_body_chars=settings.skills_max_body_chars,
+            )
         self._flow = PlanActFlow(
             self._agent_id,
             self._repository,
@@ -73,6 +83,7 @@ class AgentTaskRunner(TaskRunner):
             self._browser,
             self._mcp_tool,
             self._search_engine,
+            skill_registry=skill_registry,
         )
 
     async def _put_and_add_event(self, task: Task, event: AgentEvent) -> None:

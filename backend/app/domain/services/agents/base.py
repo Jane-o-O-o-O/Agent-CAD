@@ -24,6 +24,19 @@ from app.domain.utils.robust_json_parser import RobustJsonParser, ToolCallParseE
 
 
 logger = logging.getLogger(__name__)
+
+
+def _with_additional_context(request: str, additional_context: Optional[str]) -> str:
+    if not additional_context:
+        return request
+    return (
+        f"{additional_context}\n\n"
+        "<current_request>\n"
+        f"{request}\n"
+        "</current_request>"
+    )
+
+
 class BaseAgent(ABC):
     """
     Base agent class, defining the basic behavior of the agent
@@ -67,6 +80,10 @@ class BaseAgent(ABC):
         )
         self.toolkits = tools
         self.memory = None
+        self.additional_context: Optional[str] = None
+
+    def set_additional_context(self, context: Optional[str]) -> None:
+        self.additional_context = context
 
     async def _parse_json(self, text: str) -> dict:
         """Parse JSON from LLM output using RetryWithErrorOutputParser."""
@@ -206,7 +223,7 @@ class BaseAgent(ABC):
 
     async def ask(self, request: str, format: Optional[str] = None) -> AIMessage:
         return await self.ask_with_messages([
-            HumanMessage(content=request)
+            HumanMessage(content=_with_additional_context(request, self.additional_context))
         ], format)
     
     async def roll_back(self, message: Message):

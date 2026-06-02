@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, Depends, UploadFile, File, Query
 from fastapi.responses import StreamingResponse
 import logging
 
@@ -17,6 +17,7 @@ router = APIRouter(prefix="/files", tags=["files"])
 @router.post("", response_model=APIResponse[FileInfoResponse])
 async def upload_file(
     file: UploadFile = File(...),
+    include_url: bool = Query(True),
     file_service: FileService = Depends(get_file_service),
     current_user: User = Depends(get_current_user)
 ) -> APIResponse[FileInfoResponse]:
@@ -29,7 +30,7 @@ async def upload_file(
         content_type=file.content_type
     )
     
-    return APIResponse.success(await FileInfoResponse.from_file_info(result))
+    return APIResponse.success(await FileInfoResponse.from_file_info(result, include_url=include_url))
 
 @router.get("/{file_id}")
 async def download_file_with_signature(

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <SimpleBar>
     <div class="flex h-full w-full min-w-0 flex-1 flex-col px-3 sm:px-5">
       <header class="sticky top-0 z-10 w-full py-3">
@@ -84,8 +84,8 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import ChatBox from '../components/ChatBox.vue';
-import { createSession } from '../api/agent';
 import { showErrorToast } from '../utils/toast';
+import * as agentApi from '../api/agent';
 import {
   Bot,
   DraftingCompass,
@@ -111,21 +111,21 @@ const { currentUser } = useAuth();
 
 const prompts = [
   {
-    title: '完成 CAD 画图',
-    caption: '理解要求，生成图纸、脚本或模型文件',
-    message: '帮我完成这个 CAD 画图任务。请先理解图纸要求，再给出可执行的绘图步骤，并尽量生成可直接打开或运行的 CAD 文件/脚本。',
+    title: '瀹屾垚 CAD 鐢诲浘',
+    caption: '鐞嗚В瑕佹眰锛岀敓鎴愬浘绾搞€佽剼鏈垨妯″瀷鏂囦欢',
+    message: '甯垜瀹屾垚杩欎釜 CAD 鐢诲浘浠诲姟銆傝鍏堢悊瑙ｅ浘绾歌姹傦紝鍐嶇粰鍑哄彲鎵ц鐨勭粯鍥炬楠わ紝骞跺敖閲忕敓鎴愬彲鐩存帴鎵撳紑鎴栬繍琛岀殑 CAD 鏂囦欢/鑴氭湰銆?,
     icon: DraftingCompass,
   },
   {
-    title: '拆解建模方案',
-    caption: '任务拆分、结构规划、建模步骤',
-    message: '帮我把这个 CAD 任务拆成可执行方案，并给出建模步骤。',
+    title: '鎷嗚В寤烘ā鏂规',
+    caption: '浠诲姟鎷嗗垎銆佺粨鏋勮鍒掋€佸缓妯℃楠?,
+    message: '甯垜鎶婅繖涓?CAD 浠诲姟鎷嗘垚鍙墽琛屾柟妗堬紝骞剁粰鍑哄缓妯℃楠ゃ€?,
     icon: Workflow,
   },
   {
-    title: '检查图纸问题',
-    caption: '尺寸、结构、标注、图层与可制造性',
-    message: '帮我检查这个 CAD 图纸或建模结果，指出尺寸、结构、标注、图层和可制造性方面的问题，并给出具体修改建议。',
+    title: '妫€鏌ュ浘绾搁棶棰?,
+    caption: '灏哄銆佺粨鏋勩€佹爣娉ㄣ€佸浘灞備笌鍙埗閫犳€?,
+    message: '甯垜妫€鏌ヨ繖涓?CAD 鍥剧焊鎴栧缓妯＄粨鏋滐紝鎸囧嚭灏哄銆佺粨鏋勩€佹爣娉ㄣ€佸浘灞傚拰鍙埗閫犳€ф柟闈㈢殑闂锛屽苟缁欏嚭鍏蜂綋淇敼寤鸿銆?,
     icon: TerminalSquare,
   },
 ];
@@ -165,7 +165,7 @@ const handleSubmit = async () => {
   isSubmitting.value = true;
 
   try {
-    const session = await createSession();
+    const session = await agentApi.createSession();
     const sessionId = session.session_id;
 
     router.push({
