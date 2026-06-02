@@ -5,7 +5,7 @@
       <!-- Header (only shown when claw exists) -->
       <div
         v-if="hasClaw"
-        class="sm:min-w-[390px] flex flex-row items-center justify-between pt-3 pb-1 gap-1 sticky top-0 z-10 bg-[var(--background-gray-main)] flex-shrink-0">
+        class="sm:min-w-[390px] flex flex-row items-center justify-between pt-3 pb-1 gap-1 sticky top-0 z-10 cad-surface flex-shrink-0">
         <div class="flex items-center flex-1">
           <div
             v-if="!isLeftPanelShow"
@@ -127,7 +127,7 @@
           </div>
 
           <!-- Input Area -->
-          <div class="flex flex-col bg-[var(--background-gray-main)] sticky bottom-0">
+          <div class="flex flex-col cad-surface sticky bottom-0">
             <button
               v-if="!follow"
               @click="handleFollow"

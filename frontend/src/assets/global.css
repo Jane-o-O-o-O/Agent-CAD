@@ -2,6 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --cad-bg: #edf5f7;
+  --cad-grid-minor: rgba(31, 112, 153, 0.16);
+  --cad-grid-major: rgba(0, 129, 242, 0.28);
+  --cad-line: rgba(0, 129, 242, 0.62);
+  --cad-line-soft: rgba(16, 99, 148, 0.32);
+  --cad-accent: rgba(0, 168, 132, 0.72);
+  --cad-panel: rgba(248, 250, 250, 0.72);
+  --cad-panel-strong: rgba(255, 255, 255, 0.92);
+}
+
+.dark {
+  --cad-bg: #111418;
+  --cad-grid-minor: rgba(97, 178, 229, 0.12);
+  --cad-grid-major: rgba(97, 178, 229, 0.24);
+  --cad-line: rgba(72, 168, 255, 0.58);
+  --cad-line-soft: rgba(129, 200, 255, 0.24);
+  --cad-accent: rgba(74, 214, 170, 0.68);
+  --cad-panel: rgba(39, 39, 40, 0.78);
+  --cad-panel-strong: rgba(22, 22, 24, 0.94);
+}
+
 
 #app {
   display: contents;
@@ -13,8 +35,447 @@ body,html {
   margin: 0;
   padding: 0;
   font-family: -apple-system,BlinkMacSystemFont,Segoe UI Variable Display,Segoe UI,Helvetica,Apple Color Emoji,Arial,sans-serif,Segoe UI Emoji,Segoe UI Symbol;
-  background-color: var(--background-white-main);
+  background: var(--cad-bg);
   color: var(--text-primary)
+}
+
+body {
+  overflow: hidden;
+}
+
+.cad-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 78% 14%, rgba(0, 129, 242, 0.12), transparent 28%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.42), transparent 44%),
+    var(--cad-bg);
+}
+
+.cad-backdrop::before,
+.cad-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 42px;
+  border: 1px solid var(--cad-line-soft);
+  opacity: 0.45;
+}
+
+.cad-backdrop::after {
+  inset: auto 52px 42px auto;
+  width: min(360px, 42vw);
+  height: 78px;
+  background:
+    linear-gradient(var(--cad-line-soft), var(--cad-line-soft)) 0 26px / 100% 1px no-repeat,
+    linear-gradient(90deg, var(--cad-line-soft), var(--cad-line-soft)) 34% 0 / 1px 100% no-repeat,
+    linear-gradient(90deg, var(--cad-line-soft), var(--cad-line-soft)) 67% 0 / 1px 100% no-repeat;
+}
+
+.cad-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--cad-grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cad-grid-major) 1px, transparent 1px),
+    linear-gradient(var(--cad-grid-minor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cad-grid-minor) 1px, transparent 1px);
+  background-size: 96px 96px, 96px 96px, 24px 24px, 24px 24px;
+  mask-image: linear-gradient(to bottom, #000 0%, #000 78%, transparent 100%);
+}
+
+.cad-ruler {
+  position: absolute;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--cad-line-soft) 0,
+    var(--cad-line-soft) 1px,
+    transparent 1px,
+    transparent 24px
+  );
+  opacity: 0.75;
+}
+
+.cad-ruler-top {
+  top: 18px;
+  left: 28px;
+  right: 28px;
+  height: 18px;
+  border-top: 1px solid var(--cad-line-soft);
+  border-bottom: 1px solid var(--cad-line-soft);
+}
+
+.cad-ruler-left {
+  top: 28px;
+  bottom: 28px;
+  left: 18px;
+  width: 18px;
+  border-left: 1px solid var(--cad-line-soft);
+  border-right: 1px solid var(--cad-line-soft);
+  transform: rotate(180deg);
+  writing-mode: vertical-rl;
+}
+
+.cad-axis {
+  position: absolute;
+  background: var(--cad-accent);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.24);
+}
+
+.cad-axis-x {
+  left: 34px;
+  bottom: 76px;
+  width: min(260px, 34vw);
+  height: 1px;
+}
+
+.cad-axis-y {
+  left: 34px;
+  bottom: 76px;
+  width: 1px;
+  height: min(220px, 32vh);
+}
+
+.cad-origin {
+  position: absolute;
+  left: 28px;
+  bottom: 70px;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--cad-accent);
+  border-radius: 50%;
+}
+
+.cad-wire {
+  position: absolute;
+  border: 1px solid var(--cad-line);
+  opacity: 0.58;
+}
+
+.cad-wire::before,
+.cad-wire::after {
+  content: "";
+  position: absolute;
+  border: 1px solid var(--cad-line-soft);
+}
+
+.cad-wire-a {
+  right: 7vw;
+  top: 13vh;
+  width: min(360px, 32vw);
+  aspect-ratio: 1.42;
+  transform: skewX(-12deg) rotate(-3deg);
+}
+
+.cad-wire-a::before {
+  inset: 18%;
+}
+
+.cad-wire-a::after {
+  left: 12%;
+  right: 12%;
+  top: 50%;
+}
+
+.cad-wire-b {
+  left: 19vw;
+  bottom: 9vh;
+  width: min(240px, 30vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.cad-wire-b::before {
+  inset: 22%;
+  border-radius: 50%;
+}
+
+.cad-wire-b::after {
+  left: 50%;
+  top: -16%;
+  bottom: -16%;
+}
+
+.cad-wire-c {
+  right: 19vw;
+  bottom: 13vh;
+  width: min(180px, 24vw);
+  height: min(110px, 16vw);
+  transform: rotate(9deg);
+}
+
+.cad-wire-c::before {
+  width: 44%;
+  height: 64%;
+  right: -22%;
+  top: 18%;
+  transform: skewY(-22deg);
+}
+
+.cad-wire-c::after {
+  left: -18%;
+  top: -18%;
+  width: 36%;
+  height: 36%;
+  border-radius: 50%;
+}
+
+.cad-crosshair {
+  position: absolute;
+  width: 92px;
+  height: 92px;
+  border: 1px dashed var(--cad-line-soft);
+  border-radius: 50%;
+  opacity: 0.72;
+}
+
+.cad-crosshair::before,
+.cad-crosshair::after {
+  content: "";
+  position: absolute;
+  background: var(--cad-line);
+}
+
+.cad-crosshair::before {
+  left: -18px;
+  right: -18px;
+  top: 50%;
+  height: 1px;
+}
+
+.cad-crosshair::after {
+  top: -18px;
+  bottom: -18px;
+  left: 50%;
+  width: 1px;
+}
+
+.cad-crosshair-a {
+  left: 11vw;
+  top: 18vh;
+}
+
+.cad-crosshair-b {
+  right: 12vw;
+  top: 48vh;
+  transform: scale(0.72);
+}
+
+.cad-dimension {
+  position: absolute;
+  color: rgba(14, 102, 148, 0.72);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  opacity: 0.86;
+  pointer-events: none;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.72);
+}
+
+.cad-dimension::before,
+.cad-dimension::after {
+  content: "";
+  position: absolute;
+  background: var(--cad-line);
+}
+
+.cad-dimension-top {
+  left: 31vw;
+  top: 17vh;
+  width: 28vw;
+  height: 24px;
+  border-top: 1px solid var(--cad-line);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.cad-dimension-top::before,
+.cad-dimension-top::after {
+  top: -10px;
+  width: 1px;
+  height: 20px;
+}
+
+.cad-dimension-top::before {
+  left: 0;
+}
+
+.cad-dimension-top::after {
+  right: 0;
+}
+
+.cad-dimension-side {
+  right: 5vw;
+  top: 27vh;
+  width: 28px;
+  height: 34vh;
+  border-left: 1px solid var(--cad-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+}
+
+.cad-dimension-side::before,
+.cad-dimension-side::after {
+  left: -10px;
+  width: 20px;
+  height: 1px;
+}
+
+.cad-dimension-side::before {
+  top: 0;
+}
+
+.cad-dimension-side::after {
+  bottom: 0;
+}
+
+.cad-dimension::before,
+.cad-dimension::after {
+  opacity: 0.84;
+}
+
+.cad-dimension[data-label]::selection {
+  background: transparent;
+}
+
+.cad-isometric {
+  position: absolute;
+  right: 9vw;
+  top: 62vh;
+  width: 180px;
+  height: 120px;
+  opacity: 0.62;
+  transform: rotate(-9deg);
+}
+
+.cad-isometric span {
+  position: absolute;
+  border: 1px solid var(--cad-line);
+}
+
+.cad-isometric span:nth-child(1) {
+  inset: 18px 42px 14px 14px;
+}
+
+.cad-isometric span:nth-child(2) {
+  inset: 0 24px 32px 32px;
+  transform: skewY(-22deg);
+}
+
+.cad-isometric span:nth-child(3) {
+  inset: 38px 0 0 64px;
+  transform: skewY(22deg);
+}
+
+.cad-title-block {
+  position: absolute;
+  right: 62px;
+  bottom: 48px;
+  width: min(334px, 40vw);
+  height: 66px;
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 0.8fr;
+  align-items: center;
+  color: rgba(14, 102, 148, 0.76);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0;
+  border: 1px solid var(--cad-line-soft);
+  opacity: 0.88;
+}
+
+.cad-title-block div {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border-left: 1px solid var(--cad-line-soft);
+}
+
+.cad-title-block div:first-child {
+  border-left: 0;
+}
+
+.cad-grid-label {
+  position: absolute;
+  color: rgba(14, 102, 148, 0.62);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0;
+  opacity: 0.86;
+}
+
+.cad-grid-label-a {
+  left: 48px;
+  bottom: 56px;
+}
+
+.cad-grid-label-b {
+  left: 48px;
+  bottom: 40px;
+}
+
+.cad-shell {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+
+.cad-surface {
+  position: relative;
+  background:
+    linear-gradient(180deg, var(--cad-panel), rgba(255,255,255,0.48));
+  backdrop-filter: blur(2px);
+}
+
+.cad-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent calc(50% - 1px), rgba(0, 129, 242, 0.14) calc(50% - 1px), rgba(0, 129, 242, 0.14) 50%, transparent 50%),
+    linear-gradient(0deg, transparent calc(50% - 1px), rgba(0, 168, 132, 0.14) calc(50% - 1px), rgba(0, 168, 132, 0.14) 50%, transparent 50%);
+}
+
+.dark .cad-surface {
+  background:
+    linear-gradient(180deg, var(--cad-panel), rgba(22,22,24,0.62));
+}
+
+.cad-panel {
+  background: var(--cad-panel-strong);
+  border-color: var(--border-main);
+}
+
+@media (max-width: 640px) {
+  .cad-ruler,
+  .cad-axis,
+  .cad-origin,
+  .cad-title-block,
+  .cad-dimension,
+  .cad-grid-label {
+    display: none;
+  }
+
+  .cad-wire-a {
+    right: -22vw;
+    top: 14vh;
+    width: 60vw;
+  }
+
+  .cad-wire-b {
+    left: -26vw;
+    bottom: 10vh;
+    width: 56vw;
+  }
 }
 
 .clickable {
