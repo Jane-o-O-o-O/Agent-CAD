@@ -1,0 +1,75 @@
+services:
+  frontend:
+    image: simpleyyt/manus-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - manus-network
+    environment:
+      - BACKEND_URL=http://backend:8000
+
+  backend:
+    image: simpleyyt/manus-backend
+    depends_on:
+      - sandbox
+      - claw
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      #- ./mcp.json:/etc/mcp.json # Mount MCP servers directory
+    networks:
+      - manus-network
+    environment:
+      # OpenAI API base URL
+      - API_BASE=https://api.openai.com/v1
+      # OpenAI API key, replace with your own
+      - API_KEY=sk-xxxx
+      # LLM model name
+      - MODEL_NAME=gpt-4o
+      # LLM temperature parameter, controls randomness
+      #- TEMPERATURE=0.7
+      # Maximum tokens for LLM response
+      #- MAX_TOKENS=2000
+      # More configuration options: https://docs.ai-manus.com/#/configuration
+
+  sandbox:
+    image: simpleyyt/manus-sandbox
+    command: /bin/sh -c "exit 0"  # prevent sandbox from starting, ensure image is pulled
+    restart: "no"
+    networks:
+      - manus-network
+
+  claw:
+    image: simpleyyt/manus-claw
+    entrypoint: /bin/sh -c "exit 0"  # prevent claw from starting, ensure image is pulled
+    restart: "no"
+    networks:
+      - manus-network
+
+  mongodb:
+    image: mongo:7.0
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+    #ports:
+    #  - "27017:27017"
+    networks:
+      - manus-network
+
+  redis:
+    image: redis:7.0
+    restart: unless-stopped
+    networks:
+      - manus-network
+
+volumes:
+  mongodb_data:
+    name: manus-mongodb-data
+
+networks:
+  manus-network:
+    name: manus-network
+    driver: bridge
