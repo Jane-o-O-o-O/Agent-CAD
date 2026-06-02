@@ -11,6 +11,14 @@ export interface ClientConfigResponse {
 let clientConfigCache: ClientConfigResponse | null = null
 let isClientConfigLoaded = false
 
+const fallbackClientConfig: ClientConfigResponse = {
+  auth_provider: 'none',
+  show_github_button: false,
+  github_repository_url: 'https://github.com/Jane-o-O-o-O/Agent-CAD',
+  google_analytics_id: null,
+  claw_enabled: true,
+}
+
 /**
  * Get client runtime configuration.
  */
@@ -34,8 +42,9 @@ export async function getCachedClientConfig(): Promise<ClientConfigResponse | nu
     return clientConfigCache
   } catch (error) {
     console.warn('Failed to load client runtime configuration:', error)
+    clientConfigCache = fallbackClientConfig
     isClientConfigLoaded = true
-    return null
+    return clientConfigCache
   }
 }
 
