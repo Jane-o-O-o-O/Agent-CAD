@@ -7,6 +7,8 @@ import glob
 import asyncio
 import subprocess
 import mimetypes
+import tempfile
+import shutil
 from typing import Optional, BinaryIO
 from fastapi import UploadFile
 from app.models.file import (
@@ -18,6 +20,68 @@ from app.core.exceptions import AppException, ResourceNotFoundException, BadRequ
 
 class FileService:
     """File Operation Service"""
+
+    OFFICE_EXTENSIONS = {'.doc', '.docx', '.rtf', '.odt'}
+    PDF_EXTENSIONS = {'.pdf'}
+
+    def _extract_text_from_binary_file(self, file: str) -> str:
+        ext = os.path.splitext(file)[1].lower()
+
+        if ext == '.doc' and shutil.which('antiword'):
+            result = subprocess.run(
+                ['antiword', file],
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+                check=False,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout
+
+        if ext in self.PDF_EXTENSIONS and shutil.which('pdftotext'):
+            result = subprocess.run(
+                ['pdftotext', file, '-'],
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+                check=False,
+            )
+            if result.returncode == 0:
+                return result.stdout
+            raise AppException(message=f"Failed to extract PDF text: {result.stderr}")
+
+        if ext in self.OFFICE_EXTENSIONS and shutil.which('libreoffice'):
+            with tempfile.TemporaryDirectory() as tmpdir:
+                result = subprocess.run(
+                    [
+                        'libreoffice',
+                        '--headless',
+                        '--convert-to',
+                        'txt:Text',
+                        '--outdir',
+                        tmpdir,
+                        file,
+                    ],
+                    capture_output=True,
+                    text=True,
+                    encoding='utf-8',
+                    errors='replace',
+                    check=False,
+                    timeout=60,
+                )
+                if result.returncode != 0:
+                    raise AppException(message=f"Failed to convert Office file: {result.stderr}")
+
+                converted_files = glob.glob(os.path.join(tmpdir, '*.txt'))
+                if not converted_files:
+                    raise AppException(message="Office conversion did not produce a text file")
+
+                with open(converted_files[0], 'r', encoding='utf-8', errors='replace') as f:
+                    return f.read()
+
+        raise AppException(message=f"File type is not directly readable and no converter is available: {file}")
 
     async def read_file(self, file: str, start_line: Optional[int] = None, 
                  end_line: Optional[int] = None, sudo: bool = False, max_length: Optional[int] = 10000) -> FileReadResult:
@@ -58,6 +122,9 @@ class FileService:
                         with open(file, 'r', encoding='utf-8') as f:
                             return f.read()
                     except Exception as e:
+                        ext = os.path.splitext(file)[1].lower()
+                        if ext in self.OFFICE_EXTENSIONS or ext in self.PDF_EXTENSIONS:
+                            return self._extract_text_from_binary_file(file)
                         raise AppException(message=f"Failed to read file: {str(e)}")
                 
                 # Execute IO operation in thread pool

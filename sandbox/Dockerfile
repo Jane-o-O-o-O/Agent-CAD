@@ -25,6 +25,9 @@ RUN apt-get update && apt-get install -y \
     socat \
     supervisor \
     websockify \
+    libreoffice \
+    antiword \
+    poppler-utils \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
