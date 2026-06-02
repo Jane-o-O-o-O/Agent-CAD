@@ -1,0 +1,46 @@
+# 📅 开发计划
+
+> 当前开发中的功能：配置
+
+## Claw（Manus × Claw）
+
+ * [x] 集成 [OpenClaw](https://github.com/anthropics/openclaw) AI 助手
+ * [x] 一键部署、用户隔离容器
+ * [x] 自动过期倒计时
+ * [x] 完整聊天历史（MongoDB + OpenClaw 会话合并）
+ * [x] 文件上传与下载
+ * [x] OpenAI 兼容 LLM 代理
+
+## 工具
+
+ * [x] 支持浏览器接管
+ * [x] 支持外部 MCP 工具集成
+ * [ ] 支持 Deploy & Expose 工具
+
+## 用户认证
+
+ * [x] 支持多用户
+
+## 部署
+
+ * [ ] 支持 Docker Swarm 部署
+ * [ ] 支持 Docker Compose 部署
+
+## UI
+
+ * [ ] 支持设置
+ * [ ] 支持时间轴回放
+
+## 任务会话
+
+ * [x] 支持分享
+
+## 基建
+
+ * [ ] 支持 Windows & 手机接入
+ * [x] 支持 Bing、Google、Tavily 等搜索提供商
+ * [ ] 支持阿里云等文件存储提供商
+ * [ ] 支持 e2b 等沙盒提供商
+ * [ ] 支持 mem0 记忆提供商
+ * [ ] 后台任务换成 celery 任务
+ * [ ] 沙盒企业级安全建设
