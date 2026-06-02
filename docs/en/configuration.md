@@ -1,0 +1,231 @@
+# 📋 Configuration Guide
+
+## Configuration Items
+
+### Model Provider Configuration
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `API_KEY` | - | Yes | API key for the LLM model |
+| `API_BASE` | `http://mockserver:8090/v1` | No | Base API address for specifying model service endpoint |
+
+### Model Configuration
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `MODEL_PROVIDER` | `openai` | No | Model provider (e.g. `openai`, `anthropic`, `google_genai`, `ollama`) |
+| `MODEL_NAME` | `deepseek-chat` | Yes | Name of the model to use |
+| `TEMPERATURE` | `0.7` | No | Randomness level of model responses, range 0-1 |
+| `MAX_TOKENS` | `2000` | No | Maximum number of tokens in model response |
+
+### MongoDB Configuration
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `MONGODB_URI` | `mongodb://mongodb:27017` | No | MongoDB connection string |
+| `MONGODB_DATABASE` | `manus` | No | Database name |
+| `MONGODB_USERNAME` | - | No | MongoDB username |
+| `MONGODB_PASSWORD` | - | No | MongoDB password |
+
+> **Note**: MongoDB configuration items are currently commented out, indicating they may be optional features or not fully implemented yet.
+
+### Redis Configuration
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `REDIS_HOST` | `redis` | No | Redis server address |
+| `REDIS_PORT` | `6379` | No | Redis server port |
+| `REDIS_DB` | `0` | No | Redis database number |
+| `REDIS_PASSWORD` | - | No | Redis password |
+
+> **Note**: Redis configuration items are currently commented out, indicating they may be optional features or not fully implemented yet.
+
+### Sandbox Configuration
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `SANDBOX_ADDRESS` | - | No | Sandbox server address |
+| `SANDBOX_IMAGE` | `simpleyyt/manus-sandbox` | No | Docker sandbox image name |
+| `SANDBOX_NAME_PREFIX` | `sandbox` | No | Sandbox container name prefix |
+| `SANDBOX_TTL_MINUTES` | `30` | No | Sandbox time-to-live in minutes |
+| `SANDBOX_NETWORK` | `manus-network` | No | Docker network name |
+| `SANDBOX_CHROME_ARGS` | - | No | Chrome browser startup arguments |
+| `SANDBOX_HTTPS_PROXY` | - | No | HTTPS proxy settings |
+| `SANDBOX_HTTP_PROXY` | - | No | HTTP proxy settings |
+| `SANDBOX_NO_PROXY` | - | No | List of addresses to exclude from proxy |
+
+### Claw (OpenClaw) Configuration
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `CLAW_ENABLED` | `true` | No | Enable Claw feature; set to `false` to hide the sidebar entry |
+| `CLAW_IMAGE` | `simpleyyt/manus-claw` | No | Claw Docker image name |
+| `CLAW_NAME_PREFIX` | `manus-claw` | No | Claw container name prefix |
+| `CLAW_TTL_SECONDS` | `3600` | No | Claw container time-to-live in seconds; set to `0` for unlimited |
+| `CLAW_NETWORK` | - | No | Docker network bridge name for Claw containers |
+| `CLAW_READY_TIMEOUT` | `300` | No | Max seconds to wait for Claw container to become ready (default 5 minutes) |
+| `CLAW_ADDRESS` | - | No | Fixed Claw address (for development; skips Docker container creation) |
+| `CLAW_API_KEY` | - | No | Static API key (for development / fixed container) |
+| `MANUS_API_BASE_URL` | `http://backend:8000` | No | Backend API URL used by Claw containers for callbacks |
+
+### Search Engine Configuration
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `SEARCH_PROVIDER` | `bing_web` | No | Search engine provider (`baidu`, `baidu_web`, `google`, `bing`, `bing_web`, `tavily`, `serper`, or `custom`) |
+
+#### Baidu Search Configuration
+
+Used only when `SEARCH_PROVIDER=baidu` (Baidu Qianfan AI Search API):
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `BAIDU_SEARCH_API_KEY` | - | Yes | Baidu Qianfan AI Search API key, get from [Baidu Qianfan Console](https://console.bce.baidu.com/qianfan/ais/console/onlineService) |
+
+> If you don't want to apply for an API key, set `SEARCH_PROVIDER` to `baidu_web` to scrape Baidu search results directly without any key.
+
+#### Bing Search Configuration
+
+Used only when `SEARCH_PROVIDER=bing` (official API):
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `BING_SEARCH_API_KEY` | - | Yes | Bing Web Search API key, get from [Azure](https://www.microsoft.com/en-us/bing/apis/bing-web-search-api) |
+
+> If you don't want to apply for an API key, set `SEARCH_PROVIDER` to `bing_web` to scrape Bing search results directly without any key.
+
+#### Google Search Configuration
+
+Used only when `SEARCH_PROVIDER=google`:
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `GOOGLE_SEARCH_API_KEY` | - | Yes | Google Search API key |
+| `GOOGLE_SEARCH_ENGINE_ID` | - | Yes | Google Custom Search Engine ID |
+
+#### Tavily Search Configuration
+
+Used only when `SEARCH_PROVIDER=tavily`:
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `TAVILY_API_KEY` | - | Yes | Tavily Search API key, get from [tavily.com](https://tavily.com) |
+
+#### Serper.dev Search Configuration
+
+Used only when `SEARCH_PROVIDER=serper`. Serper.dev delivers reliable Google search results and is recommended as the default provider:
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `SERPER_API_KEY` | - | Yes | Serper.dev API key, get from [serper.dev](https://serper.dev) (free tier available) |
+
+#### Custom Search API Configuration
+
+Used only when `SEARCH_PROVIDER=custom`. Integrate any third-party search REST API by configuring the endpoint, credentials, and field mapping:
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `SEARCH_API_URL` | - | Yes | Full URL of the search endpoint |
+| `SEARCH_API_KEY` | - | No | API key for the endpoint |
+| `SEARCH_API_KEY_HEADER` | `Authorization` | No | HTTP header name used to send the key (e.g. `X-API-KEY`) |
+| `SEARCH_API_KEY_HEADER_PREFIX` | `Bearer ` | No | Prefix placed before the key value in the header (include trailing space, e.g. `Bearer `; set empty if the header value is the key itself) |
+| `SEARCH_API_KEY_PARAM` | - | No | URL query parameter name for the key (alternative to header auth) |
+| `SEARCH_API_METHOD` | `POST` | No | HTTP method: `POST` or `GET` |
+| `SEARCH_QUERY_FIELD` | `q` | No | Field name for the search query in the request body / params |
+| `SEARCH_RESULT_FIELD` | `results` | No | Dot-separated path to the results array in the JSON response (e.g. `web.results`) |
+| `SEARCH_TITLE_FIELD` | `title` | No | Field name for the result title |
+| `SEARCH_LINK_FIELD` | `link` | No | Field name for the result URL |
+| `SEARCH_SNIPPET_FIELD` | `snippet` | No | Field name for the result snippet / description |
+
+**Common integration examples:**
+
+- **Serper.dev (POST)**
+  ```env
+  SEARCH_PROVIDER=custom
+  SEARCH_API_URL=https://google.serper.dev/search
+  SEARCH_API_KEY=your-serper-key
+  SEARCH_API_KEY_HEADER=X-API-KEY
+  SEARCH_API_KEY_HEADER_PREFIX=
+  SEARCH_RESULT_FIELD=organic
+  ```
+
+- **SerpAPI (GET)**
+  ```env
+  SEARCH_PROVIDER=custom
+  SEARCH_API_URL=https://serpapi.com/search
+  SEARCH_API_KEY=your-serpapi-key
+  SEARCH_API_KEY_PARAM=api_key
+  SEARCH_API_METHOD=GET
+  SEARCH_RESULT_FIELD=organic_results
+  ```
+
+- **Brave Search API (GET)**
+  ```env
+  SEARCH_PROVIDER=custom
+  SEARCH_API_URL=https://api.search.brave.com/res/v1/web/search
+  SEARCH_API_KEY=your-brave-key
+  SEARCH_API_KEY_HEADER=X-Subscription-Token
+  SEARCH_API_KEY_HEADER_PREFIX=
+  SEARCH_API_METHOD=GET
+  SEARCH_RESULT_FIELD=web.results
+  SEARCH_SNIPPET_FIELD=description
+  ```
+
+### Authentication Configuration
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `AUTH_PROVIDER` | `password` | No | Authentication provider (`password`, `none`, or `local`) |
+| `SHOW_GITHUB_BUTTON` | `true` | No | Whether to show the GitHub button in the top bar |
+| `GITHUB_REPOSITORY_URL` | `https://github.com/simpleyyt/ai-manus` | No | GitHub button target URL |
+
+#### Password Authentication Configuration
+
+Used only when `AUTH_PROVIDER=password`:
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `PASSWORD_SALT` | - | No | Password encryption salt |
+| `PASSWORD_HASH_ROUNDS` | `10` | No | Password hash rounds |
+
+#### Local Authentication Configuration
+
+Used only when `AUTH_PROVIDER=local`:
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `LOCAL_AUTH_EMAIL` | `admin@example.com` | No | Local admin email |
+| `LOCAL_AUTH_PASSWORD` | `admin` | No | Local admin password |
+
+### JWT Configuration
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `JWT_SECRET_KEY` | `your-secret-key-here` | Yes | JWT signing key (must be changed in production) |
+| `JWT_ALGORITHM` | `HS256` | No | JWT signing algorithm |
+| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | No | Access token expiration time in minutes |
+| `JWT_REFRESH_TOKEN_EXPIRE_DAYS` | `7` | No | Refresh token expiration time in days |
+
+### Email Configuration
+
+Used only when `AUTH_PROVIDER=password`:
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `EMAIL_HOST` | - | No | SMTP server address |
+| `EMAIL_PORT` | `587` | No | SMTP server port |
+| `EMAIL_USERNAME` | - | No | Email username |
+| `EMAIL_PASSWORD` | - | No | Email password |
+| `EMAIL_FROM` | - | No | Sender email address |
+
+### MCP Configuration
+
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `MCP_CONFIG_PATH` | `/etc/mcp.json` | No | MCP configuration file path |
+
+### Log Configuration
+| Configuration | Default Value | Required | Description |
+|---------------|---------------|----------|-------------|
+| `LOG_LEVEL` | `INFO` | No | Log level (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`) |
+
