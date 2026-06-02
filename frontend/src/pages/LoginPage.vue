@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full min-h-[100vh] relative bg-[var(--background-gray-main)] dark:bg-[#050505]">
+  <div class="w-full min-h-[100vh] relative cad-shell">
     <div class="sticky top-0 left-0 w-full z-[10] px-[48px] max-sm:px-[12px] max-sm:bg-[var(--background-gray-login)]">
       <div class="w-full h-[60px] mx-auto flex items-center justify-between text-[var(--text-primary)]">
         <a href="/">
@@ -12,6 +12,7 @@
     </div>
     <div
       class="relative z-[1] flex flex-col justify-center items-center min-h-[100vh] pt-[20px] pb-[60px] -mt-[60px] max-sm:pt-[80px] max-sm:pb-[80px] max-sm:mt-0 max-sm:min-h-[calc(100vh-60px)] max-sm:justify-start">
+      <div class="cad-login-plate" aria-hidden="true"></div>
       <div class="w-full max-w-[720px] pt-[24px] mb-[40px] max-sm:pt-[0px]">
         <div class="flex flex-col items-center gap-[20px] relative" style="z-index:1">
           <div class="w-[80px] h-[80px] text-[var(--icon-primary)] max-sm:w-[64px] max-sm:h-[64px]">
@@ -97,3 +98,16 @@ onMounted(() => {
   }
 })
 </script>
+
+<style scoped>
+.cad-login-plate {
+  position: absolute;
+  width: min(680px, calc(100vw - 32px));
+  height: min(520px, calc(100vh - 120px));
+  border: 1px solid var(--cad-line-soft);
+  background:
+    linear-gradient(90deg, transparent calc(50% - 1px), var(--cad-line-soft) calc(50% - 1px), var(--cad-line-soft) 50%, transparent 50%),
+    linear-gradient(0deg, transparent calc(50% - 1px), var(--cad-line-soft) calc(50% - 1px), var(--cad-line-soft) 50%, transparent 50%);
+  opacity: 0.72;
+}
+</style>

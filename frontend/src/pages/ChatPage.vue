@@ -2,7 +2,7 @@
   <SimpleBar ref="simpleBarRef" @scroll="handleScroll">
     <div ref="chatContainerRef" class="relative flex flex-col h-full flex-1 min-w-0 px-5">
       <div ref="observerRef"
-        class="sm:min-w-[390px] flex flex-row items-center justify-between pt-3 pb-1 gap-1 sticky top-0 z-10 bg-[var(--background-gray-main)] flex-shrink-0">
+        class="sm:min-w-[390px] flex flex-row items-center justify-between pt-3 pb-1 gap-1 sticky top-0 z-10 cad-surface flex-shrink-0">
         <div class="flex items-center flex-1">
           <div class="relative flex items-center">
             <div @click="toggleLeftPanel" v-if="!isLeftPanelShow"
@@ -110,7 +110,7 @@
           <LoadingIndicator v-if="isLoading" :text="$t('Thinking')" />
         </div>
 
-        <div class="flex flex-col bg-[var(--background-gray-main)] sticky bottom-0">
+        <div class="flex flex-col cad-surface sticky bottom-0">
           <button @click="handleFollow" v-if="!follow"
             class="flex items-center justify-center w-[36px] h-[36px] rounded-full bg-[var(--background-white-main)] hover:bg-[var(--background-gray-main)] clickable border border-[var(--border-main)] shadow-[0px_5px_16px_0px_var(--shadow-S),0px_0px_1.25px_0px_var(--shadow-S)] absolute -top-20 left-1/2 -translate-x-1/2">
             <ArrowDown class="text-[var(--icon-primary)]" :size="20" />

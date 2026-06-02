@@ -2,7 +2,7 @@
   <SimpleBar>
     <div
       class="flex flex-col h-full flex-1 min-w-0 mx-auto w-full sm:min-w-[390px] px-5 justify-center items-start gap-2 relative max-w-full sm:max-w-full">
-      <div class="w-full pt-4 pb-4 px-5 bg-[var(--background-gray-main)] sticky top-0 z-10 mx-[-1.25]">
+      <div class="w-full pt-4 pb-4 px-5 cad-surface sticky top-0 z-10 mx-[-1.25]">
         <div class="flex justify-between items-center w-full absolute left-0 right-0">
           <div class="h-8 relative z-20 overflow-hidden flex gap-2 items-center flex-shrink-0">
             <div class="relative flex items-center">
@@ -58,8 +58,8 @@
           </span>
         </div>
         <div class="flex flex-col gap-1 w-full">
-          <div class="flex flex-col bg-[var(--background-gray-main)] w-full">
-            <div class="[&amp;:not(:empty)]:pb-2 bg-[var(--background-gray-main)] rounded-[22px_22px_0px_0px]">
+          <div class="flex flex-col cad-surface w-full rounded-[22px]">
+            <div class="[&amp;:not(:empty)]:pb-2 rounded-[22px_22px_0px_0px]">
             </div>
             <ChatBox :rows="2" v-model="message" @submit="handleSubmit" :isRunning="false" :attachments="attachments" />
           </div>
