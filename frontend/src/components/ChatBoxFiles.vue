@@ -69,7 +69,7 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import type { FileInfo } from '../api/file';
-import { uploadFile as apiUploadFile } from '../api/file';
+import { uploadFile as apiUploadFile, uploadFileLite } from '../api/file';
 import { getFileType, getFileTypeText, formatFileSize } from '../utils/fileType';
 import { useI18n } from 'vue-i18n';
 import { ref, nextTick, watch, onMounted, computed } from 'vue';
@@ -80,6 +80,7 @@ import { useFilePanel } from '../composables/useFilePanel';
 
 const props = defineProps<{
     attachments: FileInfo[];
+    liteUpload?: boolean;
 }>();
 
 const { showFilePanel } = useFilePanel();
@@ -144,7 +145,7 @@ const processFileUpload = async (file: File) => {
 
     try {
         // Upload the file
-        const uploadedFile = await apiUploadFile(file);
+        const uploadedFile = await uploadSelectedFile(file);
 
         // Update the file info with successful upload
         const index = files.value.findIndex(f => f.file_id === tempFileInfo.file_id);
@@ -183,7 +184,7 @@ const retryUpload = async (fileInfo: ExtendedFileInfo) => {
 
     try {
         // Retry upload
-        const uploadedFile = await apiUploadFile(fileInfo.file);
+        const uploadedFile = await uploadSelectedFile(fileInfo.file);
 
         // Update with new file info
         const index = files.value.findIndex(f => f.file_id === fileInfo.file_id);
@@ -257,6 +258,13 @@ const handleFileClick = (file: ExtendedFileInfo) => {
     if (file.status === 'success') {
         showFilePanel(file);
     }
+};
+
+const uploadSelectedFile = async (file: File) => {
+    if (props.liteUpload) {
+        return uploadFileLite(file);
+    }
+    return apiUploadFile(file);
 };
 
 defineExpose({

@@ -75,8 +75,8 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import ChatBox from '../components/ChatBox.vue';
-import { createSession } from '../api/agent';
 import { showErrorToast } from '../utils/toast';
+import * as agentApi from '../api/agent';
 import { Bot, PanelLeft, Github } from 'lucide-vue-next';
 import ManusLogoTextIcon from '../components/icons/ManusLogoTextIcon.vue';
 import type { FileInfo } from '../api/file';
@@ -139,13 +139,9 @@ const handleSubmit = async () => {
     isSubmitting.value = true;
 
     try {
-      // Create new Agent
-      const session = await createSession();
-      const sessionId = session.session_id;
-
-      // Navigate to new route with session_id, passing initial message via state
+      const session = await agentApi.createSession();
       router.push({
-        path: `/chat/${sessionId}`,
+        path: `/chat/${session.session_id}`,
         state: {
           message: message.value, files: attachments.value.map((file: FileInfo) => ({
             file_id: file.file_id,

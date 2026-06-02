@@ -30,7 +30,7 @@
         <div
           @click="handleNewTaskClick"
           class="flex items-center rounded-[10px] cursor-pointer transition-colors w-full gap-[12px] h-[36px] ps-[9px] pe-[2px]"
-          :class="route.path === '/' ? 'bg-[var(--fill-tsp-white-main)]' : 'hover:bg-[var(--fill-tsp-white-light)]'">
+          :class="isHomeRoute ? 'bg-[var(--fill-tsp-white-main)]' : 'hover:bg-[var(--fill-tsp-white-light)]'">
           <div class="shrink-0 size-[18px] flex items-center justify-center">
             <SquarePen :size="18" class="text-[var(--text-primary)]" />
           </div>
@@ -110,10 +110,10 @@
 </template>
 
 <script setup lang="ts">
-import { PanelLeft, SquarePen, Command, MessageSquareDashed, ChevronUp } from 'lucide-vue-next';
+import { PanelLeft, Command, MessageSquareDashed, ChevronUp, SquarePen } from 'lucide-vue-next';
 import SessionItem from './SessionItem.vue';
 import { useLeftPanel } from '../composables/useLeftPanel';
-import { ref, onMounted, watch, onUnmounted } from 'vue';
+import { computed, ref, onMounted, watch, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getSessionsSSE, getSessions } from '../api/agent';
 import { getCachedClientConfig } from '../api/config';
@@ -131,6 +131,7 @@ const isAllTasksCollapsed = ref(false)
 const isListScrolled = ref(false)
 const clawEnabled = ref(false)
 const scrollContainerRef = ref<HTMLElement | null>(null)
+const isHomeRoute = computed(() => route.path === '/' || route.path === '/home' || route.path === '/chat' || route.path === '/chat/home')
 
 const handleListScroll = () => {
   if (scrollContainerRef.value) {
@@ -175,7 +176,7 @@ const fetchSessions = async () => {
 }
 
 const handleNewTaskClick = () => {
-  router.push('/')
+  router.push('/chat')
 }
 
 const handleClawClick = () => {
@@ -201,7 +202,6 @@ onMounted(async () => {
     clawEnabled.value = cfg?.claw_enabled ?? false
   })
 
-  // Initial fetch of sessions
   fetchSessions()
 
   // Add keyboard event listener
@@ -219,6 +219,10 @@ onUnmounted(() => {
 })
 
 watch(() => route.path, async () => {
+  if (!cancelGetSessionsSSE.value) {
+    await fetchSessions()
+    return
+  }
   await updateSessions()
 })
 </script>
