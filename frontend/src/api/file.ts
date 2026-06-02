@@ -39,6 +39,22 @@ export async function uploadFile(file: File, metadata?: Record<string, any>): Pr
   return response.data.data;
 }
 
+export async function uploadFileLite(file: File, metadata?: Record<string, any>): Promise<FileInfo> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  if (metadata) {
+    formData.append('metadata', JSON.stringify(metadata));
+  }
+
+  const response = await apiClient.post<ApiResponse<FileInfo>>('/files?include_url=false', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data.data;
+}
+
 /**
  * Download file
  * @param fileId File ID

@@ -125,3 +125,6 @@ mcp.json
 
 uv.lock
 specs
+
+# Local smoke-test scratch outputs
+tmp_*/

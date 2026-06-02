@@ -26,6 +26,7 @@ from app.domain.services.tools.browser import BrowserToolkit
 from app.domain.services.tools.file import FileToolkit
 from app.domain.services.tools.message import MessageToolkit
 from app.domain.services.tools.search import SearchToolkit
+from app.domain.services.skills import SkillRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ class PlanActFlow(BaseFlow):
         browser: Browser,
         mcp_tool: MCPToolkit,
         search_engine: Optional[SearchEngine] = None,
+        skill_registry: Optional[SkillRegistry] = None,
     ):
         self._agent_id = agent_id
         self._repository = agent_repository
@@ -55,6 +57,7 @@ class PlanActFlow(BaseFlow):
         self._session_repository = session_repository
         self.status = AgentStatus.IDLE
         self.plan = None
+        self._skill_registry = skill_registry
 
         tools = [
             ShellToolkit(sandbox),
@@ -83,7 +86,23 @@ class PlanActFlow(BaseFlow):
         )
         logger.debug(f"Created execution agent for Agent {self._agent_id}")
 
+    def _apply_skill_context(self, message: Message) -> None:
+        if not self._skill_registry:
+            return
+
+        selected_skills = self._skill_registry.select(message.message)
+        context = self._skill_registry.build_context(selected_skills)
+        self.planner.set_additional_context(context)
+        self.executor.set_additional_context(context)
+        if selected_skills:
+            logger.info(
+                "Selected skills for Agent %s: %s",
+                self._agent_id,
+                ", ".join(skill.name for skill in selected_skills),
+            )
+
     async def run(self, message: Message) -> AsyncGenerator[BaseEvent, None]:
+        self._apply_skill_context(message)
 
         # TODO: move to task runner
         session = await self._session_repository.find_by_id(self._session_id)

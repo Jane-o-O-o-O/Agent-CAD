@@ -26,7 +26,7 @@ class FileInfoResponse(BaseModel):
     file_url: Optional[str]
 
     @staticmethod
-    async def from_file_info(file_info: FileInfo) -> "FileInfoResponse":
+    async def from_file_info(file_info: FileInfo, include_url: bool = True) -> "FileInfoResponse":
         from app.interfaces.dependencies import get_file_service
         file_service = get_file_service()
         return FileInfoResponse(
@@ -36,5 +36,5 @@ class FileInfoResponse(BaseModel):
             size=file_info.size,
             upload_date=file_info.upload_date,
             metadata=file_info.metadata,
-            file_url=await file_service.create_signed_url(file_info.file_id)
+            file_url=await file_service.create_signed_url(file_info.file_id) if include_url else None
         )

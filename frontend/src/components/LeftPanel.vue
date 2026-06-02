@@ -30,7 +30,7 @@
         <div
           @click="handleNewTaskClick"
           class="cad-nav-row flex items-center rounded-[10px] cursor-pointer transition-colors w-full gap-[12px] h-[40px] ps-[9px] pe-[2px]"
-          :class="route.path === '/' ? 'is-active' : ''">
+          :class="isHomeRoute ? 'is-active' : ''">
           <div class="shrink-0 size-[18px] flex items-center justify-center">
             <SquarePen :size="18" class="text-[var(--text-primary)]" />
           </div>
@@ -48,11 +48,23 @@
         </div>
 
         <!-- Claw 入口 -->
-        <!-- 所有任务分组标题 + 会话列表 -->
+        <div
+          v-if="clawEnabled"
+          @click="handleClawClick"
+          class="cad-nav-row flex items-center rounded-[10px] cursor-pointer transition-colors w-full gap-[12px] h-[40px] ps-[9px] pe-[2px]"
+          :class="route.path === '/chat/claw' ? 'is-active' : ''">
+          <div class="shrink-0 size-[18px] flex items-center justify-center">
+            <div class="claw-nav-icon w-[18px] h-[18px]" />
+          </div>
+          <div class="flex-1 min-w-0 flex gap-[4px] items-center text-[14px] text-[var(--text-primary)]">
+            <span class="truncate">Manus Claw</span>
+          </div>
+        </div>
+        <!-- 所有任务分组标�?+ 会话列表 -->
         <div class="flex flex-col flex-1 min-h-0 -mx-[8px] mt-[4px] overflow-hidden">
           <div class="w-full border-t border-[var(--border-main)] transition-opacity duration-200" :class="isListScrolled ? 'opacity-100' : 'opacity-0'"></div>
 
-          <!-- 滚动容器：标题 + 列表一起滚动 -->
+          <!-- 滚动容器：标�?+ 列表一起滚�?-->
           <div ref="scrollContainerRef" class="flex flex-col flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-5 px-[8px]" @scroll="handleListScroll">
 
             <!-- 分组标题 -->
@@ -97,12 +109,13 @@
 </template>
 
 <script setup lang="ts">
-import { PanelLeft, SquarePen, Command, MessageSquareDashed, ChevronUp } from 'lucide-vue-next';
+import { PanelLeft, Command, MessageSquareDashed, ChevronUp, SquarePen } from 'lucide-vue-next';
 import SessionItem from './SessionItem.vue';
 import { useLeftPanel } from '../composables/useLeftPanel';
-import { ref, onMounted, watch, onUnmounted } from 'vue';
+import { computed, ref, onMounted, watch, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getSessionsSSE, getSessions } from '../api/agent';
+import { getCachedClientConfig } from '../api/config';
 import { ListSessionItem } from '../types/response';
 import { useI18n } from 'vue-i18n';
 
@@ -115,7 +128,9 @@ const sessions = ref<ListSessionItem[]>([])
 const cancelGetSessionsSSE = ref<(() => void) | null>(null)
 const isAllTasksCollapsed = ref(false)
 const isListScrolled = ref(false)
+const clawEnabled = ref(false)
 const scrollContainerRef = ref<HTMLElement | null>(null)
+const isHomeRoute = computed(() => route.path === '/' || route.path === '/home' || route.path === '/chat' || route.path === '/chat/home')
 
 const handleListScroll = () => {
   if (scrollContainerRef.value) {
@@ -160,7 +175,11 @@ const fetchSessions = async () => {
 }
 
 const handleNewTaskClick = () => {
-  router.push('/')
+  router.push('/chat')
+}
+
+const handleClawClick = () => {
+  router.push('/chat/claw')
 }
 
 const handleSessionDeleted = (sessionId: string) => {
@@ -178,7 +197,10 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 onMounted(async () => {
-  // Initial fetch of sessions
+  getCachedClientConfig().then(cfg => {
+    clawEnabled.value = cfg?.claw_enabled ?? false
+  })
+
   fetchSessions()
 
   // Add keyboard event listener
@@ -196,6 +218,10 @@ onUnmounted(() => {
 })
 
 watch(() => route.path, async () => {
+  if (!cancelGetSessionsSSE.value) {
+    await fetchSessions()
+    return
+  }
   await updateSessions()
 })
 </script>

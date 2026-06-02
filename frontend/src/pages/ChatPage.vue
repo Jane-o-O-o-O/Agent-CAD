@@ -121,7 +121,17 @@
         </div>
       </div>
     </div>
-    <ToolPanel ref="toolPanel" :size="toolPanelSize" :sessionId="sessionId" :realTime="realTime" 
+    <CADRenderPanel
+      v-if="isCadMode"
+      :document="cadDocument"
+      :planSteps="cadPlanSteps"
+      :isBusy="cadBusy"
+      :briefSummary="cadBriefSummary"
+      @hide="isCadMode = false"
+      @reset="resetCadWorkspace"
+      @addCenterSlot="addCenterSlot"
+      @downloadDxf="downloadDxf" />
+    <ToolPanel v-else ref="toolPanel" :size="toolPanelSize" :sessionId="sessionId" :realTime="realTime" 
       :isShare="false"
       @jumpToRealTime="jumpToRealTime" />
   </SimpleBar>
@@ -129,7 +139,7 @@
 
 <script setup lang="ts">
 import SimpleBar from '../components/SimpleBar.vue';
-import { ref, onMounted, watch, nextTick, onUnmounted, reactive, toRefs } from 'vue';
+import { computed, ref, onMounted, watch, nextTick, onUnmounted, reactive, toRefs } from 'vue';
 import { useRouter, onBeforeRouteUpdate } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import ChatBox from '../components/ChatBox.vue';
@@ -146,6 +156,7 @@ import {
   AgentSSEEvent,
 } from '../types/event';
 import ToolPanel from '../components/ToolPanel.vue'
+import CADRenderPanel from '../components/CADRenderPanel.vue';
 import PlanPanel from '../components/PlanPanel.vue';
 import { ArrowDown, FileSearch, PanelLeft, Lock, Globe, Link, Check } from 'lucide-vue-next';
 import ShareIcon from '@/components/icons/ShareIcon.vue';
@@ -158,6 +169,13 @@ import { copyToClipboard } from '../utils/dom'
 import { SessionStatus } from '../types/response';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import LoadingIndicator from '@/components/ui/LoadingIndicator.vue';
+import { isCADIntent } from '@/utils/cadIntent';
+import {
+  applyCADOperation,
+  downloadCADDocumentDxf,
+  type CADPlanStep,
+  type MechanicalCADDocument,
+} from '@/api/cad';
 
 const router = useRouter()
 const { t } = useI18n()
@@ -184,7 +202,12 @@ const createInitialState = () => ({
   attachments: [] as FileInfo[],
   shareMode: 'private' as 'private' | 'public', // Default to private mode
   linkCopied: false,
-  sharingLoading: false // Loading state for share operations
+  sharingLoading: false, // Loading state for share operations
+  isCadMode: false,
+  cadBusy: false,
+  cadDocument: null as MechanicalCADDocument | null,
+  cadPlanSteps: [] as Array<CADPlanStep & { status: 'pending' | 'running' | 'done' }>,
+  lastCadRequestKey: ''
 });
 
 // Create reactive state
@@ -208,7 +231,12 @@ const {
   attachments,
   shareMode,
   linkCopied,
-  sharingLoading
+  sharingLoading,
+  isCadMode,
+  cadBusy,
+  cadDocument,
+  cadPlanSteps,
+  lastCadRequestKey
 } = toRefs(state);
 
 // Non-state refs that don't need reset
@@ -216,6 +244,12 @@ const toolPanel = ref<InstanceType<typeof ToolPanel>>()
 const simpleBarRef = ref<InstanceType<typeof SimpleBar>>();
 const observerRef = ref<HTMLDivElement>();
 const chatContainerRef = ref<HTMLDivElement>();
+
+const cadBriefSummary = computed(() => {
+  const brief = cadDocument.value?.brief;
+  if (!brief) return cadBusy.value ? 'Parsing design brief' : 'No design brief yet';
+  return `${brief.part_type || 'part'} · ${brief.features.length} parsed features`;
+});
 
 // Reset all refs to their initial values
 const resetState = () => {
@@ -282,7 +316,7 @@ const handleToolEvent = (toolData: ToolEventData) => {
   }
   if (toolContent.name !== 'message') {
     lastNoMessageTool.value = toolContent;
-    if (realTime.value) {
+    if (realTime.value && !isCadMode.value) {
       toolPanel.value?.showToolPanel(toolContent, true);
     }
   }
@@ -384,6 +418,11 @@ const chat = async (message: string = '', files: FileInfo[] = []) => {
         attachments: files
       } as AttachmentsContent,
     });
+  }
+
+  if (message.trim() && isCADIntent(message, files)) {
+    isCadMode.value = true;
+    toolPanel.value?.hideToolPanel();
   }
 
   // Automatically enable follow mode when sending message
@@ -516,15 +555,19 @@ const isLiveTool = (tool: ToolContent) => {
   return false;
 }
 
-const handleToolClick = (tool: ToolContent) => {
+const handleToolClick = async (tool: ToolContent) => {
   realTime.value = false;
+  isCadMode.value = false;
+  await nextTick();
   if (sessionId.value) {
     toolPanel.value?.showToolPanel(tool, isLiveTool(tool));
   }
 }
 
-const jumpToRealTime = () => {
+const jumpToRealTime = async () => {
   realTime.value = true;
+  isCadMode.value = false;
+  await nextTick();
   if (lastNoMessageTool.value) {
     toolPanel.value?.showToolPanel(lastNoMessageTool.value, isLiveTool(lastNoMessageTool.value));
   }
@@ -615,6 +658,48 @@ const handleCopyLink = async () => {
     console.error('Error copying share link:', error);
     showErrorToast(t('Failed to copy link'));
   }
+}
+
+async function addCenterSlot() {
+  if (!cadDocument.value) return;
+  const plate = cadDocument.value.brief?.features.find(feature => feature.type === 'base_plate');
+  const width = Number(plate?.width || 120);
+  const height = Number(plate?.height || 80);
+  try {
+    const result = await applyCADOperation(cadDocument.value.id, {
+      operation: 'add_slot',
+      params: {
+        center: [width / 2, height / 2],
+        length: Math.min(width, height) * 0.38,
+        width: Math.min(width, height) * 0.12,
+        rotation: 0,
+      },
+    });
+    cadDocument.value = result.document;
+  } catch (error: any) {
+    showErrorToast(error?.message || 'Failed to add slot');
+  }
+}
+
+async function downloadDxf() {
+  if (!cadDocument.value) return;
+  try {
+    const blob = await downloadCADDocumentDxf(cadDocument.value.id);
+    const url = URL.createObjectURL(blob);
+    const link = window.document.createElement('a');
+    link.href = url;
+    link.download = `${cadDocument.value.title.replace(/\s+/g, '_').toLowerCase() || cadDocument.value.id}.dxf`;
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (error: any) {
+    showErrorToast(error?.message || 'Failed to download DXF');
+  }
+}
+
+function resetCadWorkspace() {
+  cadDocument.value = null;
+  cadPlanSteps.value = [];
+  lastCadRequestKey.value = '';
 }
 </script>
 

@@ -53,14 +53,15 @@ async def lifespan(app: FastAPI):
         await get_redis().shutdown()
 
 
-        logger.info("Cleaning up AgentService instance")
-        try:
-            await asyncio.wait_for(get_agent_service().shutdown(), timeout=30.0)
-            logger.info("AgentService shutdown completed successfully")
-        except asyncio.TimeoutError:
-            logger.warning("AgentService shutdown timed out after 30 seconds")
-        except Exception as e:
-            logger.error(f"Error during AgentService cleanup: {str(e)}")
+        if get_agent_service.cache_info().currsize > 0:
+            logger.info("Cleaning up AgentService instance")
+            try:
+                await asyncio.wait_for(get_agent_service().shutdown(), timeout=30.0)
+                logger.info("AgentService shutdown completed successfully")
+            except asyncio.TimeoutError:
+                logger.warning("AgentService shutdown timed out after 30 seconds")
+            except Exception as e:
+                logger.error(f"Error during AgentService cleanup: {str(e)}")
 
 app = FastAPI(title="Manus AI Agent", lifespan=lifespan)
 
