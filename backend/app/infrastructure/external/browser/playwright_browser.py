@@ -20,7 +20,7 @@ class PlaywrightBrowser:
         self.playwright = None
         self.settings = get_settings()
         kwargs = dict(
-            model=self.settings.model_name,
+            model=self.settings.browser_model_name or self.settings.model_name,
             model_provider=self.settings.model_provider,
             temperature=self.settings.temperature,
             max_tokens=self.settings.max_tokens,
