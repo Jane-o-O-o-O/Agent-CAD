@@ -9,6 +9,7 @@ export default {
   'Task Completed': 'Task Completed',
   'Create a task to get started': 'Create a task to get started',
   'All Tasks': 'All Tasks',
+  'More': 'More',
   'Delete': 'Delete',
   'Just now': 'Just now',
   'minutes ago': 'minutes ago',

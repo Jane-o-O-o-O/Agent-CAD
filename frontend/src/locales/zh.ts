@@ -9,6 +9,7 @@ export default {
   'Task Completed': '任务已完成',
   'Create a task to get started': '新建一个任务以开始',
   'All Tasks': '所有任务',
+  'More': '更多',
   'Delete': '删除',
   'Just now': '刚刚',
   'minutes ago': '分钟前',
