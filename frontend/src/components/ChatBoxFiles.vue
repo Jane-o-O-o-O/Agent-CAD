@@ -82,6 +82,10 @@ const props = defineProps<{
     attachments: FileInfo[];
 }>();
 
+const emit = defineEmits<{
+    (e: 'update:attachments', attachments: FileInfo[]): void;
+}>();
+
 const { showFilePanel } = useFilePanel();
 
 // Extended FileInfo type to include upload status
@@ -108,6 +112,15 @@ const uploadFile = () => {
 
 const getFiles = () => {
     return files.value;
+};
+
+const syncAttachments = () => {
+    emit(
+        'update:attachments',
+        files.value
+            .filter(file => file.status === 'success')
+            .map(({ status, file, ...attachment }) => attachment)
+    );
 };
 
 const handleFileSelect = async (event: Event) => {
@@ -154,6 +167,7 @@ const processFileUpload = async (file: File) => {
                 status: 'success',
                 file: null
             };
+            syncAttachments();
         }
     } catch (error) {
         console.error('Upload failed:', error);
@@ -170,6 +184,7 @@ const removeFile = (fileId: string) => {
     const index = files.value.findIndex(f => f.file_id === fileId);
     if (index !== -1) {
         files.value.splice(index, 1);
+        syncAttachments();
     }
 };
 
@@ -193,6 +208,7 @@ const retryUpload = async (fileInfo: ExtendedFileInfo) => {
                 status: 'success',
                 file: null
             };
+            syncAttachments();
         }
     } catch (error) {
         console.error('Retry upload failed:', error);
