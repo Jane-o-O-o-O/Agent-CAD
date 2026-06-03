@@ -32,6 +32,13 @@ class Settings(BaseSettings):
     model_provider: str = "openai"
     temperature: float = 0.7
     max_tokens: int = 2000
+    browser_model_name: str | None = None
+    claw_model_name: str | None = None
+    reasoning_model_name: str | None = None
+    long_context_model_name: str | None = None
+    vision_model_name: str | None = None
+    embedding_model_name: str | None = None
+    reranker_model_name: str | None = None
     
     # MongoDB configuration
     mongodb_uri: str = "mongodb://mongodb:27017"

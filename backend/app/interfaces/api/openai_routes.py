@@ -124,9 +124,10 @@ async def chat_completions(request: Request):
 
     settings = get_settings()
 
-    # Override model with configured model name
-    if settings.model_name and body.get("model") in ("default", "manus-proxy/default", None):
-        body = {**body, "model": settings.model_name}
+    # Override default Claw requests with the configured Claw model.
+    configured_model = settings.claw_model_name or settings.model_name
+    if configured_model and body.get("model") in ("default", "manus-proxy/default", None):
+        body = {**body, "model": configured_model}
 
     is_stream = body.get("stream", False)
 
