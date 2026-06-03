@@ -1,7 +1,6 @@
-from typing import Optional
+﻿from typing import Optional
 from app.domain.external.search import SearchEngine
-from app.domain.services.tools.base import BaseToolkit
-from langchain.tools import tool
+from app.domain.services.tools.base import BaseToolkit, tool
 from app.domain.models.tool_result import ToolResult
 
 class SearchToolkit(BaseToolkit):
@@ -30,4 +29,4 @@ class SearchToolkit(BaseToolkit):
             query: Search query in Google search style, using 3-5 keywords.
             date_range: (Optional) Time range filter for search results.
         """
-        return await self.search_engine.search(query, date_range) 
+        return await self.search_engine.search(query, date_range)

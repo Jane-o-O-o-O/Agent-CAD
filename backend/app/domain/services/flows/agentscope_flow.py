@@ -14,6 +14,7 @@ from agentscope.event import (
     ToolCallEndEvent,
     ToolCallStartEvent,
     ToolResultEndEvent,
+    ToolResultTextDeltaEvent,
 )
 from agentscope.message import UserMsg
 
@@ -31,6 +32,7 @@ from app.domain.models.event import (
     WaitEvent,
 )
 from app.domain.models.message import Message
+from app.domain.models.tool_result import ToolResult
 from app.domain.services.agentscope_runtime.model_factory import (
     create_agentscope_model,
     create_agentscope_react_config,
@@ -40,6 +42,7 @@ from app.domain.services.agentscope_runtime.tool_adapter import (
 )
 from app.domain.services.flows.base import BaseFlow
 from app.domain.services.prompts.system import SYSTEM_PROMPT
+from app.domain.services.skills import SkillRegistry
 from app.domain.services.tools.browser import BrowserToolkit
 from app.domain.services.tools.cad import CADToolkit
 from app.domain.services.tools.file import FileToolkit
@@ -64,9 +67,10 @@ class AgentScopeFlow(BaseFlow):
         search_engine: Optional[SearchEngine] = None,
         cad_service: Optional[Any] = None,
         user_id: str = "agent",
-        additional_context: Optional[str] = None,
+        skill_registry: Optional[SkillRegistry] = None,
     ):
         settings = get_settings()
+        self._skill_registry = skill_registry
         toolkits = [
             ShellToolkit(sandbox),
             BrowserToolkit(browser),
@@ -83,31 +87,47 @@ class AgentScopeFlow(BaseFlow):
         if search_engine:
             toolkits.append(SearchToolkit(search_engine))
 
-        system_prompt = SYSTEM_PROMPT
-        if additional_context:
-            system_prompt = f"{system_prompt}\n\n{additional_context}"
-
         self._agent = Agent(
             name=agent_id,
-            system_prompt=system_prompt,
+            system_prompt=SYSTEM_PROMPT,
             model=create_agentscope_model(settings),
             toolkit=create_agentscope_toolkit(toolkits),
             react_config=create_agentscope_react_config(settings),
         )
-        self._tool_names: dict[str, str] = {
-            tool.name: toolkit.name
-            for toolkit in toolkits
-            for tool in toolkit.get_tools()
-        }
+        self._tool_names: dict[str, str] = {}
+        for toolkit in toolkits:
+            for item in toolkit.get_tools():
+                if isinstance(item, dict):
+                    tool_name = item.get("function", {}).get("name")
+                else:
+                    tool_name = item.name
+                if tool_name:
+                    self._tool_names[tool_name] = toolkit.name
 
     async def run(self, message: Message) -> AsyncGenerator[BaseEvent, None]:
         content = message.message
+        if self._skill_registry:
+            selected_skills = self._skill_registry.select(message.message)
+            skill_context = self._skill_registry.build_context(selected_skills)
+            if skill_context:
+                content = (
+                    f"{skill_context}\n\n"
+                    "<current_request>\n"
+                    f"{content}\n"
+                    "</current_request>"
+                )
+            if selected_skills:
+                logger.info(
+                    "Selected skills for AgentScope flow: %s",
+                    ", ".join(skill.name for skill in selected_skills),
+                )
         if message.attachments:
             content = f"{content}\n\nAttachments:\n" + "\n".join(message.attachments)
 
         text_parts: list[str] = []
         tool_call_names: dict[str, str] = {}
         tool_call_args: dict[str, str] = {}
+        tool_result_text: dict[str, str] = {}
 
         async for event in self._agent.reply_stream(UserMsg("user", content)):
             if isinstance(event, TextBlockDeltaEvent):
@@ -117,6 +137,7 @@ class AgentScopeFlow(BaseFlow):
             if isinstance(event, ToolCallStartEvent):
                 tool_call_names[event.tool_call_id] = event.tool_call_name
                 tool_call_args[event.tool_call_id] = ""
+                tool_result_text[event.tool_call_id] = ""
                 yield ToolEvent(
                     status=ToolStatus.CALLING,
                     tool_call_id=event.tool_call_id,
@@ -138,6 +159,12 @@ class AgentScopeFlow(BaseFlow):
             if isinstance(event, ToolCallEndEvent):
                 continue
 
+            if isinstance(event, ToolResultTextDeltaEvent):
+                tool_result_text[event.tool_call_id] = (
+                    tool_result_text.get(event.tool_call_id, "") + event.delta
+                )
+                continue
+
             if isinstance(event, ToolResultEndEvent):
                 tool_name = tool_call_names.get(event.tool_call_id, "")
                 yield ToolEvent(
@@ -147,6 +174,9 @@ class AgentScopeFlow(BaseFlow):
                     function_name=tool_name,
                     function_args=_parse_tool_args(
                         tool_call_args.get(event.tool_call_id, ""),
+                    ),
+                    function_result=_parse_tool_result(
+                        tool_result_text.get(event.tool_call_id, ""),
                     ),
                 )
                 continue
@@ -174,3 +204,20 @@ def _parse_tool_args(raw: str) -> dict[str, Any]:
     except json.JSONDecodeError:
         logger.debug("Failed to parse AgentScope tool args: %s", raw)
         return {"raw": raw}
+
+
+def _parse_tool_result(raw: str) -> Any:
+    if not raw:
+        return None
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        logger.debug("Failed to parse AgentScope tool result: %s", raw)
+        return raw
+
+    if isinstance(parsed, dict) and "success" in parsed:
+        try:
+            return ToolResult[Any](**parsed)
+        except Exception:
+            logger.debug("Failed to rebuild ToolResult from AgentScope text")
+    return parsed

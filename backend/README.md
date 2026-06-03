@@ -1,8 +1,8 @@
-# AI Manus × Claw Backend Service
+﻿# AI Manus 脳 Claw Backend Service
 
-English | [中文](README_zh.md)
+English | [涓枃](README_zh.md)
 
-AI Manus × Claw is an intelligent conversation agent system based on FastAPI and LangChain chat models. The backend adopts Domain-Driven Design (DDD) architecture, supporting intelligent dialogue, file operations, Shell command execution, browser automation, and integrated [OpenClaw](https://github.com/anthropics/openclaw) AI assistant management (Claw).
+AI Manus 脳 Claw is an intelligent conversation agent system based on FastAPI and AgentScope runtime. The backend adopts Domain-Driven Design (DDD) architecture, supporting intelligent dialogue, file operations, Shell command execution, browser automation, and integrated [OpenClaw](https://github.com/anthropics/openclaw) AI assistant management (Claw).
 
 ## Project Architecture
 
@@ -10,23 +10,23 @@ The project adopts Domain-Driven Design (DDD) architecture, clearly separating t
 
 ```
 backend/
-├── app/
-│   ├── domain/          # Domain layer: contains core business logic
-│   │   ├── models/      # Domain model definitions
-│   │   ├── services/    # Domain services
-│   │   ├── external/    # External service interfaces
-│   │   └── prompts/     # Prompt templates
-│   ├── application/     # Application layer: orchestrates business processes
-│   │   ├── services/    # Application services
-│   │   └── schemas/     # Data schema definitions
-│   ├── interfaces/      # Interface layer: defines external system interfaces
-│   │   └── api/
-│   │       └── routes.py # API route definitions
-│   ├── infrastructure/  # Infrastructure layer: provides technical implementation
-│   └── main.py          # Application entry
-├── Dockerfile           # Docker configuration file
-├── pyproject.toml       # Project dependencies and metadata
-└── README.md            # Project documentation
+鈹溾攢鈹€ app/
+鈹?  鈹溾攢鈹€ domain/          # Domain layer: contains core business logic
+鈹?  鈹?  鈹溾攢鈹€ models/      # Domain model definitions
+鈹?  鈹?  鈹溾攢鈹€ services/    # Domain services
+鈹?  鈹?  鈹溾攢鈹€ external/    # External service interfaces
+鈹?  鈹?  鈹斺攢鈹€ prompts/     # Prompt templates
+鈹?  鈹溾攢鈹€ application/     # Application layer: orchestrates business processes
+鈹?  鈹?  鈹溾攢鈹€ services/    # Application services
+鈹?  鈹?  鈹斺攢鈹€ schemas/     # Data schema definitions
+鈹?  鈹溾攢鈹€ interfaces/      # Interface layer: defines external system interfaces
+鈹?  鈹?  鈹斺攢鈹€ api/
+鈹?  鈹?      鈹斺攢鈹€ routes.py # API route definitions
+鈹?  鈹溾攢鈹€ infrastructure/  # Infrastructure layer: provides technical implementation
+鈹?  鈹斺攢鈹€ main.py          # Application entry
+鈹溾攢鈹€ Dockerfile           # Docker configuration file
+鈹溾攢鈹€ pyproject.toml       # Project dependencies and metadata
+鈹斺攢鈹€ README.md            # Project documentation
 ```
 
 ## Core Features
@@ -40,7 +40,7 @@ backend/
    - Web search integration
 4. **Sandbox Environment**: Use Docker containers to provide isolated execution environments
 5. **VNC Visualization**: Support remote viewing of the sandbox environment via WebSocket connection
-6. **Claw (Manus × Claw)**: Per-user OpenClaw container lifecycle management, chat history merge (MongoDB + OpenClaw `.jsonl` sessions), WebSocket real-time messaging, file upload/resolve, and OpenAI-compatible LLM proxy for Claw containers
+6. **Claw (Manus 脳 Claw)**: Per-user OpenClaw container lifecycle management, chat history merge (MongoDB + OpenClaw `.jsonl` sessions), WebSocket real-time messaging, file upload/resolve, and OpenAI-compatible LLM proxy for Claw containers
 
 ## Requirements
 
@@ -70,7 +70,7 @@ API_BASE=https://api.openai.com/v1       # Base URL for model API (optional for 
 
 # Model configuration
 MODEL_NAME=gpt-4o                        # Model name to use
-MODEL_PROVIDER=openai                    # Model provider for LangChain
+MODEL_PROVIDER=openai                    # Model provider for AgentScope/OpenAI-compatible models
 TEMPERATURE=0.7                          # Model temperature parameter
 MAX_TOKENS=2000                          # Maximum output tokens per model request
 
@@ -319,4 +319,4 @@ Common error codes:
 
 1. Define the tool interface in the `domain/external` directory
 2. Implement the tool functionality in the `infrastructure` layer
-3. Integrate the tool in `application/services` 
+3. Integrate the tool in `application/services`

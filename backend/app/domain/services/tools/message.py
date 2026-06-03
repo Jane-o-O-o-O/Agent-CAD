@@ -1,8 +1,6 @@
-from ast import And
-from typing import List, Optional, Union
-from app.domain.services.tools.base import BaseToolkit
+﻿from typing import List, Optional, Union
+from app.domain.services.tools.base import BaseToolkit, tool
 from app.domain.models.tool_result import ToolResult
-from langchain.tools import tool
 
 
 class MessageToolkit(BaseToolkit):
@@ -42,6 +40,6 @@ class MessageToolkit(BaseToolkit):
             attachments: (Optional) List of question-related files or reference materials
             suggest_user_takeover: (Optional) Suggested operation for user takeover (enum: "none" or "browser")
         """
-            
+
         # Return success result, actual UI interaction logic implemented by caller
         return ToolResult(success=True)

@@ -1,14 +1,13 @@
-from io import StringIO
+﻿from io import StringIO
 from typing import Optional
 
 import ezdxf
-from langchain.tools import tool
 
 from app.application.services.cad_service import CADService
 from app.domain.external.sandbox import Sandbox
 from app.domain.models.cad import CADUnit
 from app.domain.models.tool_result import ToolResult
-from app.domain.services.tools.base import BaseToolkit
+from app.domain.services.tools.base import BaseToolkit, tool
 
 
 class CADToolkit(BaseToolkit):
@@ -61,7 +60,6 @@ class CADToolkit(BaseToolkit):
                 "unknowns": brief.unknowns,
             },
         )
-
     @tool(parse_docstring=True)
     async def cad_generate_dxf(
         self,

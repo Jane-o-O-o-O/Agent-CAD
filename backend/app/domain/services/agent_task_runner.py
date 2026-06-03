@@ -8,7 +8,6 @@ from app.domain.models.message import Message
 from app.domain.models.event import (
     BaseEvent,
     ErrorEvent,
-    TitleEvent,
     MessageEvent,
     DoneEvent,
     ToolEvent,
@@ -21,7 +20,6 @@ from app.domain.models.event import (
     AgentEvent,
     McpToolContent,
 )
-from app.domain.services.flows.plan_act import PlanActFlow
 from app.domain.services.flows.agentscope_flow import AgentScopeFlow
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.browser import Browser
@@ -63,7 +61,6 @@ class AgentTaskRunner(TaskRunner):
         self._sandbox = sandbox
         self._browser = browser
         self._search_engine = search_engine
-        self._repository = agent_repository
         self._session_repository = session_repository
         self._file_storage = file_storage
         self._mcp_repository = mcp_repository
@@ -77,35 +74,17 @@ class AgentTaskRunner(TaskRunner):
                 include_system=settings.skills_include_system,
                 max_body_chars=settings.skills_max_body_chars,
             )
-        if settings.agent_framework == "agentscope":
-            skill_context = None
-            if skill_registry:
-                skill_context = skill_registry.build_context([])
-            self._flow = AgentScopeFlow(
-                agent_id=self._agent_id,
-                session_id=self._session_id,
-                sandbox=self._sandbox,
-                browser=self._browser,
-                mcp_tool=self._mcp_tool,
-                search_engine=self._search_engine,
-                cad_service=self._cad_service,
-                user_id=self._user_id,
-                additional_context=skill_context,
-            )
-        else:
-            self._flow = PlanActFlow(
-                self._agent_id,
-                self._repository,
-                self._session_id,
-                self._session_repository,
-                self._sandbox,
-                self._browser,
-                self._mcp_tool,
-                self._search_engine,
-                skill_registry=skill_registry,
-                cad_service=self._cad_service,
-                user_id=self._user_id,
-            )
+        self._flow = AgentScopeFlow(
+            agent_id=self._agent_id,
+            session_id=self._session_id,
+            sandbox=self._sandbox,
+            browser=self._browser,
+            mcp_tool=self._mcp_tool,
+            search_engine=self._search_engine,
+            cad_service=self._cad_service,
+            user_id=self._user_id,
+            skill_registry=skill_registry,
+        )
 
     async def _put_and_add_event(self, task: Task, event: AgentEvent) -> None:
         event_id = await task.output_stream.put(event.model_dump_json())
@@ -191,7 +170,12 @@ class AgentTaskRunner(TaskRunner):
                 elif event.tool_name == "search":
                     search_results: ToolResult[SearchResults] = event.function_result
                     logger.debug(f"Search tool results: {search_results}")
-                    event.tool_content = SearchToolContent(results=search_results.data.results)
+                    search_data = search_results.data
+                    if isinstance(search_data, dict):
+                        search_data = SearchResults(**search_data)
+                    event.tool_content = SearchToolContent(
+                        results=search_data.results if search_data else []
+                    )
                 elif event.tool_name == "shell":
                     if "id" in event.function_args:
                         shell_result = await self._sandbox.view_shell(event.function_args["id"], console=True)
@@ -261,9 +245,7 @@ class AgentTaskRunner(TaskRunner):
                 
                 async for event in self._run_flow(message_obj):
                     await self._put_and_add_event(task, event)
-                    if isinstance(event, TitleEvent):
-                        await self._session_repository.update_title(self._session_id, event.title)
-                    elif isinstance(event, MessageEvent):
+                    if isinstance(event, MessageEvent):
                         await self._session_repository.update_latest_message(self._session_id, event.message, event.timestamp)
                         await self._session_repository.increment_unread_message_count(self._session_id)
                     elif isinstance(event, WaitEvent):
