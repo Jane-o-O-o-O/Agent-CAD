@@ -101,6 +101,18 @@ def _openai_error_response(status_code: int, message: str, error_type: str) -> J
     )
 
 
+def _apply_chat_request_defaults(body: dict, settings) -> dict:
+    """Apply configured OpenAI-compatible defaults without overwriting explicit requests."""
+    configured_model = settings.claw_model_name or settings.model_name
+    if configured_model and body.get("model") in ("default", "manus-proxy/default", None):
+        body = {**body, "model": configured_model}
+    if settings.model_reasoning_effort and "reasoning_effort" not in body:
+        body = {**body, "reasoning_effort": settings.model_reasoning_effort}
+    if settings.service_tier and "service_tier" not in body:
+        body = {**body, "service_tier": settings.service_tier}
+    return body
+
+
 @router.post("/v1/chat/completions")
 async def chat_completions(request: Request):
     """
@@ -124,10 +136,7 @@ async def chat_completions(request: Request):
 
     settings = get_settings()
 
-    # Override default Claw requests with the configured Claw model.
-    configured_model = settings.claw_model_name or settings.model_name
-    if configured_model and body.get("model") in ("default", "manus-proxy/default", None):
-        body = {**body, "model": configured_model}
+    body = _apply_chat_request_defaults(body, settings)
 
     is_stream = body.get("stream", False)
 

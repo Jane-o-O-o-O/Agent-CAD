@@ -2,6 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from app.domain.models.cad_intake import ExtractedContent
 from app.domain.models.cad import CADOperation, CADUnit, MechanicalCADDocument, MechanicalDesignBrief
 
 
@@ -56,3 +57,11 @@ class CADPlanFromPromptResponse(BaseModel):
     message: str
     brief: MechanicalDesignBrief
     steps: list[CADPlanStep]
+
+
+class CADAnalyzeAttachmentsRequest(BaseModel):
+    attachments: list[dict] = []
+
+
+class CADAnalyzeAttachmentsResponse(BaseModel):
+    extracted: ExtractedContent

@@ -1,7 +1,7 @@
 import logging
 from app.domain.services.flows.base import BaseFlow
 from app.domain.models.message import Message
-from typing import AsyncGenerator, Optional
+from typing import Any, AsyncGenerator, Optional
 from enum import Enum
 from app.domain.models.event import (
     BaseEvent,
@@ -26,6 +26,7 @@ from app.domain.services.tools.browser import BrowserToolkit
 from app.domain.services.tools.file import FileToolkit
 from app.domain.services.tools.message import MessageToolkit
 from app.domain.services.tools.search import SearchToolkit
+from app.domain.services.tools.cad import CADToolkit
 from app.domain.services.skills import SkillRegistry
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,8 @@ class PlanActFlow(BaseFlow):
         mcp_tool: MCPToolkit,
         search_engine: Optional[SearchEngine] = None,
         skill_registry: Optional[SkillRegistry] = None,
+        cad_service: Optional[Any] = None,
+        user_id: str = "agent",
     ):
         self._agent_id = agent_id
         self._repository = agent_repository
@@ -63,6 +66,7 @@ class PlanActFlow(BaseFlow):
             ShellToolkit(sandbox),
             BrowserToolkit(browser),
             FileToolkit(sandbox),
+            CADToolkit(sandbox, cad_service=cad_service, user_id=user_id, session_id=session_id),
             MessageToolkit(),
             mcp_tool
         ]

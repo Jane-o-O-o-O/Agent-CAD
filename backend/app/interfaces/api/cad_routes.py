@@ -2,11 +2,14 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import Response
 
 from app.application.errors.exceptions import NotFoundError
+from app.application.services.cad_intake_service import CADIntakeService
 from app.application.services.cad_service import CADService
 from app.domain.models.user import User
-from app.interfaces.dependencies import get_cad_service, get_current_user
+from app.interfaces.dependencies import get_cad_intake_service, get_cad_service, get_current_user
 from app.interfaces.schemas.base import APIResponse
 from app.interfaces.schemas.cad import (
+    CADAnalyzeAttachmentsRequest,
+    CADAnalyzeAttachmentsResponse,
     ApplyCADOperationRequest,
     ApplyCADOperationsRequest,
     ApplyCADOperationResponse,
@@ -20,6 +23,16 @@ from app.interfaces.schemas.cad import (
 
 
 router = APIRouter(prefix="/cad", tags=["cad"])
+
+
+@router.post("/intake/analyze", response_model=APIResponse[CADAnalyzeAttachmentsResponse])
+async def analyze_cad_attachments(
+    request: CADAnalyzeAttachmentsRequest,
+    current_user: User = Depends(get_current_user),
+    cad_intake_service: CADIntakeService = Depends(get_cad_intake_service),
+) -> APIResponse[CADAnalyzeAttachmentsResponse]:
+    extracted = await cad_intake_service.analyze_uploads(request.attachments, current_user.id)
+    return APIResponse.success(CADAnalyzeAttachmentsResponse(extracted=extracted))
 
 
 @router.post("/documents", response_model=APIResponse[CADDocumentResponse])
@@ -64,12 +77,14 @@ async def create_cad_document_from_prompt(
 @router.post("/plans/from-prompt", response_model=APIResponse[CADPlanFromPromptResponse])
 async def create_cad_plan_from_prompt(
     request: CADPlanFromPromptRequest,
+    current_user: User = Depends(get_current_user),
     cad_service: CADService = Depends(get_cad_service),
 ) -> APIResponse[CADPlanFromPromptResponse]:
     brief, operations, message = await cad_service.plan_from_prompt(
         prompt=request.prompt,
         units=request.units,
         attachments=request.attachments,
+        user_id=current_user.id,
     )
     steps = [
         CADPlanStep(

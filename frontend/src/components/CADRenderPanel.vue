@@ -16,7 +16,7 @@
         <div class="min-w-0">
           <div class="truncate text-sm font-medium text-slate-900">{{ document?.title || 'CAD preview' }}</div>
           <div class="truncate text-xs text-slate-500">
-            {{ document ? `${document.entities.length} entities · version ${document.version} · ${document.units}` : statusText }}
+            {{ document ? `${document.entities.length} entities | version ${document.version} | ${document.units}` : statusText }}
           </div>
         </div>
         <div class="flex items-center gap-1">

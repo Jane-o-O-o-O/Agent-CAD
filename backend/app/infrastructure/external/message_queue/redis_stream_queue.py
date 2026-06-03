@@ -1,12 +1,17 @@
 import json
 import uuid
 import asyncio
+import re
 from typing import Any, AsyncGenerator, Optional, Tuple
 import logging
+from redis.exceptions import ResponseError
+from redis.exceptions import TimeoutError as RedisTimeoutError
 from app.infrastructure.storage.redis import get_redis
 from app.domain.external.message_queue import MessageQueue
 
 logger = logging.getLogger(__name__)
+
+_STREAM_ID_RE = re.compile(r"^(?:\d+(?:-\d+)?|\$)$")
 
 class RedisStreamQueue(MessageQueue):
     """Redis Stream implementation of message queue"""
@@ -97,16 +102,49 @@ class RedisStreamQueue(MessageQueue):
             Tuple[str, Any]: (Message ID, Message content), returns (None, None) if no message
         """
         logger.debug(f"Getting message from stream ({self._stream_name}): {start_id}")
-        # Handle None start_id by using "0" (read from beginning)
-        if start_id is None:
+        # Handle None start_id by using "0" (read from beginning).
+        # Browser clients can also send local UUID event ids after restoring
+        # history; those are not valid Redis Stream ids.
+        if start_id is None or not _STREAM_ID_RE.match(str(start_id)):
+            if start_id is not None:
+                logger.warning(
+                    "Invalid Redis stream start id for %s: %s; reading from beginning",
+                    self._stream_name,
+                    start_id,
+                )
             start_id = "0"
-            
-        # Read new messages
-        messages = await self._redis.client.xread(
-            {self._stream_name: start_id},
-            count=1,
-            block=block_ms
-        )
+
+        # Redis XREAD BLOCK 0 means "block forever", not "non-blocking".
+        # Keep the queue API semantics: None or <= 0 means no blocking.
+        redis_block_ms = block_ms if block_ms and block_ms > 0 else None
+
+        try:
+            messages = await self._redis.client.xread(
+                {self._stream_name: start_id},
+                count=1,
+                block=redis_block_ms
+            )
+        except RedisTimeoutError:
+            logger.debug(
+                "Timed out reading Redis stream %s after %sms",
+                self._stream_name,
+                redis_block_ms,
+            )
+            return None, None
+        except ResponseError as exc:
+            if "Invalid stream ID" in str(exc):
+                logger.warning(
+                    "Redis rejected stream id %s for %s; retrying from beginning",
+                    start_id,
+                    self._stream_name,
+                )
+                messages = await self._redis.client.xread(
+                    {self._stream_name: "0"},
+                    count=1,
+                    block=redis_block_ms
+                )
+            else:
+                raise
         
         if not messages:
             return None, None

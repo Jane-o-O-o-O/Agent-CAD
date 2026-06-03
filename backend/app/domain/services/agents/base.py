@@ -63,16 +63,7 @@ class BaseAgent(ABC):
         settings = get_settings()
         self._agent_id = agent_id
         self._repository = agent_repository
-        kwargs = dict(
-            model=settings.model_name,
-            model_provider=settings.model_provider,
-            temperature=settings.temperature,
-            max_tokens=settings.max_tokens,
-            base_url=settings.api_base,
-        )
-        if settings.extra_headers:
-            kwargs["default_headers"] = settings.extra_headers
-        self._model = init_chat_model(**kwargs)
+        self._model = init_chat_model(**settings.chat_model_kwargs())
         self._json_output_parser = RetryWithErrorOutputParser.from_llm(
             parser=JsonOutputParser(),
             llm=self._model,

@@ -135,9 +135,14 @@ export interface CADPlanFromPromptResponse {
   steps: CADPlanStep[];
 }
 
-export async function createCADDocumentFromPrompt(prompt: string, attachments: FileInfo[] = []): Promise<ApplyCADOperationResponse> {
+export async function createCADDocumentFromPrompt(
+  prompt: string,
+  attachments: FileInfo[] = [],
+  sessionId?: string,
+): Promise<ApplyCADOperationResponse> {
   const response = await apiClient.post<ApiResponse<ApplyCADOperationResponse>>('/cad/documents/from-prompt', {
     prompt,
+    session_id: sessionId,
     units: 'mm',
     attachments: attachments.map(file => ({
       file_id: file.file_id,

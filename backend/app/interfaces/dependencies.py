@@ -13,6 +13,7 @@ from app.core.config import get_settings
 # Import all required services
 from app.application.services.agent_service import AgentService
 from app.application.services.file_service import FileService
+from app.application.services.cad_intake_service import CADIntakeService
 from app.application.services.cad_service import CADService
 from app.application.services.auth_service import AuthService
 from app.application.services.token_service import TokenService
@@ -65,6 +66,7 @@ def get_agent_service() -> AgentService:
         file_storage=file_storage,
         search_engine=search_engine,
         mcp_repository=mcp_repository,
+        cad_service=get_cad_service(),
     )
 
 
@@ -89,10 +91,17 @@ def get_file_service() -> FileService:
 
 
 @lru_cache()
+def get_cad_intake_service() -> CADIntakeService:
+    """Get CAD intake service instance."""
+    logger.info("Creating CADIntakeService instance")
+    return CADIntakeService(get_file_storage())
+
+
+@lru_cache()
 def get_cad_service() -> CADService:
     """Get CAD service instance."""
     logger.info("Creating CADService instance")
-    return CADService()
+    return CADService(cad_intake_service=get_cad_intake_service())
 
 
 @lru_cache()

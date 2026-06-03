@@ -157,6 +157,11 @@ class SkillRegistry:
         skill_name = skill.name.lower()
         if skill_name in lowered_message:
             score += 20
+        if skill.name == "cad-drawing-analysis" and self._is_cad_request(lowered_message):
+            score += 30
+        for trigger in self._literal_triggers(skill.trigger_text):
+            if trigger in lowered_message:
+                score += 8
 
         trigger_terms = self._terms(skill.trigger_text)
         overlap = query_terms & trigger_terms
@@ -165,6 +170,40 @@ class SkillRegistry:
         # Longer, domain-specific terms are stronger than generic words.
         score += sum(1 for term in overlap if len(term) >= 6)
         return score
+
+    @staticmethod
+    def _is_cad_request(message: str) -> bool:
+        cad_keywords = [
+            "cad",
+            "dxf",
+            "dwg",
+            "制图",
+            "画图",
+            "图纸",
+            "机械图",
+            "工程图",
+            "流程图",
+            "原理图",
+            "安装板",
+            "孔位",
+            "圆角",
+            "开孔",
+            "通孔",
+            "长圆孔",
+            "电气控制",
+            "工艺流程",
+            "控制原理",
+        ]
+        return any(keyword in message for keyword in cad_keywords)
+
+    @staticmethod
+    def _literal_triggers(text: str) -> set[str]:
+        triggers: set[str] = set()
+        for token in re.split(r"[,;，；、\s]+", text.lower()):
+            normalized = token.strip(" ._-")
+            if len(normalized) >= 3:
+                triggers.add(normalized)
+        return triggers
 
     @staticmethod
     def _terms(text: str) -> set[str]:
