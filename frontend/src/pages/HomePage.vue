@@ -1,7 +1,7 @@
 <template>
   <SimpleBar>
-    <div class="flex h-full w-full min-w-0 flex-1 flex-col px-4 sm:px-7">
-      <header class="sticky top-0 z-10 w-full py-4">
+    <div class="flex h-full w-full min-w-0 flex-1 flex-col px-3 sm:px-5">
+      <header class="sticky top-0 z-10 w-full py-3">
         <div class="flex w-full items-center justify-between">
           <div class="relative z-20 flex h-9 flex-shrink-0 items-center gap-2 overflow-hidden">
             <button
@@ -43,11 +43,11 @@
         </div>
       </header>
 
-      <main class="cad-shortcut-stage mx-auto flex w-full max-w-[980px] flex-1 items-center pb-16 pt-8">
+      <main class="cad-shortcut-stage mx-auto flex w-full max-w-[900px] flex-1 items-center pb-8 pt-3">
         <section class="w-full">
-          <div class="cad-command-deck cad-quick-command relative overflow-hidden rounded-[26px] border border-[var(--border-light)] px-5 py-5 sm:px-7 sm:py-6">
+          <div class="cad-command-deck cad-quick-command relative overflow-hidden rounded-[20px] border border-[var(--border-light)] px-4 py-4 sm:px-5 sm:py-5">
             <div class="cad-scanline" aria-hidden="true"></div>
-            <div class="relative flex flex-col gap-4">
+            <div class="relative flex flex-col gap-3">
               <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
                 <button
                   v-for="prompt in prompts"
@@ -55,13 +55,13 @@
                   class="cad-prompt-tile cad-shortcut-tile text-left"
                   type="button"
                   @click="usePrompt(prompt.message)">
-                  <component :is="prompt.icon" class="size-6 text-[var(--cad-blue)]" />
-                  <span class="text-[16px] font-semibold text-[var(--text-primary)]">{{ prompt.title }}</span>
-                  <span class="text-[13px] leading-5 text-[var(--text-tertiary)]">{{ prompt.caption }}</span>
+                  <component :is="prompt.icon" class="size-5 text-[var(--cad-blue)]" />
+                  <span class="text-[15px] font-semibold text-[var(--text-primary)]">{{ prompt.title }}</span>
+                  <span class="text-[12px] leading-[18px] text-[var(--text-tertiary)]">{{ prompt.caption }}</span>
                 </button>
               </div>
 
-              <div class="cad-input-dock flex w-full flex-col rounded-[24px]">
+              <div class="cad-input-dock flex w-full flex-col rounded-[18px]">
                 <ChatBox
                   :rows="3"
                   v-model="message"
