@@ -40,6 +40,5 @@ class MessageToolkit(BaseToolkit):
             attachments: (Optional) List of question-related files or reference materials
             suggest_user_takeover: (Optional) Suggested operation for user takeover (enum: "none" or "browser")
         """
-
         # Return success result, actual UI interaction logic implemented by caller
         return ToolResult(success=True)
