@@ -12,7 +12,7 @@ services:
       - "5173:5173"  # Vite default development port
     environment:
       - NODE_ENV=development
-      #- VITE_API_URL=http://127.0.0.1:8000
+      - VITE_API_URL=http://127.0.0.1:8000
       - BACKEND_URL=http://backend:8000
     depends_on:
       - backend
@@ -44,9 +44,6 @@ services:
       sandbox:
         condition: service_started
         required: false
-      claw:
-        condition: service_started
-        required: false
       mongodb:
         condition: service_started
         required: true
@@ -60,7 +57,7 @@ services:
       - .env
     environment:
       - SANDBOX_ADDRESS=sandbox # Use single container as sandbox
-      - CLAW_ADDRESS=claw       # Use single fixed claw container in development
+      - CLAW_ENABLED=false
       - MANUS_API_BASE_URL=http://backend:8000
       - CLAW_API_KEY=${CLAW_DEV_API_KEY:-manus-dev-api-key-changeme}
 
@@ -82,21 +79,6 @@ services:
     environment:
       - UVI_ARGS="--reload"
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
-    restart: unless-stopped
-    networks:
-      - manus-network
-
-  claw:
-    build:
-      context: ./claw
-      dockerfile: Dockerfile
-    hostname: claw
-    ports:
-      - "18788:18788" # manus-claw HTTP server
-    environment:
-      - CLAW_TTL_SECONDS=0        # No TTL in development (0 = unlimited)
-      - MANUS_API_BASE_URL=http://backend:8000
-      - MANUS_API_KEY=${CLAW_DEV_API_KEY:-manus-dev-api-key-changeme}
     restart: unless-stopped
     networks:
       - manus-network

@@ -86,8 +86,8 @@ class Settings(BaseSettings):
 
     # Auth configuration
     auth_provider: str = "password"  # "password", "none", "local"
-    show_github_button: bool = True
-    github_repository_url: str = "https://github.com/simpleyyt/ai-manus"
+    show_github_button: bool = False
+    github_repository_url: str = ""
     password_salt: str | None = None
     password_hash_rounds: int = 10
     password_hash_algorithm: str = "pbkdf2_sha256"
@@ -111,7 +111,7 @@ class Settings(BaseSettings):
     extra_headers: dict | None = None
     
     # Claw (OpenClaw) configuration
-    claw_enabled: bool = True
+    claw_enabled: bool = False
     claw_image: str = "simpleyyt/manus-claw"
     claw_name_prefix: str = "manus-claw"
     claw_ttl_seconds: int = 3600

@@ -21,7 +21,7 @@
         <img
           class="size-[18px] object-cover [filter:brightness(0)_saturate(100%)_invert(52%)_sepia(7%)_saturate(141%)_hue-rotate(349deg)_brightness(95%)_contrast(86%)]"
           :alt="session.title || ''"
-          src="https://files.manuscdn.com/assets/icon/session/chatting.svg" />
+          src="/chatting.svg" />
       </template>
     
     </div>
@@ -35,13 +35,16 @@
 
     <!-- 省略号菜单 -->
     <div class="shrink-0 flex items-center gap-1">
-      <div
+      <button
+        type="button"
         @click.stop="handleSessionMenuClick"
-        class="group-hover:flex hidden size-8 rounded-[8px] cursor-pointer items-center justify-center hover:bg-[var(--fill-tsp-white-light)]"
-        :class="isContextMenuOpen ? '!flex bg-[var(--fill-tsp-white-light)]' : ''"
-        aria-expanded="false" aria-haspopup="dialog">
+        class="flex size-8 rounded-[8px] cursor-pointer items-center justify-center border-0 bg-transparent p-0 opacity-0 transition-opacity hover:bg-[var(--fill-tsp-white-light)] touch-device:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--border-main)]"
+        :class="isContextMenuOpen ? 'opacity-100 bg-[var(--fill-tsp-white-light)]' : ''"
+        :aria-expanded="isContextMenuOpen"
+        :aria-label="t('More')"
+        aria-haspopup="dialog">
         <Ellipsis :size="18" class="text-[var(--icon-tertiary)]" />
-      </div>
+      </button>
     </div>
   </div>
 </template>
