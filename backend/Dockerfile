@@ -2,8 +2,14 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install curl
-RUN apt-get update && apt-get install -y curl
+# Install system tools used by the backend and deterministic CAD file intake.
+RUN apt-get update && apt-get install -y \
+    curl \
+    libreoffice \
+    poppler-utils \
+    tesseract-ocr \
+    tesseract-ocr-chi-sim \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install nodejs
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
