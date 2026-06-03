@@ -1,8 +1,7 @@
-from typing import Optional
+﻿from typing import Optional
 from app.domain.external.browser import Browser
-from app.domain.services.tools.base import BaseToolkit
+from app.domain.services.tools.base import BaseToolkit, tool
 from app.domain.models.tool_result import ToolResult
-from langchain.tools import tool
 
 class BrowserToolkit(BaseToolkit):
     """Browser tool class, providing browser interaction functions"""
@@ -164,4 +163,4 @@ class BrowserToolkit(BaseToolkit):
         Args:
             max_lines: (Optional) Maximum number of log lines to return.
         """
-        return await self.browser.console_view(max_lines) 
+        return await self.browser.console_view(max_lines)

@@ -2,8 +2,6 @@ from typing import Dict, Any, Optional, List
 from playwright.async_api import async_playwright, Browser, Page
 import asyncio
 from markdownify import markdownify
-from langchain.chat_models import init_chat_model
-from langchain_core.messages import HumanMessage, SystemMessage
 from app.core.config import get_settings
 from app.domain.models.tool_result import ToolResult
 import logging
@@ -19,9 +17,6 @@ class PlaywrightBrowser:
         self.page: Optional[Page] = None
         self.playwright = None
         self.settings = get_settings()
-        self._model = init_chat_model(
-            **self.settings.chat_model_kwargs(self.settings.browser_model_name)
-        )
         self.cdp_url = cdp_url
         
     async def initialize(self):
@@ -219,11 +214,7 @@ class PlaywrightBrowser:
         markdown_content = markdownify(visible_content)
 
         max_content_length = min(50000, len(markdown_content))
-        response = await self._model.ainvoke([
-            SystemMessage(content="You are a professional web page information extraction assistant. Please extract all information from the current page content and convert it to Markdown format."),
-            HumanMessage(content=markdown_content[:max_content_length]),
-        ])
-        return response.content
+        return markdown_content[:max_content_length]
     
     async def view_page(self) -> ToolResult:
         """View visible elements within the current page's viewport and convert to Markdown format"""
