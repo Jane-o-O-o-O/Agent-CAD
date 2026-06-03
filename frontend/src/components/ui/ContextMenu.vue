@@ -1,9 +1,9 @@
 <template>
-    <div id="context-menu-portal" data-floating-ui-portal="">
+    <div id="context-menu-portal" class="fixed inset-0 z-[1100] pointer-events-none" data-floating-ui-portal="">
         <div v-if="contextMenuVisible" ref="menuRef" data-bottom=""
-            class="min-w-max inline-block transition-[transform,opacity,scale] duration-150 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 data-[starting-style]:-translate-y-2 data-[ending-style]:-translate-y-2"
+            class="min-w-max inline-block pointer-events-auto transition-[transform,opacity,scale] duration-150 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 data-[starting-style]:-translate-y-2 data-[ending-style]:-translate-y-2"
             tabindex="-1" data-floating-ui-focusable="" role="dialog" :style="{
-                position: 'absolute',
+                position: 'fixed',
                 left: calculatedPosition.x + 'px',
                 top: calculatedPosition.y + 'px',
                 '--available-width': '554px',
@@ -61,16 +61,13 @@ const calculatedPosition = computed(() => {
     }
     
     const rect = targetElement.value.getBoundingClientRect();
-    const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    
     // Calculate center position and adjust for menu width
-    const centerX = rect.left + scrollLeft + rect.width / 2;
+    const centerX = rect.left + rect.width / 2;
     const menuWidth = menuRef.value?.offsetWidth || 126; // fallback to min-width
     
     return {
         x: centerX - menuWidth / 2,
-        y: rect.bottom + scrollTop + 4 // 4px offset below the element
+        y: rect.bottom + 4 // 4px offset below the element
     };
 });
 
@@ -95,4 +92,4 @@ onMounted(() => {
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside);
 });
-</script> 
+</script>

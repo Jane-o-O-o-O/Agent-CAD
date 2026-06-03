@@ -48,7 +48,7 @@
             <div class="flex items-center gap-0.5 w-full sm:flex-1">
               <div class="w-6 h-6"><Bot :size="24" /></div>
               <div>
-                <p class="text-sm text-[var(--text-primary)]">{{ replayCompleted ? 'Manus 任务回放完成。' : 'Manus 正在回放任务...' }}</p>
+                <p class="text-sm text-[var(--text-primary)]">{{ replayCompleted ? 'CAD大王任务回放完成。' : 'CAD大王正在回放任务...' }}</p>
               </div>
             </div>
             <div class="flex items-center flex-row gap-[8px] max-sm:w-full">

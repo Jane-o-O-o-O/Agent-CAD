@@ -1,70 +1,79 @@
 <template>
   <SimpleBar>
-    <div
-      class="flex flex-col h-full flex-1 min-w-0 mx-auto w-full sm:min-w-[390px] px-5 justify-center items-start gap-2 relative max-w-full sm:max-w-full">
-      <div class="w-full pt-4 pb-4 px-5 bg-[var(--background-gray-main)] sticky top-0 z-10 mx-[-1.25]">
-        <div class="flex justify-between items-center w-full absolute left-0 right-0">
-          <div class="h-8 relative z-20 overflow-hidden flex gap-2 items-center flex-shrink-0">
-            <div class="relative flex items-center">
-              <div @click="toggleLeftPanel" v-if="!isLeftPanelShow"
-                class="flex h-7 w-7 items-center justify-center cursor-pointer rounded-md hover:bg-[var(--fill-tsp-gray-main)]">
-                <PanelLeft class="size-5 text-[var(--icon-secondary)]" />
-              </div>
-            </div>
-            <div class="flex">
+    <div class="flex h-full w-full min-w-0 flex-1 flex-col px-3 sm:px-5">
+      <header class="sticky top-0 z-10 w-full py-3">
+        <div class="flex w-full items-center justify-between">
+          <div class="relative z-20 flex h-9 flex-shrink-0 items-center gap-2 overflow-hidden">
+            <button
+              v-if="!isLeftPanelShow"
+              type="button"
+              class="cad-icon-button flex h-8 w-8 items-center justify-center"
+              @click="toggleLeftPanel">
+              <PanelLeft class="size-5 text-[var(--icon-secondary)]" />
+            </button>
+            <div class="flex items-center gap-1 rounded-xl border border-[var(--border-light)] bg-[var(--cad-panel-strong)] px-2 py-1">
               <Bot :size="30" />
               <ManusLogoTextIcon />
             </div>
           </div>
+
           <div class="flex items-center gap-2">
-            <a v-if="showGithubButton"
-               :href="githubRepositoryUrl"
-               target="_blank"
-               rel="noopener noreferrer"
-               class="items-center justify-center whitespace-nowrap font-medium transition-colors hover:opacity-90 active:opacity-80 px-[12px] gap-[6px] text-sm min-w-16 outline outline-1 -outline-offset-1 hover:bg-[var(--fill-tsp-white-light)] text-[var(--text-primary)] outline-[var(--border-btn-main)] bg-transparent clickable hidden sm:flex rounded-[100px] relative h-[32px] group"
-               title="Visit GitHub Repository">
-              <Github class="size-[18px]" />
-              GitHub
-            </a>
-            <div class="relative flex items-center" aria-expanded="false" aria-haspopup="dialog"
-              @mouseenter="handleUserMenuEnter" @mouseleave="handleUserMenuLeave">
-              <div class="relative flex items-center justify-center font-bold cursor-pointer flex-shrink-0">
+            <div
+              class="relative flex items-center"
+              aria-expanded="false"
+              aria-haspopup="dialog"
+              @mouseenter="handleUserMenuEnter"
+              @mouseleave="handleUserMenuLeave">
+              <div class="relative flex flex-shrink-0 cursor-pointer items-center justify-center font-bold">
                 <div
-                  class="relative flex items-center justify-center font-bold flex-shrink-0 rounded-full overflow-hidden"
+                  class="relative flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full font-bold"
                   style="width: 32px; height: 32px; font-size: 16px; color: rgba(255, 255, 255, 0.9); background-color: rgb(59, 130, 246);">
-                  {{ avatarLetter }}</div>
+                  {{ avatarLetter }}
+                </div>
               </div>
-              <!-- User Menu -->
-              <div v-if="showUserMenu" @mouseenter="handleUserMenuEnter" @mouseleave="handleUserMenuLeave"
-                class="absolute top-full right-0 mt-1 mr-[-15px] z-50">
+              <div
+                v-if="showUserMenu"
+                class="absolute right-0 top-full z-50 mr-[-15px] mt-1"
+                @mouseenter="handleUserMenuEnter"
+                @mouseleave="handleUserMenuLeave">
                 <UserMenu />
               </div>
             </div>
           </div>
         </div>
-        <div class="h-8"></div>
-      </div>
-      <div class="w-full max-w-full sm:max-w-[768px] sm:min-w-[390px] mx-auto mt-[180px] mb-auto">
-        <div class="w-full flex pl-4 items-center justify-start pb-4">
-          <span class="text-[var(--text-primary)] text-start font-serif text-[32px] leading-[40px]" :style="{
-            fontFamily:
-              'ui-serif, Georgia, Cambria, &quot;Times New Roman&quot;, Times, serif',
-          }">
-            {{ $t('Hello') }}, {{ currentUser?.fullname }}
-            <br />
-            <span class="text-[var(--text-tertiary)]">
-              {{ $t('What can I do for you?') }}
-            </span>
-          </span>
-        </div>
-        <div class="flex flex-col gap-1 w-full">
-          <div class="flex flex-col bg-[var(--background-gray-main)] w-full">
-            <div class="[&amp;:not(:empty)]:pb-2 bg-[var(--background-gray-main)] rounded-[22px_22px_0px_0px]">
+      </header>
+
+      <main class="cad-shortcut-stage mx-auto flex w-full max-w-[900px] flex-1 items-center pb-8 pt-3">
+        <section class="w-full">
+          <div class="cad-command-deck cad-quick-command relative overflow-hidden rounded-[20px] border border-[var(--border-light)] px-4 py-4 sm:px-5 sm:py-5">
+            <div class="cad-scanline" aria-hidden="true"></div>
+            <div class="relative flex flex-col gap-3">
+              <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <button
+                  v-for="prompt in prompts"
+                  :key="prompt.title"
+                  class="cad-prompt-tile cad-shortcut-tile text-left"
+                  type="button"
+                  @click="usePrompt(prompt.message)">
+                  <component :is="prompt.icon" class="size-5 text-[var(--cad-blue)]" />
+                  <span class="text-[15px] font-semibold text-[var(--text-primary)]">{{ prompt.title }}</span>
+                  <span class="text-[12px] leading-[18px] text-[var(--text-tertiary)]">{{ prompt.caption }}</span>
+                </button>
+              </div>
+
+              <div class="cad-input-dock flex w-full flex-col rounded-[18px]">
+                <ChatBox
+                  :rows="3"
+                  v-model="message"
+                  v-model:attachments="attachments"
+                  @submit="handleSubmit"
+                  :isRunning="isSubmitting"
+                  :attachments="attachments" />
+              </div>
             </div>
-            <ChatBox :rows="2" v-model="message" @submit="handleSubmit" :isRunning="false" :attachments="attachments" />
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   </SimpleBar>
 </template>
@@ -77,13 +86,18 @@ import { useI18n } from 'vue-i18n';
 import ChatBox from '../components/ChatBox.vue';
 import { createSession } from '../api/agent';
 import { showErrorToast } from '../utils/toast';
-import { Bot, PanelLeft, Github } from 'lucide-vue-next';
+import {
+  Bot,
+  DraftingCompass,
+  PanelLeft,
+  TerminalSquare,
+  Workflow,
+} from 'lucide-vue-next';
 import ManusLogoTextIcon from '../components/icons/ManusLogoTextIcon.vue';
 import type { FileInfo } from '../api/file';
 import { useLeftPanel } from '../composables/useLeftPanel';
 import { useFilePanel } from '../composables/useFilePanel';
 import { useAuth } from '../composables/useAuth';
-import { getCachedClientConfig } from '../api/config';
 import UserMenu from '../components/UserMenu.vue';
 
 const { t } = useI18n();
@@ -94,19 +108,35 @@ const attachments = ref<FileInfo[]>([]);
 const { toggleLeftPanel, isLeftPanelShow } = useLeftPanel();
 const { hideFilePanel } = useFilePanel();
 const { currentUser } = useAuth();
-const showGithubButton = ref(false);
-const githubRepositoryUrl = ref('https://github.com/simpleyyt/ai-manus');
 
-// Get first letter of user's fullname for avatar display
+const prompts = [
+  {
+    title: '完成 CAD 画图',
+    caption: '理解要求，生成图纸、脚本或模型文件',
+    message: '帮我完成这个 CAD 画图任务。请先理解图纸要求，再给出可执行的绘图步骤，并尽量生成可直接打开或运行的 CAD 文件/脚本。',
+    icon: DraftingCompass,
+  },
+  {
+    title: '拆解建模方案',
+    caption: '任务拆分、结构规划、建模步骤',
+    message: '帮我把这个 CAD 任务拆成可执行方案，并给出建模步骤。',
+    icon: Workflow,
+  },
+  {
+    title: '检查图纸问题',
+    caption: '尺寸、结构、标注、图层与可制造性',
+    message: '帮我检查这个 CAD 图纸或建模结果，指出尺寸、结构、标注、图层和可制造性方面的问题，并给出具体修改建议。',
+    icon: TerminalSquare,
+  },
+];
+
 const avatarLetter = computed(() => {
   return currentUser.value?.fullname?.charAt(0)?.toUpperCase() || 'M';
 });
 
-// User menu state
 const showUserMenu = ref(false);
 const userMenuTimeout = ref<number | null>(null);
 
-// Show user menu on hover
 const handleUserMenuEnter = () => {
   if (userMenuTimeout.value) {
     clearTimeout(userMenuTimeout.value);
@@ -115,52 +145,46 @@ const handleUserMenuEnter = () => {
   showUserMenu.value = true;
 };
 
-// Hide user menu with delay
 const handleUserMenuLeave = () => {
   userMenuTimeout.value = setTimeout(() => {
     showUserMenu.value = false;
-  }, 200); // 200ms delay to allow moving to menu
+  }, 200);
+};
+
+const usePrompt = (value: string) => {
+  message.value = value;
 };
 
 onMounted(() => {
   hideFilePanel();
-})
-
-onMounted(async () => {
-  const clientConfig = await getCachedClientConfig();
-  if (clientConfig) {
-    showGithubButton.value = clientConfig.show_github_button;
-    githubRepositoryUrl.value = clientConfig.github_repository_url;
-  }
 });
 
 const handleSubmit = async () => {
-  if (message.value.trim() && !isSubmitting.value) {
-    isSubmitting.value = true;
+  if (!message.value.trim() || isSubmitting.value) return;
 
-    try {
-      // Create new Agent
-      const session = await createSession();
-      const sessionId = session.session_id;
+  isSubmitting.value = true;
 
-      // Navigate to new route with session_id, passing initial message via state
-      router.push({
-        path: `/chat/${sessionId}`,
-        state: {
-          message: message.value, files: attachments.value.map((file: FileInfo) => ({
-            file_id: file.file_id,
-            filename: file.filename,
-            content_type: file.content_type,
-            size: file.size,
-            upload_date: file.upload_date
-          }))
-        }
-      });
-    } catch (error) {
-      console.error('Failed to create session:', error);
-      showErrorToast(t('Failed to create session, please try again later'));
-      isSubmitting.value = false;
-    }
+  try {
+    const session = await createSession();
+    const sessionId = session.session_id;
+
+    router.push({
+      path: `/chat/${sessionId}`,
+      state: {
+        message: message.value,
+        files: attachments.value.map((file: FileInfo) => ({
+          file_id: file.file_id,
+          filename: file.filename,
+          content_type: file.content_type,
+          size: file.size,
+          upload_date: file.upload_date,
+        })),
+      },
+    });
+  } catch (error) {
+    console.error('Failed to create session:', error);
+    showErrorToast(t('Failed to create session, please try again later'));
+    isSubmitting.value = false;
   }
 };
 </script>
