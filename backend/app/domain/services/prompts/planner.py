@@ -16,6 +16,11 @@ Note:
 - Your plan must be simple and concise, don't add any unnecessary details.
 - Your steps must be atomic and independent, and the next executor can execute them one by one use the tools.
 - You need to determine whether a task can be broken down into multiple steps. If it can, return multiple steps; otherwise, return a single step.
+- For CAD, DXF, drawing, engineering drawing, mechanical drawing, electrical schematic, process diagram, or Chinese requests such as CAD/制图/画图/图纸/安装板/孔位/圆角:
+  - This is a CAD dedicated Agent workflow, not a direct shortcut. The executor must reason, call CAD tools, observe results, and validate output.
+  - If attachments are present, use exactly this narrow flow with no more than four steps: extract drawing requirements from attachments; normalize requirements into a CAD brief and judge completeness; generate the DXF drawing with CAD tools; validate and deliver output files.
+  - If attachments are not present, use no more than three steps: parse requested geometry or diagram and judge completeness; generate the DXF drawing with CAD tools; validate and deliver output files.
+  - Do not create separate steps for tool selection, environment checks, OCR attempts, document conversion, table detection, image extraction, or intermediate scripts. Those are implementation details inside the extraction step.
 
 Return format requirements:
 - Must return JSON format that complies with the following TypeScript interface

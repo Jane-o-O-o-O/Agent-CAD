@@ -1,0 +1,176 @@
+from __future__ import annotations
+
+import json
+import logging
+from typing import Any, AsyncGenerator, Optional
+
+from agentscope.agent import Agent
+from agentscope.event import (
+    ExceedMaxItersEvent,
+    RequireExternalExecutionEvent,
+    RequireUserConfirmEvent,
+    TextBlockDeltaEvent,
+    ToolCallDeltaEvent,
+    ToolCallEndEvent,
+    ToolCallStartEvent,
+    ToolResultEndEvent,
+)
+from agentscope.message import UserMsg
+
+from app.core.config import get_settings
+from app.domain.external.browser import Browser
+from app.domain.external.sandbox import Sandbox
+from app.domain.external.search import SearchEngine
+from app.domain.models.event import (
+    BaseEvent,
+    DoneEvent,
+    ErrorEvent,
+    MessageEvent,
+    ToolEvent,
+    ToolStatus,
+    WaitEvent,
+)
+from app.domain.models.message import Message
+from app.domain.services.agentscope_runtime.model_factory import (
+    create_agentscope_model,
+    create_agentscope_react_config,
+)
+from app.domain.services.agentscope_runtime.tool_adapter import (
+    create_agentscope_toolkit,
+)
+from app.domain.services.flows.base import BaseFlow
+from app.domain.services.prompts.system import SYSTEM_PROMPT
+from app.domain.services.tools.browser import BrowserToolkit
+from app.domain.services.tools.cad import CADToolkit
+from app.domain.services.tools.file import FileToolkit
+from app.domain.services.tools.mcp import MCPToolkit
+from app.domain.services.tools.message import MessageToolkit
+from app.domain.services.tools.search import SearchToolkit
+from app.domain.services.tools.shell import ShellToolkit
+
+logger = logging.getLogger(__name__)
+
+
+class AgentScopeFlow(BaseFlow):
+    """AgentScope-backed flow that preserves the backend event contract."""
+
+    def __init__(
+        self,
+        agent_id: str,
+        session_id: str,
+        sandbox: Sandbox,
+        browser: Browser,
+        mcp_tool: MCPToolkit,
+        search_engine: Optional[SearchEngine] = None,
+        cad_service: Optional[Any] = None,
+        user_id: str = "agent",
+        additional_context: Optional[str] = None,
+    ):
+        settings = get_settings()
+        toolkits = [
+            ShellToolkit(sandbox),
+            BrowserToolkit(browser),
+            FileToolkit(sandbox),
+            CADToolkit(
+                sandbox,
+                cad_service=cad_service,
+                user_id=user_id,
+                session_id=session_id,
+            ),
+            MessageToolkit(),
+            mcp_tool,
+        ]
+        if search_engine:
+            toolkits.append(SearchToolkit(search_engine))
+
+        system_prompt = SYSTEM_PROMPT
+        if additional_context:
+            system_prompt = f"{system_prompt}\n\n{additional_context}"
+
+        self._agent = Agent(
+            name=agent_id,
+            system_prompt=system_prompt,
+            model=create_agentscope_model(settings),
+            toolkit=create_agentscope_toolkit(toolkits),
+            react_config=create_agentscope_react_config(settings),
+        )
+        self._tool_names: dict[str, str] = {
+            tool.name: toolkit.name
+            for toolkit in toolkits
+            for tool in toolkit.get_tools()
+        }
+
+    async def run(self, message: Message) -> AsyncGenerator[BaseEvent, None]:
+        content = message.message
+        if message.attachments:
+            content = f"{content}\n\nAttachments:\n" + "\n".join(message.attachments)
+
+        text_parts: list[str] = []
+        tool_call_names: dict[str, str] = {}
+        tool_call_args: dict[str, str] = {}
+
+        async for event in self._agent.reply_stream(UserMsg("user", content)):
+            if isinstance(event, TextBlockDeltaEvent):
+                text_parts.append(event.delta)
+                continue
+
+            if isinstance(event, ToolCallStartEvent):
+                tool_call_names[event.tool_call_id] = event.tool_call_name
+                tool_call_args[event.tool_call_id] = ""
+                yield ToolEvent(
+                    status=ToolStatus.CALLING,
+                    tool_call_id=event.tool_call_id,
+                    tool_name=self._tool_names.get(
+                        event.tool_call_name,
+                        event.tool_call_name,
+                    ),
+                    function_name=event.tool_call_name,
+                    function_args={},
+                )
+                continue
+
+            if isinstance(event, ToolCallDeltaEvent):
+                tool_call_args[event.tool_call_id] = (
+                    tool_call_args.get(event.tool_call_id, "") + event.delta
+                )
+                continue
+
+            if isinstance(event, ToolCallEndEvent):
+                continue
+
+            if isinstance(event, ToolResultEndEvent):
+                tool_name = tool_call_names.get(event.tool_call_id, "")
+                yield ToolEvent(
+                    status=ToolStatus.CALLED,
+                    tool_call_id=event.tool_call_id,
+                    tool_name=self._tool_names.get(tool_name, tool_name),
+                    function_name=tool_name,
+                    function_args=_parse_tool_args(
+                        tool_call_args.get(event.tool_call_id, ""),
+                    ),
+                )
+                continue
+
+            if isinstance(event, ExceedMaxItersEvent):
+                yield ErrorEvent(error="AgentScope maximum iteration count reached")
+                return
+
+            if isinstance(event, (RequireUserConfirmEvent, RequireExternalExecutionEvent)):
+                yield WaitEvent()
+                return
+
+        final_text = "".join(text_parts).strip()
+        if final_text:
+            yield MessageEvent(message=final_text)
+        yield DoneEvent()
+
+
+def _parse_tool_args(raw: str) -> dict[str, Any]:
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+        return parsed if isinstance(parsed, dict) else {"value": parsed}
+    except json.JSONDecodeError:
+        logger.debug("Failed to parse AgentScope tool args: %s", raw)
+        return {"raw": raw}

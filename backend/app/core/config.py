@@ -1,10 +1,30 @@
 import os
 import json
 import logging
+import httpx
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
 logger = logging.getLogger(__name__)
+
+_OPENAI_SDK_HEADERS_TO_STRIP = {
+    "x-stainless-lang",
+    "x-stainless-package-version",
+    "x-stainless-os",
+    "x-stainless-arch",
+    "x-stainless-runtime",
+    "x-stainless-runtime-version",
+    "x-stainless-async",
+    "x-stainless-helper-method",
+    "x-stainless-retry-count",
+}
+
+
+async def _strip_openai_sdk_headers(request: httpx.Request) -> None:
+    for header in list(request.headers.keys()):
+        if header.lower() in _OPENAI_SDK_HEADERS_TO_STRIP:
+            del request.headers[header]
+    request.headers["User-Agent"] = "python-httpx/0.28.1"
 
 
 def _parse_extra_headers() -> dict | None:
@@ -32,6 +52,13 @@ class Settings(BaseSettings):
     model_provider: str = "openai"
     temperature: float = 0.7
     max_tokens: int = 2000
+    agent_framework: str = "langchain"
+    agentscope_context_size: int = 128000
+    agentscope_max_iters: int = 20
+    agentscope_max_retries: int = 3
+    model_reasoning_effort: str | None = None
+    service_tier: str | None = None
+    strip_openai_sdk_headers: bool = False
     browser_model_name: str | None = None
     claw_model_name: str | None = None
     reasoning_model_name: str | None = None
@@ -133,10 +160,13 @@ class Settings(BaseSettings):
 
     # Codex-style skills configuration
     skills_enabled: bool = True
-    skills_paths: str = "~/.codex/skills"
+    skills_paths: str = "/app/skills:~/.codex/skills"
     skills_include_system: bool = True
     skills_max_selected: int = 3
     skills_max_body_chars: int = 20000
+
+    # CAD file intake configuration
+    cad_docling_enabled: bool = False
     
     # Logging configuration
     log_level: str = "INFO"
@@ -149,6 +179,30 @@ class Settings(BaseSettings):
         """Validate configuration settings"""
         if not self.api_key:
             raise ValueError("API key is required")
+        if self.agent_framework not in {"langchain", "agentscope"}:
+            raise ValueError("AGENT_FRAMEWORK must be 'langchain' or 'agentscope'")
+
+    def chat_model_kwargs(self, model_name: str | None = None) -> dict:
+        """Build shared kwargs for OpenAI-compatible LangChain chat models."""
+        kwargs = dict(
+            model=model_name or self.model_name,
+            model_provider=self.model_provider,
+            temperature=self.temperature,
+            max_tokens=self.max_tokens,
+            base_url=self.api_base,
+        )
+        if self.model_reasoning_effort:
+            kwargs["reasoning_effort"] = self.model_reasoning_effort
+        if self.service_tier:
+            kwargs["service_tier"] = self.service_tier
+        if self.extra_headers:
+            kwargs["default_headers"] = self.extra_headers
+        if self.strip_openai_sdk_headers:
+            kwargs["http_async_client"] = httpx.AsyncClient(
+                event_hooks={"request": [_strip_openai_sdk_headers]},
+                timeout=120.0,
+            )
+        return kwargs
 
 @lru_cache()
 def get_settings() -> Settings:

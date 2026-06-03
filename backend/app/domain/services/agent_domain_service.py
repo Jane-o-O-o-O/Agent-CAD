@@ -1,4 +1,4 @@
-from typing import Optional, AsyncGenerator, List
+from typing import Any, Optional, AsyncGenerator, List
 import logging
 from datetime import datetime
 from app.domain.models.session import Session, SessionStatus
@@ -17,6 +17,7 @@ from app.domain.repositories.mcp_repository import MCPRepository
 
 # Setup logging
 logger = logging.getLogger(__name__)
+OUTPUT_STREAM_POLL_MS = 1000
 
 class AgentDomainService:
     """
@@ -32,6 +33,7 @@ class AgentDomainService:
         file_storage: FileStorage,
         mcp_repository: MCPRepository,
         search_engine: Optional[SearchEngine] = None,
+        cad_service: Optional[Any] = None,
     ):
         self._repository = agent_repository
         self._session_repository = session_repository
@@ -40,6 +42,7 @@ class AgentDomainService:
         self._task_cls = task_cls
         self._file_storage = file_storage
         self._mcp_repository = mcp_repository
+        self._cad_service = cad_service
         logger.info("AgentDomainService initialization completed")
             
     async def shutdown(self) -> None:
@@ -76,6 +79,7 @@ class AgentDomainService:
             session_repository=self._session_repository,
             agent_repository=self._repository,
             mcp_repository=self._mcp_repository,
+            cad_service=self._cad_service,
         )
 
         task = self._task_cls.create(task_runner)
@@ -151,11 +155,14 @@ class AgentDomainService:
             logger.debug(f"Session {session_id} task: {task}")
            
             while task and not task.done:
-                event_id, event_str = await task.output_stream.get(start_id=latest_event_id, block_ms=0)
-                latest_event_id = event_id
+                event_id, event_str = await task.output_stream.get(
+                    start_id=latest_event_id,
+                    block_ms=OUTPUT_STREAM_POLL_MS,
+                )
                 if event_str is None:
                     logger.debug(f"No event found in Session {session_id}'s event queue")
                     continue
+                latest_event_id = event_id
                 event = TypeAdapter(AgentEvent).validate_json(event_str)
                 event.id = event_id
                 logger.debug(f"Got event from Session {session_id}'s event queue: {type(event).__name__}")

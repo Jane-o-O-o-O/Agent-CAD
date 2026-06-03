@@ -1,4 +1,4 @@
-from typing import Optional, AsyncGenerator, List
+from typing import Any, Optional, AsyncGenerator, List
 import asyncio
 import logging
 import os
@@ -22,6 +22,7 @@ from app.domain.models.event import (
     McpToolContent,
 )
 from app.domain.services.flows.plan_act import PlanActFlow
+from app.domain.services.flows.agentscope_flow import AgentScopeFlow
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.browser import Browser
 from app.domain.external.search import SearchEngine
@@ -54,6 +55,7 @@ class AgentTaskRunner(TaskRunner):
         file_storage: FileStorage,
         mcp_repository: MCPRepository,
         search_engine: Optional[SearchEngine] = None,
+        cad_service: Optional[Any] = None,
     ):
         self._session_id = session_id
         self._agent_id = agent_id
@@ -65,6 +67,7 @@ class AgentTaskRunner(TaskRunner):
         self._session_repository = session_repository
         self._file_storage = file_storage
         self._mcp_repository = mcp_repository
+        self._cad_service = cad_service
         self._mcp_tool = MCPToolkit()
         settings = get_settings()
         skill_registry = None
@@ -74,17 +77,35 @@ class AgentTaskRunner(TaskRunner):
                 include_system=settings.skills_include_system,
                 max_body_chars=settings.skills_max_body_chars,
             )
-        self._flow = PlanActFlow(
-            self._agent_id,
-            self._repository,
-            self._session_id,
-            self._session_repository,
-            self._sandbox,
-            self._browser,
-            self._mcp_tool,
-            self._search_engine,
-            skill_registry=skill_registry,
-        )
+        if settings.agent_framework == "agentscope":
+            skill_context = None
+            if skill_registry:
+                skill_context = skill_registry.build_context([])
+            self._flow = AgentScopeFlow(
+                agent_id=self._agent_id,
+                session_id=self._session_id,
+                sandbox=self._sandbox,
+                browser=self._browser,
+                mcp_tool=self._mcp_tool,
+                search_engine=self._search_engine,
+                cad_service=self._cad_service,
+                user_id=self._user_id,
+                additional_context=skill_context,
+            )
+        else:
+            self._flow = PlanActFlow(
+                self._agent_id,
+                self._repository,
+                self._session_id,
+                self._session_repository,
+                self._sandbox,
+                self._browser,
+                self._mcp_tool,
+                self._search_engine,
+                skill_registry=skill_registry,
+                cad_service=self._cad_service,
+                user_id=self._user_id,
+            )
 
     async def _put_and_add_event(self, task: Task, event: AgentEvent) -> None:
         event_id = await task.output_stream.put(event.model_dump_json())
@@ -207,6 +228,15 @@ class AgentTaskRunner(TaskRunner):
                     if event.tool_content:
                         logger.debug(f"MCP tool_content.result: {event.tool_content.result}")
                         logger.debug(f"MCP tool_content dict: {event.tool_content.model_dump()}")
+                elif event.tool_name == "cad":
+                    if event.function_result:
+                        event.tool_content = McpToolContent(
+                            result=event.function_result.model_dump()
+                            if hasattr(event.function_result, "model_dump")
+                            else str(event.function_result)
+                        )
+                    else:
+                        event.tool_content = McpToolContent(result="No CAD result available")
                 else:
                     logger.warning(f"Agent {self._agent_id} received unknown tool event: {event.tool_name}")
         except Exception as e:

@@ -248,7 +248,7 @@ const chatContainerRef = ref<HTMLDivElement>();
 const cadBriefSummary = computed(() => {
   const brief = cadDocument.value?.brief;
   if (!brief) return cadBusy.value ? 'Parsing design brief' : 'No design brief yet';
-  return `${brief.part_type || 'part'} · ${brief.features.length} parsed features`;
+  return `${brief.part_type || 'part'} | ${brief.features.length} parsed features`;
 });
 
 // Reset all refs to their initial values
@@ -319,6 +319,35 @@ const handleToolEvent = (toolData: ToolEventData) => {
     if (realTime.value && !isCadMode.value) {
       toolPanel.value?.showToolPanel(toolContent, true);
     }
+  }
+  syncCadToolResult(toolContent);
+}
+
+function syncCadToolResult(toolContent: ToolContent) {
+  if (toolContent.name !== 'cad') return;
+
+  isCadMode.value = true;
+  cadBusy.value = toolContent.status === 'calling';
+
+  const result = toolContent.content?.result;
+  const data = result?.data ?? result;
+
+  if (toolContent.status !== 'called' || !data) return;
+
+  if (toolContent.function === 'cad_analyze_request' && Array.isArray(data.operations)) {
+    cadPlanSteps.value = data.operations.map((operation: any, index: number) => ({
+      id: String(index + 1),
+      title: operation.operation?.replace(/_/g, ' ') || `CAD step ${index + 1}`,
+      description: JSON.stringify(operation.params ?? {}),
+      operation,
+      status: 'done',
+    }));
+  }
+
+  if (toolContent.function === 'cad_generate_dxf' && data.document) {
+    cadDocument.value = data.document as MechanicalCADDocument;
+    cadPlanSteps.value = [];
+    cadBusy.value = false;
   }
 }
 

@@ -1,8 +1,11 @@
 from datetime import datetime
 from io import StringIO
 from math import cos, radians, sin
+import logging
 import re
 from typing import Dict, List, Optional
+
+import ezdxf
 
 from app.domain.models.cad import (
     CADArc,
@@ -21,7 +24,9 @@ from app.domain.models.cad import (
     MechanicalCADDocument,
     MechanicalDesignBrief,
 )
+from app.domain.models.cad_intake import ExtractedContent
 
+logging.getLogger("ezdxf").setLevel(logging.WARNING)
 
 DEFAULT_LAYERS = [
     CADLayer(name="M-OBJECT", color=7, line_type="CONTINUOUS"),
@@ -33,8 +38,9 @@ DEFAULT_LAYERS = [
 
 
 class CADService:
-    def __init__(self) -> None:
+    def __init__(self, cad_intake_service=None) -> None:
         self._documents: Dict[str, MechanicalCADDocument] = {}
+        self._cad_intake_service = cad_intake_service
 
     async def create_document(
         self,
@@ -141,7 +147,8 @@ class CADService:
         units: CADUnit = CADUnit.MM,
         attachments: Optional[List[Dict]] = None,
     ) -> CADOperationResult:
-        brief, operations, message = self._intake_prompt(prompt, units, attachments or [])
+        extracted = await self._analyze_attachments(attachments, user_id)
+        brief, operations, message = self._intake_prompt(prompt, units, attachments or [], extracted)
         document = await self.create_document(
             user_id=user_id,
             title=title or self._title_from_brief(brief),
@@ -158,14 +165,25 @@ class CADService:
         prompt: str,
         units: CADUnit = CADUnit.MM,
         attachments: Optional[List[Dict]] = None,
+        user_id: Optional[str] = None,
     ) -> tuple[MechanicalDesignBrief, List[CADOperation], str]:
-        return self._intake_prompt(prompt, units, attachments or [])
+        extracted = await self._analyze_attachments(attachments, user_id)
+        return self._intake_prompt(prompt, units, attachments or [], extracted)
+
+    async def _analyze_attachments(
+        self,
+        attachments: Optional[List[Dict]],
+        user_id: Optional[str] = None,
+    ) -> Optional[ExtractedContent]:
+        if not attachments or not self._cad_intake_service:
+            return None
+        return await self._cad_intake_service.analyze_uploads(attachments, user_id)
 
     async def export_dxf(self, document_id: str, user_id: Optional[str] = None) -> str:
         document = await self.get_document(document_id, user_id)
         if not document:
             raise FileNotFoundError("CAD document not found")
-        return self._build_minimal_dxf(document)
+        return self._build_ezdxf(document)
 
     def _create_plate(self, params: Dict) -> List[CADEntity]:
         width = float(params["width"])
@@ -237,7 +255,13 @@ class CADService:
             layer=params.get("layer", "M-NOTE"),
         )
 
-    def _intake_prompt(self, prompt: str, units: CADUnit, attachments: List[Dict]) -> tuple[MechanicalDesignBrief, List[CADOperation], str]:
+    def _intake_prompt(
+        self,
+        prompt: str,
+        units: CADUnit,
+        attachments: List[Dict],
+        extracted: Optional[ExtractedContent] = None,
+    ) -> tuple[MechanicalDesignBrief, List[CADOperation], str]:
         normalized = prompt.lower().replace("×", "x").replace("*", "x")
         width, height, thickness = self._extract_size(normalized)
         corner_radius = self._extract_prefixed_number(normalized, ["r", "圆角"])
@@ -336,8 +360,11 @@ class CADService:
             part_type="mounting_plate",
             units=units,
             features=features,
-            constraints=["Generated from deterministic mechanical 2D intake MVP"],
-            unknowns=[],
+            constraints=[
+                "Generated from deterministic mechanical 2D intake MVP",
+                *self._constraints_from_extracted(extracted),
+            ],
+            unknowns=self._unknowns_from_extracted(extracted),
             manufacturing_notes=[],
             source_references=[
                 {"type": "text", "content": prompt},
@@ -350,10 +377,78 @@ class CADService:
                     }
                     for attachment in attachments
                 ],
+                *self._source_references_from_extracted(extracted),
             ],
         )
         message = f"Generated a {self._fmt(width)}x{self._fmt(height)} {units.value} mechanical 2D drawing"
         return brief, operations, message
+
+    def _constraints_from_extracted(self, extracted: Optional[ExtractedContent]) -> List[str]:
+        if not extracted:
+            return []
+        counts = {
+            "text_blocks": len(extracted.text_blocks),
+            "tables": len(extracted.tables),
+            "images": len(extracted.images),
+            "cad_entities": len(extracted.cad_entities),
+            "model_features": len(extracted.model_features),
+        }
+        return [f"Attachment intake parsed {key}: {value}" for key, value in counts.items() if value]
+
+    def _unknowns_from_extracted(self, extracted: Optional[ExtractedContent]) -> List[str]:
+        if not extracted:
+            return []
+        return extracted.uncertain_items[:20]
+
+    def _source_references_from_extracted(self, extracted: Optional[ExtractedContent]) -> List[Dict]:
+        if not extracted:
+            return []
+        references: List[Dict] = [
+            {
+                "type": "parsed_attachment",
+                "files": [source.model_dump() for source in extracted.source_files],
+                "summary": {
+                    "text_blocks": len(extracted.text_blocks),
+                    "tables": len(extracted.tables),
+                    "images": len(extracted.images),
+                    "cad_entities": len(extracted.cad_entities),
+                    "model_features": len(extracted.model_features),
+                },
+            }
+        ]
+        for block in extracted.text_blocks[:5]:
+            references.append(
+                {
+                    "type": "extracted_text",
+                    "source_file": block.source_file,
+                    "label": block.label,
+                    "content": block.text[:3000],
+                    "metadata": block.metadata,
+                }
+            )
+        for table in extracted.tables[:5]:
+            references.append(
+                {
+                    "type": "extracted_table",
+                    "source_file": table.source_file,
+                    "label": table.label,
+                    "rows": table.rows[:30],
+                    "metadata": table.metadata,
+                }
+            )
+        for image in extracted.images[:10]:
+            references.append(
+                {
+                    "type": "extracted_image",
+                    "source_file": image.source_file,
+                    "label": image.label,
+                    "width": image.width,
+                    "height": image.height,
+                    "format": image.format,
+                    "metadata": image.metadata,
+                }
+            )
+        return references
 
     def _extract_size(self, text: str) -> tuple[float, float, Optional[float]]:
         match = re.search(r"(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)(?:\s*x\s*(\d+(?:\.\d+)?))?", text)
@@ -386,11 +481,17 @@ class CADService:
     def _extract_count(self, text: str, nouns: List[str]) -> int:
         number_words = {"一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6}
         for noun in nouns:
-            match = re.search(rf"(\d+)\s*(?:个|x|-)?\s*{re.escape(noun)}", text)
+            match = re.search(
+                rf"(\d+)\s*(?:个|x|-)?\s*(?:m\s*\d+(?:\.\d+)?\s*)?{re.escape(noun)}",
+                text,
+            )
             if match:
                 return int(match.group(1))
             for word, value in number_words.items():
-                if f"{word}个{noun}" in text or f"{word}{noun}" in text:
+                if re.search(
+                    rf"{re.escape(word)}\s*(?:个)?\s*(?:m\s*\d+(?:\.\d+)?\s*)?{re.escape(noun)}",
+                    text,
+                ):
                     return value
         if any(noun in text for noun in nouns):
             return 4
@@ -460,6 +561,69 @@ class CADService:
         if value is None:
             return None
         return self._point(value)
+
+    def _build_ezdxf(self, document: MechanicalCADDocument) -> str:
+        dxf_doc = ezdxf.new("R2010", setup=True)
+        dxf_doc.header["$INSUNITS"] = 4 if document.units == CADUnit.MM else 1
+        modelspace = dxf_doc.modelspace()
+
+        for layer in document.layers:
+            if layer.name not in dxf_doc.layers:
+                dxf_doc.layers.add(
+                    layer.name,
+                    color=layer.color or 7,
+                    linetype=layer.line_type or "CONTINUOUS",
+                )
+
+        for entity in document.entities:
+            self._add_ezdxf_entity(modelspace, entity)
+
+        for dimension in document.dimensions:
+            if dimension.text:
+                modelspace.add_text(
+                    dimension.text,
+                    dxfattribs={"layer": dimension.layer, "height": 3.5},
+                ).set_placement((dimension.position.x, dimension.position.y))
+
+        output = StringIO()
+        dxf_doc.write(output)
+        return output.getvalue()
+
+    def _add_ezdxf_entity(self, modelspace, entity: CADEntity) -> None:
+        if isinstance(entity, CADLine):
+            modelspace.add_line(
+                (entity.start.x, entity.start.y),
+                (entity.end.x, entity.end.y),
+                dxfattribs={"layer": entity.layer},
+            )
+        elif isinstance(entity, CADCircle):
+            modelspace.add_circle(
+                (entity.center.x, entity.center.y),
+                radius=entity.radius,
+                dxfattribs={"layer": entity.layer},
+            )
+        elif isinstance(entity, CADArc):
+            modelspace.add_arc(
+                (entity.center.x, entity.center.y),
+                radius=entity.radius,
+                start_angle=entity.start_angle,
+                end_angle=entity.end_angle,
+                dxfattribs={"layer": entity.layer},
+            )
+        elif isinstance(entity, CADPolyline):
+            modelspace.add_lwpolyline(
+                [(point.x, point.y) for point in entity.points],
+                close=entity.closed,
+                dxfattribs={"layer": entity.layer},
+            )
+        elif isinstance(entity, CADSlot):
+            for line in self._slot_as_lines(entity):
+                self._add_ezdxf_entity(modelspace, line)
+        elif isinstance(entity, CADNote):
+            modelspace.add_text(
+                entity.text,
+                dxfattribs={"layer": entity.layer, "height": entity.height},
+            ).set_placement((entity.position.x, entity.position.y))
 
     def _build_minimal_dxf(self, document: MechanicalCADDocument) -> str:
         output = StringIO()
