@@ -111,22 +111,22 @@ const { currentUser } = useAuth();
 
 const prompts = [
   {
-    title: '生成 CAD 方案',
-    caption: '需求拆解、结构规划、建模步骤',
+    title: '完成 CAD 画图',
+    caption: '理解要求，生成图纸、脚本或模型文件',
+    message: '帮我完成这个 CAD 画图任务。请先理解图纸要求，再给出可执行的绘图步骤，并尽量生成可直接打开或运行的 CAD 文件/脚本。',
+    icon: DraftingCompass,
+  },
+  {
+    title: '拆解建模方案',
+    caption: '任务拆分、结构规划、建模步骤',
     message: '帮我把这个 CAD 任务拆成可执行方案，并给出建模步骤。',
     icon: Workflow,
   },
   {
-    title: '检查工程文件',
-    caption: '读取项目、定位问题、给出修复点',
-    message: '检查这个项目结构，找出最影响 CAD 大王运行体验的问题。',
+    title: '检查图纸问题',
+    caption: '尺寸、结构、标注、图层与可制造性',
+    message: '帮我检查这个 CAD 图纸或建模结果，指出尺寸、结构、标注、图层和可制造性方面的问题，并给出具体修改建议。',
     icon: TerminalSquare,
-  },
-  {
-    title: '优化界面体验',
-    caption: '布局、文案、交互流程',
-    message: '把这个 CAD 大王界面继续优化成更完整、更专业的工作台。',
-    icon: DraftingCompass,
   },
 ];
 
