@@ -21,7 +21,7 @@
         <img
           class="size-[18px] object-cover [filter:brightness(0)_saturate(100%)_invert(52%)_sepia(7%)_saturate(141%)_hue-rotate(349deg)_brightness(95%)_contrast(86%)]"
           :alt="session.title || ''"
-          src="https://files.manuscdn.com/assets/icon/session/chatting.svg" />
+          src="/chatting.svg" />
       </template>
     
     </div>

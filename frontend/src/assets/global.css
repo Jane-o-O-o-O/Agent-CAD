@@ -3,25 +3,37 @@
 @tailwind utilities;
 
 :root {
-  --cad-bg: #edf5f7;
-  --cad-grid-minor: rgba(31, 112, 153, 0.16);
-  --cad-grid-major: rgba(0, 129, 242, 0.28);
-  --cad-line: rgba(0, 129, 242, 0.62);
-  --cad-line-soft: rgba(16, 99, 148, 0.32);
-  --cad-accent: rgba(0, 168, 132, 0.72);
-  --cad-panel: rgba(248, 250, 250, 0.72);
-  --cad-panel-strong: rgba(255, 255, 255, 0.92);
+  --cad-bg: #f0f4ef;
+  --cad-paper: #f8f6ec;
+  --cad-ink: #242c29;
+  --cad-blue: #176b87;
+  --cad-mint: #23b68d;
+  --cad-rust: #b9562f;
+  --cad-grid-minor: rgba(23, 107, 135, 0.18);
+  --cad-grid-major: rgba(23, 107, 135, 0.34);
+  --cad-line: rgba(23, 107, 135, 0.58);
+  --cad-line-soft: rgba(36, 44, 41, 0.18);
+  --cad-accent: rgba(35, 182, 141, 0.76);
+  --cad-panel: rgba(248, 246, 236, 0.72);
+  --cad-panel-strong: rgba(255, 253, 245, 0.9);
+  --cad-shadow: 0 24px 70px rgba(36, 44, 41, 0.16);
 }
 
 .dark {
-  --cad-bg: #111418;
-  --cad-grid-minor: rgba(97, 178, 229, 0.12);
-  --cad-grid-major: rgba(97, 178, 229, 0.24);
-  --cad-line: rgba(72, 168, 255, 0.58);
-  --cad-line-soft: rgba(129, 200, 255, 0.24);
-  --cad-accent: rgba(74, 214, 170, 0.68);
-  --cad-panel: rgba(39, 39, 40, 0.78);
-  --cad-panel-strong: rgba(22, 22, 24, 0.94);
+  --cad-bg: #121614;
+  --cad-paper: #1d211f;
+  --cad-ink: #e6e2d6;
+  --cad-blue: #66bed0;
+  --cad-mint: #59d6aa;
+  --cad-rust: #e18a5f;
+  --cad-grid-minor: rgba(102, 190, 208, 0.18);
+  --cad-grid-major: rgba(102, 190, 208, 0.34);
+  --cad-line: rgba(102, 190, 208, 0.55);
+  --cad-line-soft: rgba(230, 226, 214, 0.18);
+  --cad-accent: rgba(89, 214, 170, 0.68);
+  --cad-panel: rgba(29, 33, 31, 0.78);
+  --cad-panel-strong: rgba(20, 23, 22, 0.92);
+  --cad-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
 }
 
 
@@ -50,8 +62,9 @@ body {
   overflow: hidden;
   pointer-events: none;
   background:
-    radial-gradient(circle at 78% 14%, rgba(0, 129, 242, 0.12), transparent 28%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.42), transparent 44%),
+    radial-gradient(circle at 76% 12%, rgba(185, 86, 47, 0.16), transparent 26%),
+    radial-gradient(circle at 16% 78%, rgba(35, 182, 141, 0.14), transparent 30%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.58), transparent 42%),
     var(--cad-bg);
 }
 
@@ -83,7 +96,8 @@ body {
     linear-gradient(var(--cad-grid-minor) 1px, transparent 1px),
     linear-gradient(90deg, var(--cad-grid-minor) 1px, transparent 1px);
   background-size: 96px 96px, 96px 96px, 24px 24px, 24px 24px;
-  mask-image: linear-gradient(to bottom, #000 0%, #000 78%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 92%, transparent 100%);
+  opacity: 1;
 }
 
 .cad-ruler {
@@ -453,6 +467,291 @@ body {
 .cad-panel {
   background: var(--cad-panel-strong);
   border-color: var(--border-main);
+}
+
+.cad-display {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.cad-command-deck,
+.cad-status-panel,
+.cad-metric {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.38)),
+    var(--cad-panel);
+  box-shadow: var(--cad-shadow);
+  backdrop-filter: blur(12px);
+}
+
+.dark .cad-command-deck,
+.dark .cad-status-panel,
+.dark .cad-metric {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    var(--cad-panel);
+}
+
+.cad-command-deck::before,
+.cad-status-panel::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  pointer-events: none;
+  border: 1px solid var(--cad-line-soft);
+  border-radius: inherit;
+  opacity: 0.7;
+}
+
+.cad-command-deck::after {
+  content: "";
+  position: absolute;
+  right: -84px;
+  top: -84px;
+  width: 260px;
+  height: 260px;
+  border: 1px solid var(--cad-line);
+  transform: rotate(22deg);
+  opacity: 0.28;
+}
+
+.cad-scanline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(0deg, transparent 0, transparent 17px, rgba(36, 44, 41, 0.035) 18px);
+  opacity: 0.72;
+}
+
+.cad-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  border: 1px solid var(--cad-line-soft);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.42);
+  color: var(--cad-blue);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  padding: 7px 11px;
+  text-transform: uppercase;
+}
+
+.dark .cad-kicker {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.cad-prompt-tile {
+  position: relative;
+  display: flex;
+  min-height: 118px;
+  flex-direction: column;
+  gap: 9px;
+  overflow: hidden;
+  border: 1px solid var(--cad-line-soft);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.42);
+  padding: 15px;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.cad-shortcut-stage {
+  min-height: min(620px, calc(100vh - 112px));
+}
+
+.cad-quick-command {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.22)),
+    rgba(248, 246, 236, 0.38);
+}
+
+.dark .cad-quick-command {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)),
+    rgba(29, 33, 31, 0.5);
+}
+
+.cad-shortcut-tile {
+  min-height: 142px;
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.dark .cad-shortcut-tile {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.cad-prompt-tile::after {
+  content: "";
+  position: absolute;
+  inset: auto 12px 12px auto;
+  width: 34px;
+  height: 34px;
+  border-right: 1px solid var(--cad-line);
+  border-bottom: 1px solid var(--cad-line);
+  opacity: 0.42;
+}
+
+.cad-prompt-tile:hover {
+  transform: translateY(-2px);
+  border-color: var(--cad-line);
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.dark .cad-prompt-tile {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cad-input-dock {
+  border: 1px solid var(--cad-line-soft);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.34));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+}
+
+.dark .cad-input-dock {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cad-metric {
+  border: 1px solid var(--border-light);
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.cad-status-panel {
+  position: relative;
+  min-height: 420px;
+  overflow: hidden;
+}
+
+.cad-status-panel::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  height: 96px;
+  pointer-events: none;
+  border: 1px solid var(--cad-line-soft);
+  background:
+    linear-gradient(var(--cad-line-soft), var(--cad-line-soft)) 0 32px / 100% 1px no-repeat,
+    linear-gradient(90deg, var(--cad-line-soft), var(--cad-line-soft)) 34% 0 / 1px 100% no-repeat,
+    linear-gradient(90deg, var(--cad-line-soft), var(--cad-line-soft)) 68% 0 / 1px 100% no-repeat;
+  opacity: 0.5;
+}
+
+.cad-service-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--cad-line-soft);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.38);
+  padding: 12px;
+}
+
+.dark .cad-service-row {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cad-service-pill {
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.cad-service-pill.is-ready {
+  background: rgba(35, 182, 141, 0.16);
+  color: var(--cad-mint);
+}
+
+.cad-service-pill.is-api {
+  background: rgba(23, 107, 135, 0.14);
+  color: var(--cad-blue);
+}
+
+.cad-service-pill.is-tools,
+.cad-service-pill.is-bridge {
+  background: rgba(185, 86, 47, 0.14);
+  color: var(--cad-rust);
+}
+
+.cad-icon-button {
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--cad-panel-strong);
+  transition: transform 160ms ease, background 160ms ease;
+}
+
+.cad-icon-button:hover {
+  transform: translateY(-1px);
+  background: var(--background-white-main);
+}
+
+.cad-main-frame {
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 18px 60px rgba(36, 44, 41, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.dark .cad-main-frame {
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.32);
+}
+
+.cad-left-panel {
+  margin: 12px 0 12px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0.32)),
+    var(--cad-panel);
+  box-shadow: 0 18px 60px rgba(36, 44, 41, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+.dark .cad-left-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.025)),
+    var(--cad-panel);
+}
+
+.cad-nav-row {
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.cad-nav-row:hover,
+.cad-nav-row.is-active {
+  border-color: var(--cad-line-soft);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.cad-nav-row.is-active::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--cad-rust);
+}
+
+.dark .cad-nav-row:hover,
+.dark .cad-nav-row.is-active {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 @media (max-width: 640px) {

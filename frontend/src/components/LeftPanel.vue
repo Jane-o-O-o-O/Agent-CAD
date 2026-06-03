@@ -6,8 +6,8 @@
       'width: 24px; transition: width 0.36s cubic-bezier(0.4, 0, 0.2, 1);'">
     <div
       :class="isLeftPanelShow ?
-        'flex flex-col overflow-hidden bg-[var(--background-nav)] h-full opacity-100 translate-x-0' :
-        'flex flex-col overflow-hidden bg-[var(--background-nav)] fixed top-1 start-1 bottom-1 z-[1] border-1 dark:border-[1px] border-[var(--border-main)] dark:border-[var(--border-light)] rounded-xl shadow-[0px_8px_32px_0px_rgba(0,0,0,0.16),0px_0px_0px_1px_rgba(0,0,0,0.06)] opacity-0 pointer-events-none -translate-x-10'"
+        'cad-left-panel flex flex-col overflow-hidden h-full opacity-100 translate-x-0' :
+        'cad-left-panel flex flex-col overflow-hidden fixed top-3 start-3 bottom-3 z-[1] opacity-0 pointer-events-none -translate-x-10'"
       :style="(isLeftPanelShow ? 'width: 300px;' : 'width: 0px;') + ' transition: opacity 0.2s, transform 0.2s, width 0.2s;'">
 
       <!-- 顶部折叠按钮 -->
@@ -15,7 +15,7 @@
         <div class="flex justify-between w-full px-1 pt-2">
           <div class="relative flex">
             <div
-              class="flex h-7 w-7 items-center justify-center cursor-pointer hover:bg-[var(--fill-tsp-gray-main)] rounded-md"
+              class="cad-icon-button flex h-8 w-8 items-center justify-center cursor-pointer"
               @click="toggleLeftPanel">
               <PanelLeft class="h-5 w-5 text-[var(--icon-secondary)]" />
             </div>
@@ -29,8 +29,8 @@
         <!-- 新建任务 -->
         <div
           @click="handleNewTaskClick"
-          class="flex items-center rounded-[10px] cursor-pointer transition-colors w-full gap-[12px] h-[36px] ps-[9px] pe-[2px]"
-          :class="route.path === '/' ? 'bg-[var(--fill-tsp-white-main)]' : 'hover:bg-[var(--fill-tsp-white-light)]'">
+          class="cad-nav-row flex items-center rounded-[10px] cursor-pointer transition-colors w-full gap-[12px] h-[40px] ps-[9px] pe-[2px]"
+          :class="route.path === '/' ? 'is-active' : ''">
           <div class="shrink-0 size-[18px] flex items-center justify-center">
             <SquarePen :size="18" class="text-[var(--text-primary)]" />
           </div>
@@ -48,19 +48,6 @@
         </div>
 
         <!-- Claw 入口 -->
-        <div
-          v-if="clawEnabled"
-          @click="handleClawClick"
-          class="flex items-center rounded-[10px] cursor-pointer transition-colors w-full gap-[12px] h-[36px] ps-[9px] pe-[2px]"
-          :class="route.path === '/chat/claw' ? 'bg-[var(--fill-tsp-white-main)]' : 'hover:bg-[var(--fill-tsp-white-light)]'">
-          <div class="shrink-0 size-[18px] flex items-center justify-center">
-            <div class="claw-nav-icon w-[18px] h-[18px]" />
-          </div>
-          <div class="flex-1 min-w-0 flex gap-[4px] items-center text-[14px] text-[var(--text-primary)]">
-            <span class="truncate">CAD大王助手</span>
-          </div>
-        </div>
-
         <!-- 所有任务分组标题 + 会话列表 -->
         <div class="flex flex-col flex-1 min-h-0 -mx-[8px] mt-[4px] overflow-hidden">
           <div class="w-full border-t border-[var(--border-main)] transition-opacity duration-200" :class="isListScrolled ? 'opacity-100' : 'opacity-0'"></div>
@@ -116,7 +103,6 @@ import { useLeftPanel } from '../composables/useLeftPanel';
 import { ref, onMounted, watch, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getSessionsSSE, getSessions } from '../api/agent';
-import { getCachedClientConfig } from '../api/config';
 import { ListSessionItem } from '../types/response';
 import { useI18n } from 'vue-i18n';
 
@@ -129,7 +115,6 @@ const sessions = ref<ListSessionItem[]>([])
 const cancelGetSessionsSSE = ref<(() => void) | null>(null)
 const isAllTasksCollapsed = ref(false)
 const isListScrolled = ref(false)
-const clawEnabled = ref(false)
 const scrollContainerRef = ref<HTMLElement | null>(null)
 
 const handleListScroll = () => {
@@ -178,10 +163,6 @@ const handleNewTaskClick = () => {
   router.push('/')
 }
 
-const handleClawClick = () => {
-  router.push('/chat/claw')
-}
-
 const handleSessionDeleted = (sessionId: string) => {
   console.log('handleSessionDeleted', sessionId)
   sessions.value = sessions.value.filter(session => session.session_id !== sessionId);
@@ -197,10 +178,6 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 onMounted(async () => {
-  getCachedClientConfig().then(cfg => {
-    clawEnabled.value = cfg?.claw_enabled ?? false
-  })
-
   // Initial fetch of sessions
   fetchSessions()
 
