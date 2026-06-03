@@ -9,7 +9,7 @@
                     :rows="rows" :value="modelValue"
                     @input="$emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
                     @compositionstart="isComposing = true" @compositionend="isComposing = false"
-                    @keydown.enter.exact="handleEnterKeydown" :placeholder="t('Give Manus a task to work on...')"
+                    @keydown.enter.exact="handleEnterKeydown" placeholder="给 CAD大王 一个 CAD 任务..."
                     :style="{ height: '46px' }"></textarea>
             </div>
             <footer class="flex flex-row justify-between w-full px-3">
@@ -41,12 +41,10 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
 import SendIcon from './icons/SendIcon.vue';
-import { useI18n } from 'vue-i18n';
 import ChatBoxFiles from './ChatBoxFiles.vue';
 import { Paperclip } from 'lucide-vue-next';
 import type { FileInfo } from '../api/file';
 
-const { t } = useI18n();
 const hasTextInput = ref(false);
 const isComposing = ref(false);
 const chatBoxFileListRef = ref();

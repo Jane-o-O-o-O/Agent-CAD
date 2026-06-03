@@ -19,7 +19,7 @@
       <span></span>
     </div>
     <div class="cad-title-block">
-      <div>AI MANUS CAD</div>
+      <div>CAD 大王</div>
       <div>MODEL SPACE</div>
       <div>SCALE 1:1</div>
     </div>

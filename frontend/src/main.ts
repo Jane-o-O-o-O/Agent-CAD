@@ -7,14 +7,12 @@ import './utils/toast'
 import i18n from './composables/useI18n'
 import { getStoredToken } from './api/auth'
 import { getCachedClientConfig } from './api/config'
-import { configure } from "vue-gtag"
 
 // Import page components
 import HomePage from './pages/HomePage.vue'
 import ChatPage from './pages/ChatPage.vue'
 import LoginPage from './pages/LoginPage.vue'
 import MainLayout from './pages/MainLayout.vue'
-import ClawPage from './pages/ClawPage.vue'
 import SharePage from './pages/SharePage.vue'
 import ShareLayout from './pages/ShareLayout.vue'
 
@@ -31,11 +29,6 @@ export const router = createRouter({
           path: '', 
           component: HomePage, 
           alias: ['/', '/home'],
-          meta: { requiresAuth: true }
-        },
-        {
-          path: 'claw',
-          component: ClawPage,
           meta: { requiresAuth: true }
         },
         { 
@@ -98,12 +91,8 @@ router.beforeEach(async (to, _, next) => {
   next()
 })
 
-// Preload client runtime config and initialize Google Analytics.
-void getCachedClientConfig().then((config) => {
-  if (config?.google_analytics_id) {
-    configure({ tagId: config.google_analytics_id })
-  }
-})
+// Preload client runtime config before route guards need it.
+void getCachedClientConfig()
 
 const app = createApp(App)
 

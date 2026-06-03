@@ -14,9 +14,9 @@ let isClientConfigLoaded = false
 const fallbackClientConfig: ClientConfigResponse = {
   auth_provider: 'none',
   show_github_button: false,
-  github_repository_url: 'https://github.com/Jane-o-O-o-O/Agent-CAD',
+  github_repository_url: '',
   google_analytics_id: null,
-  claw_enabled: true,
+  claw_enabled: false,
 }
 
 /**
