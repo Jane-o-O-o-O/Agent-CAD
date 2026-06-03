@@ -65,6 +65,7 @@
                 <ChatBox
                   :rows="3"
                   v-model="message"
+                  v-model:attachments="attachments"
                   @submit="handleSubmit"
                   :isRunning="isSubmitting"
                   :attachments="attachments" />
