@@ -45,30 +45,37 @@
 
       <main class="cad-shortcut-stage mx-auto flex w-full max-w-[900px] flex-1 items-center pb-8 pt-3">
         <section class="w-full">
-          <div class="cad-command-deck cad-quick-command relative overflow-hidden rounded-[20px] border border-[var(--border-light)] px-4 py-4 sm:px-5 sm:py-5">
+          <div class="cad-home-greeting" aria-label="CAD大王初始问候">
+            <h1>吾乃CAD大王，有什么我能帮你的吗？</h1>
+            <p>Ciallo～(∠・ω&lt; )⌒★</p>
+          </div>
+          <div class="cad-command-deck cad-quick-command cad-doubao-composer relative overflow-hidden rounded-[24px] border border-[var(--border-light)] px-2.5 py-2.5 sm:px-3 sm:py-3">
             <div class="cad-scanline" aria-hidden="true"></div>
-            <div class="relative flex flex-col gap-3">
-              <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <button
-                  v-for="prompt in prompts"
-                  :key="prompt.title"
-                  class="cad-prompt-tile cad-shortcut-tile text-left"
-                  type="button"
-                  @click="usePrompt(prompt.message)">
-                  <component :is="prompt.icon" class="size-5 text-[var(--cad-blue)]" />
-                  <span class="text-[15px] font-semibold text-[var(--text-primary)]">{{ prompt.title }}</span>
-                  <span class="text-[12px] leading-[18px] text-[var(--text-tertiary)]">{{ prompt.caption }}</span>
-                </button>
-              </div>
-
+            <div class="relative">
               <div class="cad-input-dock flex w-full flex-col rounded-[18px]">
                 <ChatBox
-                  :rows="3"
+                  :rows="2"
                   v-model="message"
                   v-model:attachments="attachments"
                   @submit="handleSubmit"
                   :isRunning="isSubmitting"
-                  :attachments="attachments" />
+                  :attachments="attachments"
+                  placeholder="给 CAD大王 一个 CAD 任务...">
+                  <template #footer-actions>
+                    <div class="cad-home-shortcuts flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
+                      <button
+                        v-for="prompt in prompts"
+                        :key="prompt.title"
+                        class="cad-home-shortcut-chip"
+                        type="button"
+                        :title="prompt.caption"
+                        @click="usePrompt(prompt.message)">
+                        <component :is="prompt.icon" class="size-3.5 shrink-0" />
+                        <span>{{ prompt.shortTitle }}</span>
+                      </button>
+                    </div>
+                  </template>
+                </ChatBox>
               </div>
             </div>
           </div>
@@ -112,18 +119,21 @@ const { currentUser } = useAuth();
 const prompts = [
   {
     title: '完成 CAD 绘图',
+    shortTitle: 'CAD 绘图',
     caption: '理解要求，生成图纸、脚本或模型文件',
     message: '帮我完成这个 CAD 绘图任务。请先理解图纸要求，再给出可执行的绘图步骤，并尽量生成可直接打开或运行的 CAD 文件/脚本。',
     icon: DraftingCompass,
   },
   {
     title: '拆解建模方案',
+    shortTitle: '建模方案',
     caption: '任务拆分、结构规划、建模步骤',
     message: '帮我把这个 CAD 任务拆成可执行方案，并给出建模步骤。',
     icon: Workflow,
   },
   {
     title: '检查图纸问题',
+    shortTitle: '图纸检查',
     caption: '尺寸、结构、标注、图层与可制造性',
     message: '帮我检查这个 CAD 图纸或建模结果，指出尺寸、结构、标注、图层和可制造性方面的问题，并给出具体修改建议。',
     icon: TerminalSquare,

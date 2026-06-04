@@ -1,7 +1,8 @@
 #!/bin/sh
+set -eu
 
-# Replace environment variables in nginx config
+# Replace environment variables in nginx config.
 envsubst '${BACKEND_URL}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
-# Start nginx
-nginx -g "daemon off;" 
+# Start nginx.
+exec nginx -g "daemon off;"

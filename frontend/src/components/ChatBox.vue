@@ -9,19 +9,23 @@
             <div class="overflow-y-auto pl-4 pr-2">
                 <textarea
                     class="flex rounded-md border-input focus-visible:outline-none focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden flex-1 bg-transparent p-0 pt-[1px] border-0 focus-visible:ring-0 focus-visible:ring-offset-0 w-full placeholder:text-[var(--text-disable)] text-[15px] shadow-none resize-none min-h-[40px]"
-                    :rows="rows" :value="modelValue"
+                    :rows="rows"
+                    :value="modelValue"
                     @input="$emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
-                    @compositionstart="isComposing = true" @compositionend="isComposing = false"
-                    @keydown.enter.exact="handleEnterKeydown" placeholder="给 CAD大王 一个 CAD 任务..."
+                    @compositionstart="isComposing = true"
+                    @compositionend="isComposing = false"
+                    @keydown.enter.exact="handleEnterKeydown"
+                    :placeholder="placeholder || '给 CAD大王 一个 CAD 任务...'"
                     :style="{ height: '46px' }"></textarea>
             </div>
-            <footer class="flex flex-row justify-between w-full px-3">
-                <div class="flex gap-2 pr-2 items-center">
+            <footer class="flex flex-row items-center justify-between gap-2 w-full px-3">
+                <div class="flex min-w-0 flex-1 gap-2 pr-2 items-center">
                     <button @click="uploadFile"
                         class="rounded-full border border-[var(--border-main)] inline-flex items-center justify-center gap-1 clickable cursor-pointer text-xs text-[var(--text-secondary)] hover:bg-[var(--fill-tsp-gray-main)] w-8 h-8 p-0 data-[popover-trigger]:bg-[var(--fill-tsp-gray-main)] shrink-0"
                         aria-expanded="false" aria-haspopup="dialog">
                         <Paperclip :size="16" />
                     </button>
+                    <slot name="footer-actions"></slot>
                 </div>
                 <div class="flex gap-2">
                     <button v-if="!isRunning || sendEnabled || hideStopButton"
@@ -59,6 +63,7 @@ const props = defineProps<{
     attachments: FileInfo[];
     hideStopButton?: boolean;
     allowSendFilesOnly?: boolean;
+    placeholder?: string;
 }>();
 
 const sendEnabled = computed(() => {
@@ -79,11 +84,11 @@ const emit = defineEmits<{
 
 const handleEnterKeydown = (event: KeyboardEvent) => {
     if (isComposing.value) {
-        // If in input method composition state, do nothing and allow default behavior
+        // If in input method composition state, do nothing and allow default behavior.
         return;
     }
 
-    // Not in input method composition state and has text input, prevent default behavior and submit
+    // Not in input method composition state and has text input, prevent default behavior and submit.
     if (sendEnabled.value) {
         event.preventDefault();
         handleSubmit();
