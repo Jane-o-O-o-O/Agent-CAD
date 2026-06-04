@@ -676,6 +676,7 @@ body {
 }
 
 .cad-home-shortcuts {
+  overflow: hidden;
   scrollbar-width: none;
 }
 
@@ -685,19 +686,29 @@ body {
 
 .cad-home-shortcut-chip {
   display: inline-flex;
-  height: 28px;
+  height: 26px;
   flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  gap: 3px;
   border: 0;
   border-radius: 999px;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1;
-  padding: 0 7px;
+  padding: 0 4px;
   transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.cad-home-shortcut-chip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cad-home-shortcut-chip:hover {
