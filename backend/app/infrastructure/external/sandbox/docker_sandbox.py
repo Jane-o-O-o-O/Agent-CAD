@@ -178,8 +178,7 @@ class DockerSandbox(Sandbox):
         # If we reach here, we've exhausted all retries
         error_message = f"Sandbox services failed to start after {max_retries} attempts ({max_retries * retry_interval} seconds)"
         logger.error(error_message)
-        # TODO: find a way to handle this
-        #raise Exception(error_message)
+        raise RuntimeError(error_message)
 
     async def exec_command(self, session_id: str, exec_dir: str, command: str) -> ToolResult:
         response = await self.client.post(
@@ -566,9 +565,16 @@ class DockerSandbox(Sandbox):
             return DockerSandbox(ip=ip, container_name=id)
 
         docker_client = docker.from_env()
-        container = docker_client.containers.get(id)
-        container.reload()
+        try:
+            container = docker_client.containers.get(id)
+            container.reload()
+        except docker.errors.NotFound:
+            logger.warning("Sandbox container %s not found", id)
+            return None
         
         ip_address = cls._get_container_ip(container)
+        if not ip_address:
+            logger.warning("Sandbox container %s has no reachable IP address", id)
+            return None
         logger.info(f"IP address: {ip_address}")
         return DockerSandbox(ip=ip_address, container_name=id)

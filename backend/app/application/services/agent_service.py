@@ -177,13 +177,7 @@ class AgentService:
             logger.error(f"Session {session_id} not found")
             raise RuntimeError("Session not found")
         
-        if not session.sandbox_id:
-            raise RuntimeError("Session has no sandbox environment")
-        
-        # Get sandbox and return VNC URL
-        sandbox = await self._sandbox_cls.get(session.sandbox_id)
-        if not sandbox:
-            raise RuntimeError("Sandbox environment not found")
+        sandbox = await self._agent_domain_service.ensure_session_sandbox(session)
         
         return sandbox.vnc_url
 
@@ -195,13 +189,7 @@ class AgentService:
             logger.error(f"Session {session_id} not found for user {user_id}")
             raise RuntimeError("Session not found")
         
-        if not session.sandbox_id:
-            raise RuntimeError("Session has no sandbox environment")
-        
-        # Get sandbox and file content
-        sandbox = await self._sandbox_cls.get(session.sandbox_id)
-        if not sandbox:
-            raise RuntimeError("Sandbox environment not found")
+        sandbox = await self._agent_domain_service.ensure_session_sandbox(session)
         
         result = await sandbox.file_read(file_path)
         if result.success:
