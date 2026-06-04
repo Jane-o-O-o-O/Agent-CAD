@@ -134,7 +134,6 @@ import {
   applyCADOperation,
   createCADDocument,
   createCADPlanFromPrompt,
-  createCADDocumentFromPrompt,
   downloadCADDocumentDxf,
   type MechanicalCADDocument,
   type CADPlanStep,
