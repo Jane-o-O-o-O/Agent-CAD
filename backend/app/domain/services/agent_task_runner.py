@@ -221,6 +221,15 @@ class AgentTaskRunner(TaskRunner):
                         )
                     else:
                         event.tool_content = McpToolContent(result="No CAD result available")
+                elif event.tool_name == "data_processor":
+                    if event.function_result:
+                        event.tool_content = McpToolContent(
+                            result=event.function_result.model_dump()
+                            if hasattr(event.function_result, "model_dump")
+                            else str(event.function_result)
+                        )
+                    else:
+                        event.tool_content = McpToolContent(result="No data processor result available")
                 else:
                     logger.warning(f"Agent {self._agent_id} received unknown tool event: {event.tool_name}")
         except Exception as e:

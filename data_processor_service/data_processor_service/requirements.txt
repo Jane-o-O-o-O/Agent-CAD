@@ -1,0 +1,11 @@
+fastapi>=0.111
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9
+pydantic>=2.7
+beautifulsoup4>=4.12
+pandas>=2.2
+openpyxl>=3.1
+python-docx>=1.1
+pypdf>=4.2
+pillow>=10.3
+pytesseract>=0.3.13

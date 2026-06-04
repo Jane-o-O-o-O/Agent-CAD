@@ -44,6 +44,9 @@ services:
       sandbox:
         condition: service_started
         required: false
+      data-processor:
+        condition: service_started
+        required: false
       mongodb:
         condition: service_started
         required: true
@@ -60,6 +63,7 @@ services:
       - CLAW_ENABLED=false
       - MANUS_API_BASE_URL=http://backend:8000
       - CLAW_API_KEY=${CLAW_DEV_API_KEY:-manus-dev-api-key-changeme}
+      - DATA_PROCESSOR_BASE_URL=http://data-processor:8010
 
   sandbox:
     build:
@@ -79,6 +83,20 @@ services:
     environment:
       - UVI_ARGS="--reload"
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+    restart: unless-stopped
+    networks:
+      - manus-network
+
+  data-processor:
+    build:
+      context: ./data_processor_service/data_processor_service
+      dockerfile: Dockerfile
+    volumes:
+      - ./data_processor_service/data_processor_service:/app
+      - /app/__pycache__
+    ports:
+      - "8010:8010"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8010", "--reload"]
     restart: unless-stopped
     networks:
       - manus-network

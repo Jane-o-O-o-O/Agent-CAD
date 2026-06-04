@@ -144,6 +144,10 @@ class Settings(BaseSettings):
 
     # CAD file intake configuration
     cad_docling_enabled: bool = False
+
+    # Data processor service configuration
+    data_processor_base_url: str | None = None
+    data_processor_timeout_seconds: float = 120.0
     
     # Logging configuration
     log_level: str = "INFO"
