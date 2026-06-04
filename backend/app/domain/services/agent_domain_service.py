@@ -53,18 +53,11 @@ class AgentDomainService:
 
     async def _create_task(self, session: Session) -> Task:
         """Create a new agent task"""
-        sandbox = None
-        sandbox_id = session.sandbox_id
-        if sandbox_id:
-            sandbox = await self._sandbox_cls.get(sandbox_id)
-        if not sandbox:
-            sandbox = await self._sandbox_cls.create()
-            session.sandbox_id = sandbox.id
-            await self._session_repository.save(session)
+        sandbox = await self.ensure_session_sandbox(session)
         browser = await sandbox.get_browser()
         if not browser:
-            logger.error(f"Failed to get browser for Sandbox {sandbox_id}")
-            raise RuntimeError(f"Failed to get browser for Sandbox {sandbox_id}")
+            logger.error(f"Failed to get browser for Sandbox {sandbox.id}")
+            raise RuntimeError(f"Failed to get browser for Sandbox {sandbox.id}")
         
         await self._session_repository.save(session)
 
@@ -87,6 +80,84 @@ class AgentDomainService:
         await self._session_repository.save(session)
 
         return task
+
+    async def ensure_session_sandbox(self, session: Session) -> Sandbox:
+        """Return a healthy sandbox for the session, restoring files if rebuilt."""
+        sandbox = None
+        old_sandbox_id = session.sandbox_id
+
+        if old_sandbox_id:
+            try:
+                sandbox = await self._sandbox_cls.get(old_sandbox_id)
+                if sandbox:
+                    await sandbox.ensure_sandbox()
+                    return sandbox
+            except Exception as e:
+                logger.warning(
+                    "Session %s sandbox %s is unavailable; creating a replacement: %s",
+                    session.id,
+                    old_sandbox_id,
+                    e,
+                )
+
+        sandbox = await self._sandbox_cls.create()
+        session.sandbox_id = sandbox.id
+        await self._session_repository.save(session)
+        logger.info(
+            "Session %s assigned sandbox %s%s",
+            session.id,
+            sandbox.id,
+            f" replacing {old_sandbox_id}" if old_sandbox_id else "",
+        )
+        await sandbox.ensure_sandbox()
+        await self._restore_session_files_to_sandbox(session, sandbox)
+        return sandbox
+
+    async def _restore_session_files_to_sandbox(self, session: Session, sandbox: Sandbox) -> None:
+        """Upload persisted session files back into a replacement sandbox."""
+        restored = 0
+        skipped = 0
+        for file_info in session.files or []:
+            if not file_info.file_id or not file_info.file_path:
+                skipped += 1
+                continue
+            try:
+                file_data, stored_info = await self._file_storage.download_file(
+                    file_info.file_id,
+                    session.user_id,
+                )
+                result = await sandbox.file_upload(
+                    file_data,
+                    file_info.file_path,
+                    filename=file_info.filename or stored_info.filename,
+                )
+                if result.success:
+                    restored += 1
+                else:
+                    skipped += 1
+                    logger.warning(
+                        "Failed to restore file %s to sandbox %s: %s",
+                        file_info.file_path,
+                        sandbox.id,
+                        result.message,
+                    )
+            except Exception as e:
+                skipped += 1
+                logger.warning(
+                    "Failed to restore file %s (%s) for session %s: %s",
+                    file_info.file_path,
+                    file_info.file_id,
+                    session.id,
+                    e,
+                )
+        if restored or skipped:
+            logger.info(
+                "Restored %s session files to sandbox %s for session %s; skipped %s",
+                restored,
+                sandbox.id,
+                session.id,
+                skipped,
+            )
         
     async def _get_task(self, session: Session) -> Optional[Task]:
         """Get a task for the given session"""
