@@ -45,6 +45,7 @@ from app.domain.services.prompts.system import SYSTEM_PROMPT
 from app.domain.services.skills import SkillRegistry
 from app.domain.services.tools.browser import BrowserToolkit
 from app.domain.services.tools.cad import CADToolkit
+from app.domain.services.tools.data_processor import DataProcessorToolkit
 from app.domain.services.tools.file import FileToolkit
 from app.domain.services.tools.mcp import MCPToolkit
 from app.domain.services.tools.message import MessageToolkit
@@ -75,6 +76,11 @@ class AgentScopeFlow(BaseFlow):
             ShellToolkit(sandbox),
             BrowserToolkit(browser),
             FileToolkit(sandbox),
+            DataProcessorToolkit(
+                sandbox,
+                base_url=settings.data_processor_base_url,
+                timeout_seconds=settings.data_processor_timeout_seconds,
+            ),
             CADToolkit(
                 sandbox,
                 cad_service=cad_service,

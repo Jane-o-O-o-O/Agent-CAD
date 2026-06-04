@@ -35,7 +35,16 @@ export const TOOL_FUNCTION_MAP: {[key: string]: string} = {
   
   // Message tools
   "message_notify_user": "Sending notification",
-  "message_ask_user": "Asking question"
+  "message_ask_user": "Asking question",
+
+  // Data processor tools
+  "data_processor_parse_file": "Parsing file",
+
+  // CAD tools
+  "cad_analyze_request": "Analyzing CAD request",
+  "cad_generate_dxf": "Generating DXF",
+  "cad_generate_dxf_from_spec": "Generating final DXF",
+  "cad_validate_dxf": "Validating DXF"
 };
 
 /**
@@ -66,7 +75,12 @@ export const TOOL_FUNCTION_ARG_MAP: {[key: string]: string} = {
   "browser_console_view": "console",
   "info_search_web": "query",
   "message_notify_user": "message",
-  "message_ask_user": "question"
+  "message_ask_user": "question",
+  "data_processor_parse_file": "file",
+  "cad_analyze_request": "prompt",
+  "cad_generate_dxf": "output_path",
+  "cad_generate_dxf_from_spec": "output_path",
+  "cad_validate_dxf": "file"
 };
 
 /**
@@ -78,7 +92,9 @@ export const TOOL_NAME_MAP: {[key: string]: string} = {
   "browser": "Browser",
   "info": "Information",
   "message": "Message",
-  "mcp": "MCP Tool"
+  "mcp": "MCP Tool",
+  "data_processor": "Data Processor",
+  "cad": "CAD"
 };
 
 import SearchIcon from '../components/icons/SearchIcon.vue';
@@ -95,6 +111,8 @@ export const TOOL_ICON_MAP: {[key: string]: any} = {
   "browser": BrowserIcon,
   "search": SearchIcon,
   "message": "",
+  "data_processor": EditIcon,
+  "cad": EditIcon,
   "mcp": SearchIcon  // 暂时使用搜索图标，可以后续创建专门的MCP图标
 };
 
@@ -112,5 +130,7 @@ export const TOOL_COMPONENT_MAP: {[key: string]: any} = {
   "file": FileToolView,
   "search": SearchToolView,
   "browser": BrowserToolView,
-  "mcp": McpToolView
+  "mcp": McpToolView,
+  "data_processor": McpToolView,
+  "cad": McpToolView
 };

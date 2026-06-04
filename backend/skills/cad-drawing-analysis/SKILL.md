@@ -17,12 +17,13 @@ For every CAD drawing task, follow this loop:
 2. Call `cad_analyze_request` after any necessary file intake.
 3. Reason about whether the parsed brief is complete enough.
 4. If important values are missing, call `message_ask_user`.
-5. If complete enough, call `cad_generate_dxf`.
+5. If complete enough, convert the requirements into explicit geometry and call `cad_generate_dxf_from_spec`.
 6. Call `cad_validate_dxf`.
 7. If validation fails, regenerate once or explain the blocking issue.
 8. Deliver the validated DXF file path and a concise summary.
 
 Do not directly write ad hoc DXF with shell scripts unless the CAD tool fails and there is no other way.
+Use `cad_generate_dxf` only as a fallback when the geometry cannot be represented as a structured spec.
 
 ## Fixed Plan Shape
 
@@ -30,13 +31,13 @@ For CAD requests with attachments, create no more than four plan steps:
 
 1. Extract drawing requirements from uploaded files.
 2. Normalize the extracted requirements into a CAD brief and decide if enough data is available.
-3. Generate the DXF drawing with the CAD tool.
+3. Generate the DXF drawing with `cad_generate_dxf_from_spec`.
 4. Validate and deliver the DXF output.
 
 For CAD requests without attachments, create no more than three plan steps:
 
 1. Parse the requested geometry or diagram and decide if enough data is available.
-2. Generate the DXF drawing with the CAD tool.
+2. Generate the DXF drawing with `cad_generate_dxf_from_spec`.
 3. Validate and deliver the DXF output.
 
 Do not create separate plan steps for tool selection, environment checks, OCR attempts, document conversion, table detection, image extraction, or intermediate scripts. Those are implementation details inside a step.
@@ -62,6 +63,17 @@ Ask the user only when a missing value changes the drawing type, main topology, 
 ## Validation
 
 After generating DXF, always call `cad_validate_dxf`. Treat the result as the observation for the next reasoning step.
+
+## Final DXF Tool
+
+Prefer `cad_generate_dxf_from_spec` for final output. Give it explicit geometry instead of prose:
+
+- Mechanical plates: use `rectangle`, `hole`, `slot`, `center_mark`, `text`, and visible `dimensions`.
+- Process/electrical diagrams: use `line`, `polyline`, `rectangle`, `circle`, and `text` for labeled blocks and connectors.
+- Keep coordinates in the chosen units and place the main drawing near the origin.
+- Put outlines on `M-OBJECT`, holes/slots on `M-HOLE`, center marks on `M-CENTER`, dimensions on `M-DIM`, notes on `M-NOTE`.
+
+Only use `cad_generate_dxf` when the older prompt-to-CAD planner is specifically needed as a fallback.
 
 A valid delivery must mention:
 
