@@ -59,7 +59,6 @@
                   v-model:attachments="attachments"
                   @submit="handleSubmit"
                   :isRunning="isSubmitting"
-                  :attachments="attachments"
                   placeholder="给 CAD大王 一个 CAD 任务...">
                   <template #footer-actions>
                     <div class="cad-home-shortcuts grid min-w-0 flex-1 grid-cols-7 items-center gap-1">
@@ -184,7 +183,7 @@ const handleUserMenuEnter = () => {
 };
 
 const handleUserMenuLeave = () => {
-  userMenuTimeout.value = setTimeout(() => {
+  userMenuTimeout.value = window.setTimeout(() => {
     showUserMenu.value = false;
   }, 200);
 };

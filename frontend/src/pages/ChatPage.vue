@@ -1,7 +1,7 @@
 <template>
   <SimpleBar ref="simpleBarRef" @scroll="handleScroll">
-    <div ref="chatContainerRef" class="relative flex flex-col h-full flex-1 min-w-0 px-4">
-      <div ref="observerRef"
+    <div class="relative flex flex-col h-full flex-1 min-w-0 px-4">
+      <div
         class="sm:min-w-[390px] flex flex-row items-center justify-between pt-2 pb-1 gap-1 sticky top-0 z-10 cad-surface flex-shrink-0">
         <div class="flex items-center flex-1">
           <div class="relative flex items-center">
@@ -242,9 +242,6 @@ const {
 // Non-state refs that don't need reset
 const toolPanel = ref<InstanceType<typeof ToolPanel>>()
 const simpleBarRef = ref<InstanceType<typeof SimpleBar>>();
-const observerRef = ref<HTMLDivElement>();
-const chatContainerRef = ref<HTMLDivElement>();
-
 const cadBriefSummary = computed(() => {
   const brief = cadDocument.value?.brief;
   if (!brief) return cadBusy.value ? 'Parsing design brief' : 'No design brief yet';
