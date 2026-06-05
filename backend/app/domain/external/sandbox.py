@@ -113,7 +113,8 @@ class Sandbox(Protocol):
         file: str, 
         start_line: int = None, 
         end_line: int = None, 
-        sudo: bool = False
+        sudo: bool = False,
+        max_length: int = 10000
     ) -> ToolResult:
         """Read file content
         
@@ -122,6 +123,7 @@ class Sandbox(Protocol):
             start_line: Start line number
             end_line: End line number
             sudo: Whether to use sudo privileges
+            max_length: Maximum content length to return. None disables truncation.
             
         Returns:
             File content

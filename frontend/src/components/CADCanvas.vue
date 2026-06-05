@@ -3,7 +3,7 @@
     <div ref="viewerRef" class="h-full w-full" aria-label="Professional DXF preview" />
 
     <div
-      v-if="!document"
+      v-if="!document && !dxfFile"
       class="absolute inset-0 flex items-center justify-center bg-[#f5f7f6] text-sm text-slate-500">
       Generate a drawing to preview the DXF
     </div>
@@ -25,10 +25,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { downloadCADDocumentDxf, type MechanicalCADDocument } from '@/api/cad';
+import { downloadFile, type FileInfo } from '@/api/file';
 import type { DxfViewer as DxfViewerClass } from 'dxf-viewer';
 
 const props = defineProps<{
   document?: MechanicalCADDocument | null;
+  dxfFile?: FileInfo | null;
 }>();
 
 type ViewerStatus = 'idle' | 'exporting' | 'loading' | 'ready' | 'error';
@@ -52,7 +54,7 @@ const statusText = computed(() => {
 });
 
 watch(
-  () => [props.document?.id, props.document?.version] as const,
+  () => [props.document?.id, props.document?.version, props.dxfFile?.file_id] as const,
   () => {
     void renderDocument();
   },
@@ -71,11 +73,12 @@ onBeforeUnmount(() => {
 
 async function renderDocument() {
   const document = props.document;
+  const dxfFile = props.dxfFile;
   const token = ++loadToken;
   errorMessage.value = '';
   progressPhase.value = '';
 
-  if (!document || !viewerRef.value) {
+  if ((!document && !dxfFile) || !viewerRef.value) {
     status.value = 'idle';
     cleanupViewer();
     revokeObjectUrl();
@@ -86,7 +89,9 @@ async function renderDocument() {
   await nextTick();
 
   try {
-    const blob = await downloadCADDocumentDxf(document.id);
+    const blob = dxfFile
+      ? await downloadFile(dxfFile.file_id)
+      : await downloadCADDocumentDxf(document!.id);
     if (token !== loadToken) return;
 
     revokeObjectUrl();

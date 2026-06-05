@@ -139,6 +139,7 @@
     <CADRenderPanel
       v-if="isCadMode"
       :document="cadDocument"
+      :dxfFile="cadDxfFile"
       :planSteps="cadPlanSteps"
       :isBusy="cadBusy"
       :briefSummary="cadBriefSummary"
@@ -184,7 +185,6 @@ import { copyToClipboard } from '../utils/dom'
 import { SessionStatus } from '../types/response';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import LoadingIndicator from '@/components/ui/LoadingIndicator.vue';
-import { isCADIntent } from '@/utils/cadIntent';
 import { cadPrompts } from '@/constants/cadPrompts';
 import {
   applyCADOperation,
@@ -192,6 +192,7 @@ import {
   type CADPlanStep,
   type MechanicalCADDocument,
 } from '@/api/cad';
+import { downloadFile } from '@/api/file';
 
 const router = useRouter()
 const { t } = useI18n()
@@ -200,6 +201,9 @@ const { showSessionFileList } = useSessionFileList()
 const { hideFilePanel } = useFilePanel()
 
 // Create initial state factory
+type CADProgressStatus = 'pending' | 'running' | 'done' | 'failed';
+type CADProgressStep = CADPlanStep & { status: CADProgressStatus };
+
 const createInitialState = () => ({
   inputMessage: '',
   isLoading: false,
@@ -222,7 +226,8 @@ const createInitialState = () => ({
   isCadMode: false,
   cadBusy: false,
   cadDocument: null as MechanicalCADDocument | null,
-  cadPlanSteps: [] as Array<CADPlanStep & { status: 'pending' | 'running' | 'done' }>,
+  cadDxfFile: null as FileInfo | null,
+  cadPlanSteps: [] as CADProgressStep[],
   lastCadRequestKey: ''
 });
 
@@ -251,6 +256,7 @@ const {
   isCadMode,
   cadBusy,
   cadDocument,
+  cadDxfFile,
   cadPlanSteps,
   lastCadRequestKey
 } = toRefs(state);
@@ -260,7 +266,7 @@ const toolPanel = ref<InstanceType<typeof ToolPanel>>()
 const simpleBarRef = ref<InstanceType<typeof SimpleBar>>();
 const cadBriefSummary = computed(() => {
   const brief = cadDocument.value?.brief;
-  if (!brief) return cadBusy.value ? 'Parsing design brief' : 'No design brief yet';
+  if (!brief) return cadBusy.value ? 'Generating DXF drawing' : 'DXF generation process';
   return `${brief.part_type || 'part'} | ${brief.features.length} parsed features`;
 });
 
@@ -327,41 +333,160 @@ const handleToolEvent = (toolData: ToolEventData) => {
     }
     lastTool.value = toolContent;
   }
+  syncCadToolResult(toolContent);
   if (toolContent.name !== 'message') {
     lastNoMessageTool.value = toolContent;
     if (realTime.value && !isCadMode.value) {
       toolPanel.value?.showToolPanel(toolContent, true);
     }
   }
-  syncCadToolResult(toolContent);
 }
 
 function syncCadToolResult(toolContent: ToolContent) {
   if (toolContent.name !== 'cad') return;
 
-  isCadMode.value = true;
-  cadBusy.value = toolContent.status === 'calling';
+  const functionName = toolContent.function;
+  const isDxfGeneration = isDxfGenerationFunction(functionName);
+  const isDxfProcess = isDxfGeneration || functionName === 'cad_analyze_request' || functionName === 'cad_validate_dxf';
+  if (!isDxfProcess) return;
 
   const result = toolContent.content?.result;
   const data = result?.data ?? result;
+  const success = result?.success !== false;
 
-  if (toolContent.status !== 'called' || !data) return;
+  if (functionName === 'cad_analyze_request') {
+    if (toolContent.status === 'calling') {
+      updateCadProgressStep('analyze', '分析绘图要求', '解析尺寸、结构和出图约束', 'running');
+      return;
+    }
 
-  if (toolContent.function === 'cad_analyze_request' && Array.isArray(data.operations)) {
-    cadPlanSteps.value = data.operations.map((operation: any, index: number) => ({
-      id: String(index + 1),
-      title: operation.operation?.replace(/_/g, ' ') || `CAD step ${index + 1}`,
-      description: JSON.stringify(operation.params ?? {}),
-      operation,
-      status: 'done',
-    }));
+    if (toolContent.status === 'called') {
+      if (Array.isArray(data?.operations)) {
+        cadPlanSteps.value = data.operations.map((operation: any, index: number) => ({
+          id: `plan-${index + 1}`,
+          title: operation.operation?.replace(/_/g, ' ') || `CAD step ${index + 1}`,
+          description: JSON.stringify(operation.params ?? {}),
+          operation,
+          status: 'done',
+        }));
+      } else {
+        updateCadProgressStep('analyze', '分析绘图要求', result?.message || 'CAD request analyzed', success ? 'done' : 'failed');
+      }
+    }
+    return;
   }
 
-  if (toolContent.function === 'cad_generate_dxf' && data.document) {
-    cadDocument.value = data.document as MechanicalCADDocument;
-    cadPlanSteps.value = [];
+  if (isDxfGeneration && toolContent.status === 'calling') {
+    isCadMode.value = true;
+    cadBusy.value = true;
+    toolPanel.value?.hideToolPanel();
+    updateCadProgressStep(
+      'generate-dxf',
+      functionName === 'cad_generate_dxf_from_spec' ? '生成最终 DXF' : '创建 DXF 文件',
+      getCadToolDescription(toolContent),
+      'running',
+    );
+    updateCadProgressStep('validate-dxf', '校验 DXF 文件', '等待生成完成后解析校验', 'pending');
+    return;
+  }
+
+  if (isDxfGeneration && toolContent.status === 'called') {
+    isCadMode.value = true;
+    cadBusy.value = false;
+    const outputPath = data?.output_path || toolContent.args?.output_path || '/home/ubuntu/output.dxf';
+    updateCadProgressStep(
+      'generate-dxf',
+      functionName === 'cad_generate_dxf_from_spec' ? '生成最终 DXF' : '创建 DXF 文件',
+      `${success ? '已写入' : '生成失败'}: ${outputPath}`,
+      success ? 'done' : 'failed',
+    );
+    if (data?.validation) {
+      updateCadProgressStep(
+        'validate-dxf',
+        '校验 DXF 文件',
+        getCadValidationDescription(data.validation),
+        data.validation.has_geometry === false ? 'failed' : 'done',
+      );
+    }
+    if (data?.document) {
+      cadDocument.value = data.document as MechanicalCADDocument;
+    }
+    const dxfFile = getCadDxfFile(data);
+    if (dxfFile) {
+      cadDxfFile.value = dxfFile;
+    }
+    return;
+  }
+
+  if (functionName === 'cad_validate_dxf') {
+    isCadMode.value = true;
+    cadBusy.value = toolContent.status === 'calling';
+    toolPanel.value?.hideToolPanel();
+    if (toolContent.status === 'calling') {
+      updateCadProgressStep('validate-dxf', '校验 DXF 文件', getCadToolDescription(toolContent), 'running');
+      return;
+    }
+    updateCadProgressStep(
+      'validate-dxf',
+      '校验 DXF 文件',
+      data ? getCadValidationDescription(data) : result?.message || 'DXF validation finished',
+      success ? 'done' : 'failed',
+    );
+    const dxfFile = getCadDxfFile(data);
+    if (dxfFile) {
+      cadDxfFile.value = dxfFile;
+    }
     cadBusy.value = false;
   }
+}
+
+function isDxfGenerationFunction(functionName: string) {
+  return functionName === 'cad_generate_dxf' || functionName === 'cad_generate_dxf_from_spec';
+}
+
+function updateCadProgressStep(
+  id: string,
+  title: string,
+  description: string,
+  status: CADProgressStatus,
+) {
+  const operation: CADPlanStep['operation'] = {
+    operation: id,
+    params: { description },
+  };
+  const existing = cadPlanSteps.value.find(step => step.id === id);
+  if (existing) {
+    existing.title = title;
+    existing.description = description;
+    existing.status = status;
+    existing.operation = operation;
+    return;
+  }
+  cadPlanSteps.value.push({ id, title, description, operation, status });
+}
+
+function getCadToolDescription(toolContent: ToolContent) {
+  const target = toolContent.args?.output_path || toolContent.args?.file;
+  if (target) return String(target);
+  if (toolContent.args?.title) return String(toolContent.args.title);
+  return '准备几何、图层、标注并写入 DXF';
+}
+
+function getCadValidationDescription(validation: any) {
+  const entityCount = validation?.entity_count ?? validation?.entities;
+  const version = validation?.dxf_version;
+  const entityTypes = Array.isArray(validation?.entity_types) ? validation.entity_types.join(', ') : '';
+  const parts = [
+    version ? `版本 ${version}` : '',
+    entityCount !== undefined ? `${entityCount} 个实体` : '',
+    entityTypes,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(' | ') : 'DXF validation passed';
+}
+
+function getCadDxfFile(data: any): FileInfo | null {
+  const files = Array.isArray(data?.files) ? data.files : [];
+  return files.find((file: FileInfo) => file.filename?.toLowerCase().endsWith('.dxf')) ?? null;
 }
 
 // Handle step event
@@ -415,11 +540,14 @@ const handleEvent = (event: AgentSSEEvent) => {
   } else if (event.event === 'step') {
     handleStepEvent(event.data as StepEventData);
   } else if (event.event === 'done') {
-    //isLoading.value = false;
+    isLoading.value = false;
+    cancelCurrentChat.value = null;
   } else if (event.event === 'wait') {
-    // TODO: handle wait event
+    isLoading.value = false;
+    cancelCurrentChat.value = null;
   } else if (event.event === 'error') {
     handleErrorEvent(event.data as ErrorEventData);
+    cancelCurrentChat.value = null;
   } else if (event.event === 'title') {
     handleTitleEvent(event.data as TitleEventData);
   } else if (event.event === 'plan') {
@@ -464,11 +592,6 @@ const chat = async (message: string = '', files: FileInfo[] = []) => {
         attachments: files
       } as AttachmentsContent,
     });
-  }
-
-  if (message.trim() && isCADIntent(message, files)) {
-    isCadMode.value = true;
-    toolPanel.value?.hideToolPanel();
   }
 
   // Automatically enable follow mode when sending message
@@ -536,8 +659,13 @@ const restoreSession = async () => {
     handleEvent(event);
   }
   realTime.value = true;
-  if (session.status === SessionStatus.RUNNING || session.status === SessionStatus.PENDING) {
+  if (session.status === SessionStatus.RUNNING) {
     await chat();
+  }
+  const sessionFiles = await agentApi.getSessionFiles(sessionId.value);
+  const latestDxf = [...sessionFiles].reverse().find(file => file.filename?.toLowerCase().endsWith('.dxf'));
+  if (latestDxf && isCadMode.value && !cadDocument.value) {
+    cadDxfFile.value = latestDxf;
   }
   agentApi.clearUnreadMessageCount(sessionId.value);
 }
@@ -728,13 +856,16 @@ async function addCenterSlot() {
 }
 
 async function downloadDxf() {
-  if (!cadDocument.value) return;
+  if (!cadDocument.value && !cadDxfFile.value) return;
   try {
-    const blob = await downloadCADDocumentDxf(cadDocument.value.id);
+    const blob = cadDxfFile.value
+      ? await downloadFile(cadDxfFile.value.file_id)
+      : await downloadCADDocumentDxf(cadDocument.value!.id);
     const url = URL.createObjectURL(blob);
     const link = window.document.createElement('a');
     link.href = url;
-    link.download = `${cadDocument.value.title.replace(/\s+/g, '_').toLowerCase() || cadDocument.value.id}.dxf`;
+    link.download = cadDxfFile.value?.filename
+      || `${cadDocument.value!.title.replace(/\s+/g, '_').toLowerCase() || cadDocument.value!.id}.dxf`;
     link.click();
     URL.revokeObjectURL(url);
   } catch (error: any) {
@@ -744,6 +875,7 @@ async function downloadDxf() {
 
 function resetCadWorkspace() {
   cadDocument.value = null;
+  cadDxfFile.value = null;
   cadPlanSteps.value = [];
   lastCadRequestKey.value = '';
 }

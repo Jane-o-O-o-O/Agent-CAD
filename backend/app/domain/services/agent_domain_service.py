@@ -205,6 +205,8 @@ class AgentDomainService:
                     task = await self._create_task(session)
                     if not task:
                         raise RuntimeError("Failed to create task")
+                    session.status = SessionStatus.RUNNING
+                    await self._session_repository.update_status(session_id, SessionStatus.RUNNING)
                 
                 await self._session_repository.update_latest_message(session_id, message, timestamp or datetime.now())
 

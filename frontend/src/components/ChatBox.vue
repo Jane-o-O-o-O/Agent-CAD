@@ -46,13 +46,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, computed } from 'vue';
 import SendIcon from './icons/SendIcon.vue';
 import ChatBoxFiles from './ChatBoxFiles.vue';
 import { Paperclip } from 'lucide-vue-next';
 import type { FileInfo } from '../api/file';
 
-const hasTextInput = ref(false);
 const isComposing = ref(false);
 const chatBoxFileListRef = ref();
 
@@ -67,12 +66,14 @@ const props = defineProps<{
 }>();
 
 const sendEnabled = computed(() => {
-    const hasFiles = (props.attachments?.length ?? 0) > 0;
+    const hasTextInput = props.modelValue.trim() !== '';
+    const displayedFiles = chatBoxFileListRef.value?.getFiles?.() ?? props.attachments ?? [];
+    const hasFiles = displayedFiles.length > 0;
     const allUploaded = chatBoxFileListRef.value?.isAllUploaded ?? true;
     if (props.allowSendFilesOnly) {
-        return hasTextInput.value || (hasFiles && allUploaded);
+        return hasTextInput || (hasFiles && allUploaded);
     }
-    return hasTextInput.value && (!hasFiles || allUploaded);
+    return hasTextInput && (!hasFiles || allUploaded);
 });
 
 const emit = defineEmits<{
@@ -108,9 +109,6 @@ const uploadFile = () => {
     chatBoxFileListRef.value?.uploadFile();
 };
 
-watch(() => props.modelValue, (value) => {
-    hasTextInput.value = value.trim() !== '';
-});
 </script>
 
 <style scoped>
