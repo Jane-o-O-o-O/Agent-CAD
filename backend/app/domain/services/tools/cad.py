@@ -212,7 +212,7 @@ class CADToolkit(BaseToolkit):
             file: Absolute sandbox path of the DXF file to validate.
             expected_summary: Short natural-language summary of expected geometry.
         """
-        read_result = await self.sandbox.file_read(file=file)
+        read_result = await self.sandbox.file_read(file=file, max_length=None)
         if not read_result.success:
             return ToolResult(success=False, message=f"Failed to read DXF file: {file}")
 

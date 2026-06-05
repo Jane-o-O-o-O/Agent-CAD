@@ -38,6 +38,8 @@ from app.domain.services.skills import SkillRegistry
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
+MAX_CONVERSATION_HISTORY_MESSAGES = 12
+MAX_CONVERSATION_HISTORY_CHARS = 12000
 
 class AgentTaskRunner(TaskRunner):
     """Agent task that can be cancelled"""
@@ -66,6 +68,7 @@ class AgentTaskRunner(TaskRunner):
         self._mcp_repository = mcp_repository
         self._cad_service = cad_service
         self._mcp_tool = MCPToolkit()
+        self._pending_output_files: List[FileInfo] = []
         settings = get_settings()
         skill_registry = None
         if settings.skills_enabled:
@@ -119,6 +122,53 @@ class AgentTaskRunner(TaskRunner):
             return file_info
         except Exception as e:
             logger.exception(f"Agent {self._agent_id} failed to sync file: {e}")
+
+    async def _sync_cad_output_file(self, file_path: Optional[str]) -> Optional[FileInfo]:
+        """Sync generated CAD output into session files and pending message attachments."""
+        if not file_path:
+            return None
+        file_info = await self._sync_file_to_storage(file_path)
+        if not file_info:
+            return None
+        if not any(existing.file_id == file_info.file_id for existing in self._pending_output_files):
+            self._pending_output_files.append(file_info)
+        return file_info
+
+    async def _sync_cad_result_files(self, event: ToolEvent) -> None:
+        """Attach generated CAD files to the session when CAD tools return sandbox paths."""
+        if event.status != ToolStatus.CALLED or event.tool_name != "cad" or not event.function_result:
+            return
+
+        raw_result = (
+            event.function_result.model_dump()
+            if hasattr(event.function_result, "model_dump")
+            else event.function_result
+        )
+        if not isinstance(raw_result, dict) or not raw_result.get("success", False):
+            return
+
+        data = raw_result.get("data")
+        if not isinstance(data, dict):
+            return
+
+        candidate_paths = [
+            data.get("output_path"),
+            data.get("file"),
+        ]
+        validation = data.get("validation")
+        if isinstance(validation, dict):
+            candidate_paths.append(validation.get("file"))
+
+        synced_files = []
+        for file_path in candidate_paths:
+            if isinstance(file_path, str) and file_path.lower().endswith(".dxf"):
+                file_info = await self._sync_cad_output_file(file_path)
+                if file_info:
+                    synced_files.append(file_info.model_dump())
+
+        if synced_files:
+            raw_result["data"]["files"] = synced_files
+            event.function_result = ToolResult(**raw_result)
     
     async def _sync_file_to_sandbox(self, file_id: str) -> Optional[FileInfo]:
         """Download file from storage to sandbox"""
@@ -138,6 +188,9 @@ class AgentTaskRunner(TaskRunner):
         try:
             if event.attachments:
                 for attachment in event.attachments:
+                    if attachment.file_id:
+                        attachments.append(attachment)
+                        continue
                     file_info = await self._sync_file_to_storage(attachment.file_path)
                     if file_info:
                         attachments.append(file_info)
@@ -158,6 +211,48 @@ class AgentTaskRunner(TaskRunner):
             event.attachments = attachments
         except Exception as e:
             logger.exception(f"Agent {self._agent_id} failed to sync attachments to event: {e}")
+
+    async def _build_conversation_history(self, current_event_id: Optional[str]) -> List[dict[str, str]]:
+        """Build a compact same-session text history for a fresh AgentScope runner."""
+        try:
+            session = await self._session_repository.find_by_id(self._session_id)
+        except Exception as e:
+            logger.warning("Failed to load session history for %s: %s", self._session_id, e)
+            return []
+
+        if not session or not session.events:
+            return []
+
+        history: List[dict[str, str]] = []
+        total_chars = 0
+        for event in reversed(session.events):
+            if event.id == current_event_id:
+                continue
+            if not isinstance(event, MessageEvent):
+                continue
+            if event.role not in ("user", "assistant"):
+                continue
+            content = (event.message or "").strip()
+            if not content:
+                continue
+            if event.attachments:
+                attachment_names = [
+                    attachment.filename or attachment.file_path or attachment.file_id
+                    for attachment in event.attachments
+                    if attachment.filename or attachment.file_path or attachment.file_id
+                ]
+                if attachment_names:
+                    content = f"{content}\nAttachments: {', '.join(attachment_names)}"
+            next_total = total_chars + len(content)
+            if history and next_total > MAX_CONVERSATION_HISTORY_CHARS:
+                break
+            history.append({"role": event.role, "content": content})
+            total_chars = next_total
+            if len(history) >= MAX_CONVERSATION_HISTORY_MESSAGES:
+                break
+
+        history.reverse()
+        return history
     
 
     # TODO: refactor this function
@@ -213,6 +308,7 @@ class AgentTaskRunner(TaskRunner):
                         logger.debug(f"MCP tool_content.result: {event.tool_content.result}")
                         logger.debug(f"MCP tool_content dict: {event.tool_content.model_dump()}")
                 elif event.tool_name == "cad":
+                    await self._sync_cad_result_files(event)
                     if event.function_result:
                         event.tool_content = McpToolContent(
                             result=event.function_result.model_dump()
@@ -243,6 +339,7 @@ class AgentTaskRunner(TaskRunner):
             await self._mcp_tool.initialized(await self._mcp_repository.get_mcp_config())
             while not await task.input_stream.is_empty():
                 event = await self._pop_event(task)
+                self._pending_output_files = []
                 message = ""
                 if isinstance(event, MessageEvent):
                     message = event.message or ""
@@ -251,8 +348,13 @@ class AgentTaskRunner(TaskRunner):
                 logger.info(f"Agent {self._agent_id} received new message: {message[:50]}...")
 
                 message_obj = Message(message=message, attachments=[attachment.file_path for attachment in event.attachments])
+                conversation_history = (
+                    await self._build_conversation_history(event.id)
+                    if isinstance(event, MessageEvent)
+                    else []
+                )
                 
-                async for event in self._run_flow(message_obj):
+                async for event in self._run_flow(message_obj, conversation_history):
                     await self._put_and_add_event(task, event)
                     if isinstance(event, MessageEvent):
                         await self._session_repository.update_latest_message(self._session_id, event.message, event.timestamp)
@@ -282,18 +384,25 @@ class AgentTaskRunner(TaskRunner):
             await self._put_and_add_event(task, ErrorEvent(error=f"Task error: {str(e)}"))
             await self._session_repository.update_status(self._session_id, SessionStatus.COMPLETED)
     
-    async def _run_flow(self, message: Message) -> AsyncGenerator[BaseEvent, None]:
+    async def _run_flow(
+        self,
+        message: Message,
+        conversation_history: Optional[List[dict[str, str]]] = None,
+    ) -> AsyncGenerator[BaseEvent, None]:
         """Process a single message through the agent's flow and yield events"""
         if not message.message:
             logger.warning(f"Agent {self._agent_id} received empty message")
             yield ErrorEvent(error="No message")
             return
 
-        async for event in self._flow.run(message):
+        async for event in self._flow.run(message, conversation_history=conversation_history):
             if isinstance(event, ToolEvent):
                 # TODO: move to tool function
                 await self._handle_tool_event(event)
             elif isinstance(event, MessageEvent):
+                if self._pending_output_files and not event.attachments:
+                    event.attachments = list(self._pending_output_files)
+                    self._pending_output_files = []
                 await self._sync_message_attachments_to_storage(event)
             yield event
 

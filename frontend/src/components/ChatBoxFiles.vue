@@ -95,13 +95,21 @@ interface ExtendedFileInfo extends FileInfo {
     file?: File | null; // Keep reference to original file for retry
 }
 
-const files = ref<ExtendedFileInfo[]>(props.attachments);
+const files = ref<ExtendedFileInfo[]>(toDisplayFiles(props.attachments));
 const fileInput = ref<HTMLInputElement>();
 const scrollContainer = ref<HTMLElement>();
 
 watch(() => props.attachments, (newVal) => {
-    files.value = newVal;
+    files.value = toDisplayFiles(newVal);
 });
+
+function toDisplayFiles(attachments: FileInfo[]): ExtendedFileInfo[] {
+    return attachments.map(file => ({
+        ...file,
+        status: (file as ExtendedFileInfo).status ?? 'success',
+        file: (file as ExtendedFileInfo).file ?? null
+    }));
+}
 
 // Scroll state
 const canScrollLeft = ref(false);
@@ -119,7 +127,7 @@ const syncAttachments = () => {
     emit(
         'update:attachments',
         files.value
-            .filter(file => file.status === 'success')
+            .filter(file => !file.status || file.status === 'success')
             .map(({ status, file, ...attachment }) => attachment)
     );
 };
@@ -267,11 +275,11 @@ onMounted(() => {
 });
 
 const isAllUploaded = computed(() => {
-    return files.value.every(file => file.status === 'success');
+    return files.value.every(file => !file.status || file.status === 'success');
 });
 
 const handleFileClick = (file: ExtendedFileInfo) => {
-    if (file.status === 'success') {
+    if (!file.status || file.status === 'success') {
         showFilePanel(file);
     }
 };

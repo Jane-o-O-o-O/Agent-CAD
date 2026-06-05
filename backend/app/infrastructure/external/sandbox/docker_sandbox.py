@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class DockerSandbox(Sandbox):
     def __init__(self, ip: str = None, container_name: str = None):
         """Initialize Docker sandbox and API interaction client"""
-        self.client = httpx.AsyncClient(timeout=600)
+        self.client = httpx.AsyncClient(timeout=600, trust_env=False)
         self.ip = ip
         self.base_url = f"http://{self.ip}:8080"
         self._vnc_url = f"ws://{self.ip}:5901"
@@ -259,7 +259,8 @@ class DockerSandbox(Sandbox):
         return ToolResult(**response.json())
 
     async def file_read(self, file: str, start_line: int = None, 
-                        end_line: int = None, sudo: bool = False) -> ToolResult:
+                        end_line: int = None, sudo: bool = False,
+                        max_length: int = 10000) -> ToolResult:
         """Read file content
         
         Args:
@@ -267,6 +268,7 @@ class DockerSandbox(Sandbox):
             start_line: Start line number
             end_line: End line number
             sudo: Whether to use sudo privileges
+            max_length: Maximum content length to return. None disables truncation.
             
         Returns:
             File content
@@ -277,7 +279,8 @@ class DockerSandbox(Sandbox):
                 "file": file,
                 "start_line": start_line,
                 "end_line": end_line,
-                "sudo": sudo
+                "sudo": sudo,
+                "max_length": max_length
             }
         )
         return ToolResult(**response.json())
