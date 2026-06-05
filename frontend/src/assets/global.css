@@ -717,6 +717,15 @@ body {
   transform: translateY(-1px);
 }
 
+.cad-session-shortcuts {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.cad-session-shortcuts .cad-home-shortcut-chip {
+  min-width: 0;
+  width: 100%;
+}
+
 .dark .cad-input-dock {
   background: rgba(255, 255, 255, 0.05);
 }
