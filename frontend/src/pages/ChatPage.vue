@@ -117,7 +117,22 @@
           </button>
           <PlanPanel v-if="plan && plan.steps.length > 0" :plan="plan" />
           <ChatBox v-model="inputMessage" :rows="1" @submit="handleSubmit" :isRunning="isLoading" @stop="handleStop"
-            :attachments="attachments" />
+            :attachments="attachments">
+            <template #footer-actions>
+              <div class="cad-home-shortcuts cad-session-shortcuts grid min-w-0 flex-1 items-center gap-1">
+                <button
+                  v-for="prompt in cadPrompts"
+                  :key="prompt.title"
+                  class="cad-home-shortcut-chip"
+                  type="button"
+                  :title="prompt.caption"
+                  @click="usePrompt(prompt.message)">
+                  <component :is="prompt.icon" class="size-3.5 shrink-0" />
+                  <span>{{ prompt.shortTitle }}</span>
+                </button>
+              </div>
+            </template>
+          </ChatBox>
         </div>
       </div>
     </div>
@@ -170,6 +185,7 @@ import { SessionStatus } from '../types/response';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import LoadingIndicator from '@/components/ui/LoadingIndicator.vue';
 import { isCADIntent } from '@/utils/cadIntent';
+import { cadPrompts } from '@/constants/cadPrompts';
 import {
   applyCADOperation,
   downloadCADDocumentDxf,
@@ -414,6 +430,10 @@ const handleEvent = (event: AgentSSEEvent) => {
 
 const handleSubmit = () => {
   chat(inputMessage.value, attachments.value);
+}
+
+const usePrompt = (value: string) => {
+  inputMessage.value = value;
 }
 
 const chat = async (message: string = '', files: FileInfo[] = []) => {
