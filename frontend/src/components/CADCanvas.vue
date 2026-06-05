@@ -1,5 +1,5 @@
 <template>
-  <div class="relative h-full w-full overflow-hidden bg-[#f5f7f6]">
+  <div class="cad-canvas-surface relative h-full w-full overflow-hidden">
     <div ref="viewerRef" class="h-full w-full" aria-label="Professional DXF preview" />
 
     <div
@@ -26,6 +26,8 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { downloadCADDocumentDxf, type MechanicalCADDocument } from '@/api/cad';
 import { downloadFile, type FileInfo } from '@/api/file';
+// @ts-ignore dxf-viewer depends on three at runtime, but this app does not ship top-level three types.
+import { Color } from 'three';
 import type { DxfViewer as DxfViewerClass } from 'dxf-viewer';
 
 const props = defineProps<{
@@ -102,6 +104,7 @@ async function renderDocument() {
     currentViewer.Clear();
     await currentViewer.Load({
       url: objectUrl,
+      fonts: ['/fonts/cad-preview.ttf'],
       progressCbk: (phase) => {
         progressPhase.value = phase;
       },
@@ -127,10 +130,16 @@ async function ensureViewer() {
     viewer = new DxfViewer(viewerRef.value, {
       autoResize: true,
       antialias: true,
-      clearAlpha: 1,
+      clearColor: new Color('#f8faf8'),
+      clearAlpha: 0,
+      canvasAlpha: true,
+      colorCorrection: true,
       blackWhiteInversion: true,
       sceneOptions: {
         suppressPaperSpace: true,
+        textOptions: {
+          curveSubdivision: 4,
+        },
       },
     });
   }
@@ -150,3 +159,16 @@ function revokeObjectUrl() {
   objectUrl = null;
 }
 </script>
+
+<style scoped>
+.cad-canvas-surface {
+  background-color: #f8faf8;
+  background-image:
+    linear-gradient(rgba(37, 99, 70, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 70, 0.08) 1px, transparent 1px),
+    linear-gradient(rgba(37, 99, 70, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 70, 0.14) 1px, transparent 1px);
+  background-position: center;
+  background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+}
+</style>

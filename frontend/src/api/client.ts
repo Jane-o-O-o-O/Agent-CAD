@@ -244,6 +244,7 @@ export interface SSEOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: any;
   headers?: Record<string, string>;
+  retry?: false;
 }
 
 /**
@@ -290,7 +291,8 @@ export const createSSEConnection = async <T = any>(
   const { 
     method = 'GET', 
     body, 
-    headers = {}
+    headers = {},
+    retry,
   } = options;
   
   // Create AbortController for cancellation
@@ -372,6 +374,9 @@ export const createSSEConnection = async <T = any>(
           
           if (onError) {
             onError(error);
+          }
+          if (retry === false) {
+            throw error;
           }
           reject(error);
         },

@@ -99,7 +99,8 @@ export const chatWithSession = async (
         timestamp: Math.floor(Date.now() / 1000), 
         event_id: eventId,
         attachments
-      }
+      },
+      retry: false
     },
     callbacks
   );

@@ -423,17 +423,17 @@ class CADToolkit(BaseToolkit):
         if distance <= 0:
             raise ValueError("Linear dimension start and end points must differ.")
         normal = (-dy / distance, dx / distance)
-        offset = float(dimension.get("offset", 8) or 8)
+        offset = float(dimension.get("offset", 14) or 14)
         dim_start = self._point_tuple(dimension["position"]) if "position" in dimension else (
             start[0] + normal[0] * offset,
             start[1] + normal[1] * offset,
         )
         dim_end = (dim_start[0] + dx, dim_start[1] + dy)
         text = str(dimension.get("text") or self._format_number(distance))
-        text_height = float(dimension.get("height", 3.5) or 3.5)
+        text_height = float(dimension.get("height", 4.2) or 4.2)
         text_position = (
-            (dim_start[0] + dim_end[0]) / 2 + normal[0] * text_height,
-            (dim_start[1] + dim_end[1]) / 2 + normal[1] * text_height,
+            (dim_start[0] + dim_end[0]) / 2 + normal[0] * text_height * 1.15,
+            (dim_start[1] + dim_end[1]) / 2 + normal[1] * text_height * 1.15,
         )
 
         self._add_raw_line(modelspace, start, dim_start, layer)
@@ -441,7 +441,11 @@ class CADToolkit(BaseToolkit):
         self._add_raw_line(modelspace, dim_start, dim_end, layer)
         self._add_dimension_tick(modelspace, dim_start, normal, layer)
         self._add_dimension_tick(modelspace, dim_end, normal, layer)
-        modelspace.add_text(text, dxfattribs={"layer": layer, "height": text_height}).set_placement(text_position)
+        text_entity = modelspace.add_text(
+            text,
+            dxfattribs={"layer": layer, "height": text_height},
+        )
+        text_entity.set_placement(text_position, align="MIDDLE_CENTER")
 
     def _add_visible_radial_dimension(self, modelspace, dimension: Dict[str, Any], dimension_type: str) -> None:
         center = self._point_tuple(dimension["center"])
@@ -450,21 +454,23 @@ class CADToolkit(BaseToolkit):
         angle = radians(float(dimension.get("angle", 30) or 30))
         end = (center[0] + cos(angle) * radius, center[1] + sin(angle) * radius)
         leader_end = (
-            center[0] + cos(angle) * radius * 1.6,
-            center[1] + sin(angle) * radius * 1.6,
+            center[0] + cos(angle) * radius * 1.9,
+            center[1] + sin(angle) * radius * 1.9,
         )
         prefix = "DIA" if dimension_type.startswith("diameter") else "R"
         measured = radius * 2 if prefix == "DIA" else radius
         text = str(dimension.get("text") or f"{prefix} {self._format_number(measured)}")
+        text_height = float(dimension.get("height", 4.2) or 4.2)
         self._add_raw_line(modelspace, center, end, layer)
         self._add_raw_line(modelspace, end, leader_end, layer)
-        modelspace.add_text(
+        text_entity = modelspace.add_text(
             text,
-            dxfattribs={"layer": layer, "height": float(dimension.get("height", 3.5) or 3.5)},
-        ).set_placement(leader_end)
+            dxfattribs={"layer": layer, "height": text_height},
+        )
+        text_entity.set_placement(leader_end, align="MIDDLE_LEFT")
 
     def _add_dimension_tick(self, modelspace, point: Tuple[float, float], normal: Tuple[float, float], layer: str) -> None:
-        size = 2.5
+        size = 3.2
         tangent = (normal[1], -normal[0])
         self._add_raw_line(
             modelspace,

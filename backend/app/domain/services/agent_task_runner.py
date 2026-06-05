@@ -8,6 +8,7 @@ from app.domain.models.message import Message
 from app.domain.models.event import (
     BaseEvent,
     ErrorEvent,
+    MessageDeltaEvent,
     MessageEvent,
     DoneEvent,
     ToolEvent,
@@ -355,6 +356,10 @@ class AgentTaskRunner(TaskRunner):
                 )
                 
                 async for event in self._run_flow(message_obj, conversation_history):
+                    if isinstance(event, MessageDeltaEvent):
+                        await task.output_stream.put(event.model_dump_json())
+                        continue
+
                     await self._put_and_add_event(task, event)
                     if isinstance(event, MessageEvent):
                         await self._session_repository.update_latest_message(self._session_id, event.message, event.timestamp)

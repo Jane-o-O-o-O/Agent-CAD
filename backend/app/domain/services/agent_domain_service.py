@@ -208,6 +208,7 @@ class AgentDomainService:
                     session.status = SessionStatus.RUNNING
                     await self._session_repository.update_status(session_id, SessionStatus.RUNNING)
                 
+                latest_event_id = await task.output_stream.get_latest_id()
                 await self._session_repository.update_latest_message(session_id, message, timestamp or datetime.now())
 
                 message_event = MessageEvent(
