@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from pathlib import Path
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
@@ -36,6 +37,7 @@ class Settings(BaseSettings):
     agentscope_max_retries: int = 3
     model_reasoning_effort: str | None = None
     service_tier: str | None = None
+    deepseek_thinking_type: str | None = "disabled"
     browser_model_name: str | None = None
     claw_model_name: str | None = None
     reasoning_model_name: str | None = None
@@ -153,8 +155,12 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     
     class Config:
-        env_file = ".env"
+        env_file = (
+            str(Path(__file__).resolve().parents[3] / ".env"),
+            str(Path(__file__).resolve().parents[2] / ".env"),
+        )
         env_file_encoding = "utf-8"
+        extra = "ignore"
         
     def validate(self):
         """Validate configuration settings"""
@@ -166,9 +172,9 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     """Get application settings"""
-    if not os.environ.get("OPENAI_API_KEY"):
-        os.environ["OPENAI_API_KEY"] = os.getenv("API_KEY")
     settings = Settings()
+    if not os.environ.get("OPENAI_API_KEY") and settings.api_key:
+        os.environ["OPENAI_API_KEY"] = settings.api_key
     settings.extra_headers = _parse_extra_headers()
     settings.validate()
     return settings 

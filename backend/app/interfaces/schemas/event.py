@@ -9,6 +9,7 @@ from app.domain.models.event import (
     AgentEvent,
     ErrorEvent,
     PlanEvent,
+    MessageDeltaEvent,
     MessageEvent,
     TitleEvent,
     ToolEvent,
@@ -74,6 +75,24 @@ class MessageSSEEvent(BaseSSEEvent):
                 role=event.role,
                 content=event.message,
                 attachments=[await FileInfoResponse.from_file_info(attachment) for attachment in event.attachments] if event.attachments else None
+            )
+        )
+
+class MessageDeltaEventData(BaseEventData):
+    role: Literal["assistant"]
+    delta: str
+
+class MessageDeltaSSEEvent(BaseSSEEvent):
+    event: Literal["message_delta"] = "message_delta"
+    data: MessageDeltaEventData
+
+    @classmethod
+    def from_event(cls, event: MessageDeltaEvent) -> Self:
+        return cls(
+            data=MessageDeltaEventData(
+                **BaseEventData.base_event_data(event),
+                role=event.role,
+                delta=event.delta,
             )
         )
 
@@ -176,6 +195,7 @@ AgentSSEEvent = Union[
     CommonEventData,
     PlanSSEEvent,
     MessageSSEEvent,
+    MessageDeltaSSEEvent,
     TitleSSEEvent,
     ToolSSEEvent,
     StepSSEEvent,

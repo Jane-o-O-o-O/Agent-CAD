@@ -106,11 +106,24 @@ def _apply_chat_request_defaults(body: dict, settings) -> dict:
     configured_model = settings.claw_model_name or settings.model_name
     if configured_model and body.get("model") in ("default", "manus-proxy/default", None):
         body = {**body, "model": configured_model}
+    if _is_deepseek_request(body, settings) and settings.deepseek_thinking_type:
+        if isinstance(body.get("extra_body"), dict):
+            body = {**body, **body["extra_body"]}
+            body.pop("extra_body", None)
+        thinking = dict(body.get("thinking") or {})
+        thinking.setdefault("type", settings.deepseek_thinking_type)
+        body = {**body, "thinking": thinking}
     if settings.model_reasoning_effort and "reasoning_effort" not in body:
         body = {**body, "reasoning_effort": settings.model_reasoning_effort}
     if settings.service_tier and "service_tier" not in body:
         body = {**body, "service_tier": settings.service_tier}
     return body
+
+
+def _is_deepseek_request(body: dict, settings) -> bool:
+    model_name = str(body.get("model") or settings.model_name or "").lower()
+    api_base = (settings.api_base or "").lower()
+    return "deepseek" in model_name or "api.deepseek.com" in api_base
 
 
 @router.post("/v1/chat/completions")

@@ -26,6 +26,7 @@ from app.domain.models.event import (
     BaseEvent,
     DoneEvent,
     ErrorEvent,
+    MessageDeltaEvent,
     MessageEvent,
     ToolEvent,
     ToolStatus,
@@ -146,7 +147,10 @@ class AgentScopeFlow(BaseFlow):
 
         async for event in self._agent.reply_stream(UserMsg("user", content)):
             if isinstance(event, TextBlockDeltaEvent):
-                text_parts.append(event.delta)
+                delta = event.delta or ""
+                if delta:
+                    text_parts.append(delta)
+                    yield MessageDeltaEvent(delta=delta)
                 continue
 
             if isinstance(event, ToolCallStartEvent):

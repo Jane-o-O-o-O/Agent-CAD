@@ -166,6 +166,7 @@ import {
   StepEventData,
   ToolEventData,
   MessageEventData,
+  MessageDeltaEventData,
   ErrorEventData,
   TitleEventData,
   PlanEventData,
@@ -218,6 +219,7 @@ const createInitialState = () => ({
   lastMessageTool: undefined as ToolContent | undefined,
   lastTool: undefined as ToolContent | undefined,
   lastEventId: undefined as string | undefined,
+  streamingAssistantIndex: -1,
   cancelCurrentChat: null as (() => void) | null,
   attachments: [] as FileInfo[],
   shareMode: 'private' as 'private' | 'public', // Default to private mode
@@ -248,6 +250,7 @@ const {
   lastNoMessageTool,
   lastTool,
   lastEventId,
+  streamingAssistantIndex,
   cancelCurrentChat,
   attachments,
   shareMode,
@@ -297,6 +300,25 @@ const getLastStep = (): StepContent | undefined => {
 
 // Handle message event
 const handleMessageEvent = (messageData: MessageEventData) => {
+  if (messageData.role === 'assistant' && streamingAssistantIndex.value >= 0) {
+    const message = messages.value[streamingAssistantIndex.value];
+    if (message?.type === 'assistant') {
+      Object.assign(message.content, {
+        ...messageData,
+      } as MessageContent);
+      streamingAssistantIndex.value = -1;
+      if (messageData.attachments?.length > 0) {
+        messages.value.push({
+          type: 'attachments',
+          content: {
+            ...messageData
+          } as AttachmentsContent,
+        });
+      }
+      return;
+    }
+  }
+
   messages.value.push({
     type: messageData.role,
     content: {
@@ -340,6 +362,29 @@ const handleToolEvent = (toolData: ToolEventData) => {
       toolPanel.value?.showToolPanel(toolContent, true);
     }
   }
+}
+
+const handleMessageDeltaEvent = (messageData: MessageDeltaEventData) => {
+  if (!messageData.delta) return;
+
+  if (streamingAssistantIndex.value < 0) {
+    streamingAssistantIndex.value = messages.value.length;
+    messages.value.push({
+      type: 'assistant',
+      content: {
+        content: '',
+        role: 'assistant',
+        timestamp: messageData.timestamp,
+      } as MessageContent,
+    });
+  }
+
+  const message = messages.value[streamingAssistantIndex.value];
+  if (message?.type !== 'assistant') {
+    streamingAssistantIndex.value = -1;
+    return;
+  }
+  (message.content as MessageContent).content += messageData.delta;
 }
 
 function syncCadToolResult(toolContent: ToolContent) {
@@ -535,18 +580,23 @@ const handlePlanEvent = (planData: PlanEventData) => {
 const handleEvent = (event: AgentSSEEvent) => {
   if (event.event === 'message') {
     handleMessageEvent(event.data as MessageEventData);
+  } else if (event.event === 'message_delta') {
+    handleMessageDeltaEvent(event.data as MessageDeltaEventData);
   } else if (event.event === 'tool') {
     handleToolEvent(event.data as ToolEventData);
   } else if (event.event === 'step') {
     handleStepEvent(event.data as StepEventData);
   } else if (event.event === 'done') {
     isLoading.value = false;
+    streamingAssistantIndex.value = -1;
     cancelCurrentChat.value = null;
   } else if (event.event === 'wait') {
     isLoading.value = false;
+    streamingAssistantIndex.value = -1;
     cancelCurrentChat.value = null;
   } else if (event.event === 'error') {
     handleErrorEvent(event.data as ErrorEventData);
+    streamingAssistantIndex.value = -1;
     cancelCurrentChat.value = null;
   } else if (event.event === 'title') {
     handleTitleEvent(event.data as TitleEventData);
