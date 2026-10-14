@@ -46,6 +46,7 @@ from app.domain.services.prompts.system import SYSTEM_PROMPT
 from app.domain.services.skills import SkillRegistry
 from app.domain.services.tools.browser import BrowserToolkit
 from app.domain.services.tools.cad import CADToolkit
+from app.domain.services.tools.cad_v2 import CADV2Toolkit
 from app.domain.services.tools.data_processor import DataProcessorToolkit
 from app.domain.services.tools.file import FileToolkit
 from app.domain.services.tools.mcp import MCPToolkit
@@ -88,6 +89,7 @@ class AgentScopeFlow(BaseFlow):
                 user_id=user_id,
                 session_id=session_id,
             ),
+            CADV2Toolkit(user_id=user_id),
             MessageToolkit(),
             mcp_tool,
         ]
