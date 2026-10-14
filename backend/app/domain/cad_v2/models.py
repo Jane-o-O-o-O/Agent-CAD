@@ -291,6 +291,63 @@ class Constraint(StrictModel):
         return self
 
 
+class AssemblyPart(StrictModel):
+    """Reusable, single-solid definition sourced from the feature graph."""
+    id: Identifier
+    name: str = Field(min_length=1, max_length=200)
+    feature_id: Identifier
+    color: tuple[float, float, float, float] = (0.35, 0.55, 0.8, 1.0)
+    material: str | None = Field(default=None, max_length=200)
+    expected_geometry: ExpectedGeometry = Field(default_factory=ExpectedGeometry)
+
+    @field_validator("color")
+    @classmethod
+    def bounded_color(cls, value: tuple[float, ...]) -> tuple[float, ...]:
+        if any(not 0 <= channel <= 1 for channel in value):
+            raise ValueError("RGBA color channels must lie between zero and one")
+        return value
+
+
+class AssemblyInstance(StrictModel):
+    id: Identifier
+    part_id: Identifier
+    name: str | None = Field(default=None, max_length=200)
+    transform: TransformParams = Field(default_factory=TransformParams)
+    editable: bool = True
+
+
+class AssemblyMate(StrictModel):
+    """Measured requirements on explicit instance poses, not a free-form solver.
+
+    Fixed compares the complete relative transform. Aligned compares directed
+    local axes and the signed plane offset. Concentric compares axis lines;
+    rotation about, and translation along, that line remain unconstrained.
+    An absent reference instance denotes the world frame.
+    """
+    id: Identifier
+    type: Literal["fixed", "aligned", "concentric"]
+    instance_id: Identifier
+    reference_instance_id: Identifier | None = None
+    origin: Vector3 = (0, 0, 0)
+    reference_origin: Vector3 = (0, 0, 0)
+    axis: Direction3 = (0, 0, 1)
+    reference_axis: Direction3 = (0, 0, 1)
+    offset: Scalar = 0
+    transform: TransformParams = Field(default_factory=TransformParams)
+    tolerance: float = Field(default=1e-4, gt=0, le=1)
+    angular_tolerance: float = Field(default=1e-4, gt=0, le=1)
+
+
+class AssemblyDefinition(StrictModel):
+    id: Identifier = "assembly"
+    name: str = Field(default="Assembly", min_length=1, max_length=200)
+    parts: list[AssemblyPart] = Field(min_length=1, max_length=100)
+    instances: list[AssemblyInstance] = Field(min_length=1, max_length=100)
+    mates: list[AssemblyMate] = Field(default_factory=list, max_length=300)
+    collision_check: bool = True
+    collision_tolerance: float = Field(default=1e-7, ge=0, le=1)
+
+
 class CADDocumentIR(StrictModel):
     schema_version: Literal["2.0"] = "2.0"
     document_id: str = Field(default_factory=lambda: str(uuid4()), min_length=1, max_length=100)
@@ -302,7 +359,17 @@ class CADDocumentIR(StrictModel):
     dependencies: dict[str, list[str]] = Field(default_factory=dict, max_length=500)
     constraints: list[Constraint] = Field(default_factory=list, max_length=1000)
     expected_geometry: ExpectedGeometry = Field(default_factory=ExpectedGeometry)
+    assembly: AssemblyDefinition | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def assembly_default_solid_count(self) -> CADDocumentIR:
+        # Resolve this before model_dump: the executor serializes typed documents
+        # before compiling in a child process, which otherwise loses which fields
+        # came from defaults.
+        if self.assembly is not None and "solids" not in self.expected_geometry.model_fields_set:
+            self.expected_geometry = self.expected_geometry.model_copy(update={"solids": len(self.assembly.instances)})
+        return self
 
     @field_validator("parameters")
     @classmethod

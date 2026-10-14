@@ -37,6 +37,7 @@ class CompiledIR(StrictModel):
     expected_geometry: dict[str, Any]
     constraints: list[dict[str, Any]]
     source_ir: dict[str, Any]
+    assembly: dict[str, Any] | None = None
 
 
 def validate_ir(ir: CADDocumentIR | dict[str, Any]) -> CADDocumentIR:
@@ -114,6 +115,30 @@ def _validate_dependencies(ir: CADDocumentIR) -> None:
     for hole in ir.expected_geometry.holes:
         if hole.feature_id is not None and hole.feature_id not in by_id:
             raise DependencyError("expected hole references unknown feature", feature_id=hole.feature_id)
+    if ir.assembly is not None:
+        assembly = ir.assembly
+        parts = {part.id: part for part in assembly.parts}
+        instances = {instance.id: instance for instance in assembly.instances}
+        if len(parts) != len(assembly.parts) or len(instances) != len(assembly.instances):
+            raise DependencyError("assembly part and instance IDs must be unique within their collections")
+        if len({mate.id for mate in assembly.mates}) != len(assembly.mates):
+            raise DependencyError("assembly mate IDs must be unique")
+        for part in assembly.parts:
+            if shape_kinds.get(part.feature_id) != "solid":
+                raise DependencyError("assembly part must reference a solid feature", feature_id=part.feature_id)
+            if part.expected_geometry.solids != 1:
+                raise ParameterError("an assembly part definition must contain exactly one solid")
+            for hole in part.expected_geometry.holes:
+                if hole.feature_id is not None and hole.feature_id not in by_id:
+                    raise DependencyError("part hole references unknown feature", feature_id=hole.feature_id)
+        for instance in assembly.instances:
+            if instance.part_id not in parts:
+                raise DependencyError("assembly instance references unknown part", details={"instance_id": instance.id, "part_id": instance.part_id})
+        for mate in assembly.mates:
+            if mate.instance_id not in instances or (mate.reference_instance_id is not None and mate.reference_instance_id not in instances):
+                raise DependencyError("assembly mate references unknown instance", details={"mate_id": mate.id})
+            if mate.instance_id == mate.reference_instance_id:
+                raise DependencyError("assembly mate cannot reference its own instance", details={"mate_id": mate.id})
 
 
 def compile_ir(ir: CADDocumentIR | dict[str, Any]) -> CompiledIR:
@@ -221,20 +246,45 @@ def compile_ir(ir: CADDocumentIR | dict[str, Any]) -> CompiledIR:
             depends_on=sorted(set(feature.depends_on + document.dependencies.get(feature.id, []))),
             params=params, validation_conditions=feature.validation_conditions,
         ))
-    expected = document.expected_geometry.model_dump()
-    if expected["bbox"] is not None:
-        expected["bbox"] = vector(expected["bbox"])
-        if any(item <= 0 for item in expected["bbox"]):
-            raise ParameterError("expected bbox dimensions must be positive")
-    for key in ("volume", "volume_min", "volume_max"):
-        if expected[key] is not None:
-            expected[key] = scalar(expected[key], 3)
-            if expected[key] <= 0:
-                raise ParameterError("expected volume must be positive")
-    if expected["volume_min"] is not None and expected["volume_max"] is not None and expected["volume_min"] > expected["volume_max"]:
-        raise ParameterError("minimum volume cannot exceed maximum")
-    expected["tolerance"] *= scale
-    expected["holes"] = [normalize_hole(hole) for hole in expected["holes"]]
+    def normalize_expected(expected: dict[str, Any]) -> dict[str, Any]:
+        expected = deepcopy(expected)
+        if expected["bbox"] is not None:
+            expected["bbox"] = vector(expected["bbox"])
+            if any(item <= 0 for item in expected["bbox"]):
+                raise ParameterError("expected bbox dimensions must be positive")
+        for key in ("volume", "volume_min", "volume_max"):
+            if expected[key] is not None:
+                expected[key] = scalar(expected[key], 3)
+                if expected[key] <= 0:
+                    raise ParameterError("expected volume must be positive")
+        if expected["volume_min"] is not None and expected["volume_max"] is not None and expected["volume_min"] > expected["volume_max"]:
+            raise ParameterError("minimum volume cannot exceed maximum")
+        expected["tolerance"] *= scale
+        expected["holes"] = [normalize_hole(hole) for hole in expected["holes"]]
+        return expected
+
+    expected = normalize_expected(document.expected_geometry.model_dump())
+    assembly = document.assembly.model_dump(mode="json") if document.assembly is not None else None
+    if assembly is not None:
+        # Assembly material is deliberately never fused. Each instance contributes
+        # exactly one solid; the default single-part count does not apply.
+        if "solids" not in document.expected_geometry.model_fields_set:
+            expected["solids"] = len(assembly["instances"])
+        for part in assembly["parts"]:
+            part["expected_geometry"] = normalize_expected(part["expected_geometry"])
+        for instance in assembly["instances"]:
+            instance["transform"]["translation"] = vector(instance["transform"]["translation"])
+            instance["transform"]["rotation"] = vector(instance["transform"]["rotation"], 0)
+        for mate in assembly["mates"]:
+            for key in ("origin", "reference_origin"):
+                mate[key] = vector(mate[key])
+            for key in ("axis", "reference_axis"):
+                mate[key] = direction(mate[key])
+            mate["offset"] = scalar(mate["offset"])
+            mate["transform"]["translation"] = vector(mate["transform"]["translation"])
+            mate["transform"]["rotation"] = vector(mate["transform"]["rotation"], 0)
+            mate["tolerance"] *= scale
+        assembly["collision_tolerance"] *= scale ** 3
     constraints = []
     for constraint in document.constraints:
         item = constraint.model_dump()
@@ -251,11 +301,14 @@ def compile_ir(ir: CADDocumentIR | dict[str, Any]) -> CompiledIR:
         name: value * scale if document.parameters[name].kind == "length" else value
         for name, value in values.items()
     }
+    source_ir = document.model_dump(mode="json")
+    if assembly is not None:
+        source_ir["expected_geometry"]["solids"] = expected["solids"]
     return CompiledIR(
         document_id=document.document_id, features=compiled,
         output_feature=document.output_feature or document.features[-1].id,
         resolved_parameters=normalized_values, expected_geometry=expected,
-        constraints=constraints, source_ir=document.model_dump(mode="json"),
+        constraints=constraints, source_ir=source_ir, assembly=assembly,
     )
 
 
@@ -273,7 +326,7 @@ def compile_to_python(ir: CADDocumentIR | dict[str, Any]) -> str:
         f'IR = json.loads({literal})\n'
         'backend = Build123dBackend()\n'
         'result = backend.build(compile_ir(IR))\n'
-        'report = validate(result)\n'
+        'report = backend.validate(result)\n'
         'if report["status"] != "passed":\n'
         '    raise ConstraintViolationError("Replay validation did not pass", details=report)\n'
         'backend.export(result, Path(sys.argv[1]) if len(sys.argv) > 1 else Path("cad-output"))\n'
@@ -289,10 +342,16 @@ def apply_edits(
     add_features: list[dict[str, Any]] | None = None, delete_features: list[str] | None = None,
     output_feature: str | None = None, expected_geometry: dict[str, Any] | None = None,
     constraints: list[dict[str, Any]] | None = None,
+    instance_patches: dict[str, dict[str, Any]] | None = None,
+    add_instances: list[dict[str, Any]] | None = None,
+    delete_instances: list[str] | None = None,
+    mate_patches: dict[str, dict[str, Any]] | None = None,
 ) -> CADDocumentIR:
     """Apply an atomic validated patch; the caller publishes only after geometry validation."""
     document = validate_ir(ir)
     payload = document.model_dump(mode="json")
+    if document.assembly is not None and "solids" not in document.expected_geometry.model_fields_set:
+        payload["expected_geometry"]["solids"] = len(document.assembly.instances)
     for name, update in (parameters or {}).items():
         if name not in document.parameters:
             raise ParameterError("cannot edit unknown parameter", details={"parameter": name})
@@ -342,6 +401,50 @@ def apply_edits(
         payload["expected_geometry"].update(deepcopy(expected_geometry))
     if constraints is not None:
         payload["constraints"] = deepcopy(constraints)
+    if any((instance_patches, add_instances, delete_instances, mate_patches)):
+        if payload["assembly"] is None:
+            raise ParameterError("instance edits require an assembly document")
+        assembly = payload["assembly"]
+        instances = {instance["id"]: instance for instance in assembly["instances"]}
+        for instance_id, patch in (instance_patches or {}).items():
+            if instance_id not in instances:
+                raise DependencyError("cannot patch unknown instance", details={"instance_id": instance_id})
+            instance = instances[instance_id]
+            if not instance["editable"]:
+                raise ParameterError("instance is not editable", details={"instance_id": instance_id})
+            if set(patch) - {"transform", "name", "part_id"}:
+                raise ParameterError("instance patch contains protected fields", details={"instance_id": instance_id})
+            for key, value in patch.items():
+                if key == "transform":
+                    if not isinstance(value, dict):
+                        raise ParameterError("instance transform patch must be an object")
+                    instance[key].update(deepcopy(value))
+                else:
+                    instance[key] = deepcopy(value)
+        deleted_instances = set(delete_instances or [])
+        for instance_id in deleted_instances:
+            if instance_id not in instances:
+                raise DependencyError("cannot delete unknown instance", details={"instance_id": instance_id})
+            if not instances[instance_id]["editable"]:
+                raise ParameterError("instance is not editable", details={"instance_id": instance_id})
+        original_count = len(assembly["instances"])
+        assembly["instances"] = [i for i in assembly["instances"] if i["id"] not in deleted_instances]
+        assembly["instances"].extend(deepcopy(add_instances or []))
+        if "solids" not in (expected_geometry or {}) and payload["expected_geometry"]["solids"] == original_count:
+            payload["expected_geometry"]["solids"] = len(assembly["instances"])
+        mates = {mate["id"]: mate for mate in assembly["mates"]}
+        for mate_id, patch in (mate_patches or {}).items():
+            if mate_id not in mates:
+                raise DependencyError("cannot patch unknown assembly mate", details={"mate_id": mate_id})
+            if set(patch) - {"origin", "reference_origin", "axis", "reference_axis", "offset", "transform"}:
+                raise ParameterError("mate patch contains protected fields", details={"mate_id": mate_id})
+            for key, value in patch.items():
+                if key == "transform":
+                    if not isinstance(value, dict):
+                        raise ParameterError("mate transform patch must be an object")
+                    mates[mate_id][key].update(deepcopy(value))
+                else:
+                    mates[mate_id][key] = deepcopy(value)
     # Dependent/expected references deliberately remain: dangling references reject
     # a deletion rather than silently weakening the design.
     result = validate_ir(payload)
