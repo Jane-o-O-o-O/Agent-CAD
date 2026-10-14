@@ -2,7 +2,7 @@ import { computed, onBeforeUnmount, ref } from 'vue';
 import {
   cancelCADJob, createCADJob, editCADV2Document, getCADJob, getCADRevision,
   getCADV2Document, listCADRevisions, listCADV2Documents, restoreCADRevision, subscribeCADJob,
-  type CADJob, type CADRevision, type CADV2Document,
+  type CADJob, type CADRevision, type CADV2Document, type CADEditRequest,
 } from '@/api/cadV2';
 
 export const terminalCADJob = (job: CADJob | null) => !!job && ['completed', 'failed', 'cancelled'].includes(job.status);
@@ -124,7 +124,7 @@ export function useCADV2Workspace() {
     finally { if (epoch === workspaceEpoch) submitting.value = false; }
   }
   async function generate(prompt: string) { await run(() => createCADJob(prompt)); }
-  async function edit(edit: { prompt?: string; parameters?: Record<string, number> }) {
+  async function edit(edit: CADEditRequest) {
     if (!document.value?.current_revision || historical.value) return;
     const id = document.value.id, expected = document.value.current_revision;
     await run(() => editCADV2Document(id, expected, edit));

@@ -1,7 +1,9 @@
 import { apiClient, createSSEConnection, type ApiResponse, type SSECallbacks } from './client';
 
 export type CADJobStatus = 'created' | 'queued' | 'running' | 'validating' | 'repairing' | 'completed' | 'failed' | 'cancelled';
-export type CADArtifactFormat = 'step' | 'stl' | 'glb' | 'ir' | 'python';
+export type CADArtifactFormat = 'step' | 'stl' | 'glb' | 'ir' | 'python' | 'dxf' | 'svg' | 'bom_json' | 'bom_csv';
+export interface CADInstance { id: string; part_id: string; name?: string | null; editable: boolean; transform: { translation: Array<number | string>; rotation: Array<number | string> } }
+export interface CADEditRequest { prompt?: string; parameters?: Record<string, number>; clarification_job_id?: string; instance_patches?: Record<string, { transform?: { translation?: number[]; rotation?: number[] } }> }
 export interface CADV2Error { code?: string; type?: string; message: string; feature_id?: string; details?: unknown }
 export interface CADParameter {
   kind: 'length' | 'angle' | 'integer' | 'scalar';
@@ -18,6 +20,7 @@ export interface CADIR {
   units: string;
   parameters: Record<string, CADParameter>;
   features: Array<{ id?: string; feature_id?: string; type?: string; [key: string]: unknown }>;
+  assembly?: { name?: string; instances: CADInstance[]; parts: Array<{ id: string; name?: string; material?: string; color?: number[] }> } | null;
   [key: string]: unknown;
 }
 export interface CADValidationCheck {
@@ -96,7 +99,7 @@ export async function listCADRevisions(id: string): Promise<CADRevision[]> {
 export async function getCADRevision(documentId: string, revisionId: string): Promise<CADRevision> {
   return unwrap(await apiClient.get<ApiResponse<CADRevision>>(`${root}/documents/${segment(documentId)}/revisions/${segment(revisionId)}`));
 }
-export async function editCADV2Document(documentId: string, expectedRevision: string, edit: { prompt?: string; parameters?: Record<string, number> }): Promise<CADJob> {
+export async function editCADV2Document(documentId: string, expectedRevision: string, edit: CADEditRequest): Promise<CADJob> {
   return unwrap(await apiClient.post<ApiResponse<CADJob>>(`${root}/documents/${segment(documentId)}/edits`, {
     ...edit, expected_revision: expectedRevision, request_id: crypto.randomUUID(),
   }));
