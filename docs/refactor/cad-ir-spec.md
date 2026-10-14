@@ -47,10 +47,10 @@ Selectors use `kind: edge|face`, optional `geometry_type` (the kernel geometry n
 - `bbox`: three positive dimensions, including parameter expressions.
 - `solids`: expected positive integer, default 1.
 - `volume`, `volume_min`, `volume_max`: positive volume expectations.
-- `holes`: groups containing `diameter`, `positions`, `direction`, `through`, optional `depth` and `feature_id`.
+- `holes`: groups containing `diameter`, `positions`, `direction`, `through`, optional `depth` and `feature_id`. A nonempty list is the complete expected final hole-profile inventory, not a subset. The validator counts unique inward full cylindrical profiles by axis and radius; complex counterbores may involve several profiles and need an explicit inventory.
 - `tolerance`: absolute linear tolerance in document units, default 0.0001.
 
-Constraints have `id`, `type` (`dimension`, `volume`, `solid_count`, `hole`, `symmetry`, `distance`, `custom`), optional `feature_id`, `expected`, `axis`, `tolerance`, `description`. Typed constraint declarations do not themselves prove geometry correctness. The geometry validator returns measured evidence or explicitly `unverified` for unsupported checks. Feature `validation_conditions` are likewise declarations, not a success signal. Refer to `geometry-validation.md` for actual verification coverage.
+Constraints have `id`, `type` (`dimension`, `volume`, `solid_count`, `hole`, `symmetry`, `distance`, `custom`), optional `feature_id`, `expected`, `axis`, `tolerance`, `description`. A `hole` constraint requires the same typed hole payload as `expected_geometry.holes` and uses the same expression and unit normalization; blind holes require positive depth. Typed constraint declarations do not themselves prove geometry correctness. The geometry validator returns measured evidence or explicitly `unverified` for unsupported checks. Feature `validation_conditions` are likewise declarations, not a success signal. Refer to `geometry-validation.md` for actual verification coverage.
 
 Keep editable dimensions and their expectations linked to the same parameter expression. Changing a hole diameter should change the geometric feature and the corresponding expectation, while retaining board dimensions and centres. Literal expectations stay fixed when a feature is directly patched: a conflicting edit must fail geometry validation rather than change the expected answer.
 
@@ -110,9 +110,9 @@ script = compile_to_python(ir_dict)
 edited = apply_edits(ir_dict, parameters={"hole_diameter": 8})
 ```
 
-`CompiledIR` contains numeric normalized `features`, `resolved_parameters`, `expected_geometry`, `constraints`, output ID and original `source_ir`. Replay Python is a fixed trusted program plus a JSON literal; injected metadata remains inert data. Replay needs the installed project and its CAD dependencies.
+`CompiledIR` contains numeric normalized `features`, `resolved_parameters`, `expected_geometry`, `constraints`, output ID and original `source_ir`. Replay Python is a fixed trusted program plus a JSON literal; injected metadata remains inert data. Replay needs the installed project and its CAD dependencies. Run `python model.py /path/to/output`; it validates the rebuilt B-Rep before export and refuses export when any constraint fails or remains unverified.
 
-`apply_edits` copies the document, applies parameter edits, partial feature params, additions or deletions, and compiles before returning. It respects editability and cannot change protected feature fields (`id`, `type`, verification expectations). It never removes dangling references or weakens requirements automatically. Geometry execution and immutable revision publication happen in the application service; failed edits do not mutate the supplied document.
+`apply_edits` copies the document, applies parameter edits, partial feature params, additions or deletions, an optional explicit `output_feature` switch, and compiles before returning. It respects editability and cannot change protected feature fields (`id`, `type`, verification expectations). It never removes dangling references or weakens requirements automatically. Geometry execution and immutable revision publication happen in the application service; failed edits do not mutate the supplied document.
 
 ## Error taxonomy and tests
 
