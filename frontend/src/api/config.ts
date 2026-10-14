@@ -6,6 +6,7 @@ export interface ClientConfigResponse {
   github_repository_url: string
   google_analytics_id: string | null
   claw_enabled: boolean
+  cad_v2_standalone?: boolean
 }
 
 let clientConfigCache: ClientConfigResponse | null = null

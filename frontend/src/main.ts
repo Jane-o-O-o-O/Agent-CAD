@@ -48,6 +48,11 @@ export const router = createRouter({
           component: CADPage,
           meta: { requiresAuth: true }
         },
+        {
+          path: 'cad-v2',
+          component: () => import('./pages/CADV2Page.vue'),
+          meta: { requiresAuth: true }
+        },
         { 
           path: ':sessionId', 
           component: ChatPage,

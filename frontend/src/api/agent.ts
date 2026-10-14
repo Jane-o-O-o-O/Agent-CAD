@@ -75,7 +75,7 @@ export const getVNCUrl = async (
   expireMinutes: number = 15
 ): Promise<string> => {
     const signedUrlResponse = await createVncSignedUrl(sessionId, expireMinutes);
-    const wsBaseUrl = API_CONFIG.host.replace(/^http/, 'ws');
+    const wsBaseUrl = (API_CONFIG.host || window.location.origin).replace(/^http/, 'ws');
     return `${wsBaseUrl}${signedUrlResponse.signed_url}`;
 }
 
