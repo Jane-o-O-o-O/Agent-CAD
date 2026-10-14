@@ -37,6 +37,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /app/__pycache__  # Avoid overwriting cache files
       - /app/.venv  # Avoid overwriting virtual environment
+      - cad_v2_data:/var/lib/agent-cad
     ports:
       - "8000:8000"
       - "5678:5678" # Debug port
@@ -64,6 +65,7 @@ services:
       - MANUS_API_BASE_URL=http://backend:8000
       - CLAW_API_KEY=${CLAW_DEV_API_KEY:-manus-dev-api-key-changeme}
       - DATA_PROCESSOR_BASE_URL=http://data-processor:8010
+      - CAD_V2_DATA_DIR=/var/lib/agent-cad
 
   sandbox:
     build:
@@ -133,6 +135,7 @@ services:
       - manus-network
 
 volumes:
+  cad_v2_data:
   mongodb_data:
     name: manus-mongodb-data
 

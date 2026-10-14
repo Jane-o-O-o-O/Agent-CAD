@@ -124,7 +124,10 @@ mcp.json
 !frontend/src/lib/
 
 uv.lock
+!backend/uv.lock
 specs
 
 # Local smoke-test scratch outputs
 tmp_*/
+.cad-v2-data/
+backend/.venv-cad/

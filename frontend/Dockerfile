@@ -1,5 +1,5 @@
 # Use Node.js as base image
-FROM node:18-alpine as build-stage
+FROM node:24-alpine as build-stage
 
 # Set working directory
 WORKDIR /app
@@ -13,8 +13,8 @@ RUN npm ci
 # Copy project files
 COPY . .
 
-# Build application - skip type checking
-RUN npm run build
+# Match the verified Node runtime and reject invalid TypeScript before packaging.
+RUN npm run type-check && npm run build
 
 # Use nginx as production environment image
 FROM nginx:stable-alpine as production-stage
@@ -33,4 +33,4 @@ RUN chmod +x /docker-entrypoint.sh
 EXPOSE 80
 
 # Start nginx with environment variable substitution
-CMD ["/docker-entrypoint.sh"] 
+CMD ["/docker-entrypoint.sh"]
