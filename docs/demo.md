@@ -1,20 +1,15 @@
-# ✨ 场景演示
+# 场景示例
 
-## 电脑接管
+## CAD 工程工作流
 
-> 任务: 看一下知乎热搜
+在 CAD 工作台中创建参数化零件、修改尺寸并查看三维模型，完成几何校验后导出工程文件。
 
-[](https://raw.githubusercontent.com/Simpleyyt/picgo-image/master/takeover.mp4 ':include controls width="100%"')
+详见 [CAD 技术设计](agent-cad-technical-design.md)。
 
 ## 文件处理
 
-> 任务：转成 jpg
-
-![](https://raw.githubusercontent.com/Simpleyyt/picgo-image/master/file.mp4 ':include controls width="100%"')
-
+上传工程文件，在会话中读取、分析或转换文件，并下载处理结果。
 
 ## MCP 工具调用
 
-> 任务：统计一下 simpleyyt 用户的 github 仓库
-
-![](https://raw.githubusercontent.com/Simpleyyt/picgo-image/master/mcp.mp4 ':include controls width="100%"')
+配置外部 MCP 服务以访问 GitHub、文件系统或其他数据源，详见 [MCP 配置](mcp.md)。

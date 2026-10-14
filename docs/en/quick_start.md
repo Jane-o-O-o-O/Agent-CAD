@@ -33,19 +33,19 @@ Deploy using Docker Compose: at minimum set `API_KEY`, and adjust `API_BASE` and
 ```yaml
 services:
   frontend:
-    image: simpleyyt/manus-frontend
+    image: agent-cad/frontend
     ports:
       - "5173:80"
     depends_on:
       - backend
     restart: unless-stopped
     networks:
-      - manus-network
+      - agent-cad-network
     environment:
       - BACKEND_URL=http://backend:8000
 
   backend:
-    image: simpleyyt/manus-backend
+    image: agent-cad/backend
     depends_on:
       - sandbox
       - claw
@@ -54,7 +54,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       #- ./mcp.json:/etc/mcp.json # Mount MCP servers directory
     networks:
-      - manus-network
+      - agent-cad-network
     environment:
       # OpenAI API base URL
       - API_BASE=https://api.openai.com/v1
@@ -66,21 +66,21 @@ services:
       #- TEMPERATURE=0.7
       # Maximum tokens for LLM response
       #- MAX_TOKENS=2000
-      # More configuration options: https://docs.ai-manus.com/#/configuration
+      # More configuration options: docs/en/configuration.md
 
   sandbox:
-    image: simpleyyt/manus-sandbox
+    image: agent-cad/sandbox
     command: /bin/sh -c "exit 0"  # prevent sandbox from starting, ensure image is pulled
     restart: "no"
     networks:
-      - manus-network
+      - agent-cad-network
 
   claw:
-    image: simpleyyt/manus-claw
+    image: agent-cad/claw
     entrypoint: /bin/sh -c "exit 0"  # prevent claw from starting, ensure image is pulled
     restart: "no"
     networks:
-      - manus-network
+      - agent-cad-network
 
   mongodb:
     image: mongo:7.0
@@ -90,21 +90,21 @@ services:
     #ports:
     #  - "27017:27017"
     networks:
-      - manus-network
+      - agent-cad-network
 
   redis:
     image: redis:7.0
     restart: unless-stopped
     networks:
-      - manus-network
+      - agent-cad-network
 
 volumes:
   mongodb_data:
-    name: manus-mongodb-data
+    name: agent-cad-mongodb-data
 
 networks:
-  manus-network:
-    name: manus-network
+  agent-cad-network:
+    name: agent-cad-network
     driver: bridge
 ```
 <!-- /docker-compose-example.yml -->
@@ -115,7 +115,7 @@ Save as `docker-compose.yml` file.
 
 The example above only includes the essential AI model configuration. For additional settings (search engine, authentication, sandbox, Claw, etc.), it is recommended to use `env_file` to load a `.env` file, keeping your `docker-compose.yml` clean.
 
-**Step 1**: Create a `.env` file based on [`.env.example`](https://github.com/simpleyyt/ai-manus/blob/main/.env.example):
+**Step 1**: Create a `.env` file based on [`.env.example`](https://github.com/Jane-o-O-o-O/Agent-CAD/blob/main/.env.example):
 
 <!-- .env.example -->
 ```ini
@@ -130,7 +130,7 @@ MAX_TOKENS=2000
 
 # MongoDB configuration
 #MONGODB_URI=mongodb://mongodb:27017
-#MONGODB_DATABASE=manus
+#MONGODB_DATABASE=agent_cad
 #MONGODB_USERNAME=
 #MONGODB_PASSWORD=
 
@@ -142,10 +142,10 @@ MAX_TOKENS=2000
 
 # Sandbox configuration
 #SANDBOX_ADDRESS=
-SANDBOX_IMAGE=simpleyyt/manus-sandbox
+SANDBOX_IMAGE=agent-cad/sandbox
 SANDBOX_NAME_PREFIX=sandbox
 SANDBOX_TTL_MINUTES=30
-SANDBOX_NETWORK=manus-network
+SANDBOX_NETWORK=agent-cad-network
 #SANDBOX_CHROME_ARGS=
 #SANDBOX_HTTPS_PROXY=
 #SANDBOX_HTTP_PROXY=
@@ -215,13 +215,13 @@ JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 # Enable or disable Claw feature (hides sidebar entry when false)
 #CLAW_ENABLED=true
 # Docker image used for Claw containers
-#CLAW_IMAGE=simpleyyt/manus-claw
+#CLAW_IMAGE=agent-cad/claw
 # Prefix for Claw container names
-#CLAW_NAME_PREFIX=manus-claw
+#CLAW_NAME_PREFIX=agent-cad-claw
 # Time-to-live for Claw containers in seconds (0 = unlimited)
 #CLAW_TTL_SECONDS=3600
 # Docker network bridge name for Claw containers
-#CLAW_NETWORK=manus-network
+#CLAW_NETWORK=agent-cad-network
 # Max seconds to wait for Claw container to become ready
 #CLAW_READY_TIMEOUT=300
 # Fixed Claw address (for development; skips Docker container creation)
@@ -229,7 +229,7 @@ JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 # Static API key for Claw (for development / fixed container)
 #CLAW_API_KEY=
 # Backend API URL used by Claw containers for callbacks
-#MANUS_API_BASE_URL=http://backend:8000
+#AGENT_CAD_API_BASE_URL=http://backend:8000
 
 # Extra headers for LLM API requests (JSON format)
 #EXTRA_HEADERS={"X-Custom-Header": "value"}
@@ -246,7 +246,7 @@ LOG_LEVEL=INFO
 
 ```yaml
   backend:
-    image: simpleyyt/manus-backend
+    image: agent-cad/backend
     # ...
     env_file:
       - .env
@@ -262,4 +262,4 @@ docker compose up -d
 
 > Note: If you see `sandbox-1 exited with code 0`, this is normal — it ensures the sandbox image is successfully pulled locally.
 
-Open your browser and visit <http://localhost:5173> to access Manus.
+Open your browser and visit <http://localhost:5173> to access Agent-CAD.

@@ -1,18 +1,20 @@
 services:
   frontend:
-    image: simpleyyt/manus-frontend
+    image: agent-cad/frontend
+    build: ./frontend
     ports:
       - "5173:80"
     depends_on:
       - backend
     restart: unless-stopped
     networks:
-      - manus-network
+      - agent-cad-network
     environment:
       - BACKEND_URL=http://backend:8000
 
   backend:
-    image: simpleyyt/manus-backend
+    image: agent-cad/backend
+    build: ./backend
     depends_on:
       - sandbox
       - claw
@@ -21,7 +23,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       #- ./mcp.json:/etc/mcp.json # Mount MCP servers directory
     networks:
-      - manus-network
+      - agent-cad-network
     environment:
       # OpenAI API base URL
       - API_BASE=https://api.openai.com/v1
@@ -33,21 +35,23 @@ services:
       #- TEMPERATURE=0.7
       # Maximum tokens for LLM response
       #- MAX_TOKENS=2000
-      # More configuration options: https://docs.ai-manus.com/#/configuration
+      # More configuration options: docs/configuration.md
 
   sandbox:
-    image: simpleyyt/manus-sandbox
+    image: agent-cad/sandbox
+    build: ./sandbox
     command: /bin/sh -c "exit 0"  # prevent sandbox from starting, ensure image is pulled
     restart: "no"
     networks:
-      - manus-network
+      - agent-cad-network
 
   claw:
-    image: simpleyyt/manus-claw
+    image: agent-cad/claw
+    build: ./claw
     entrypoint: /bin/sh -c "exit 0"  # prevent claw from starting, ensure image is pulled
     restart: "no"
     networks:
-      - manus-network
+      - agent-cad-network
 
   mongodb:
     image: mongo:7.0
@@ -57,19 +61,19 @@ services:
     #ports:
     #  - "27017:27017"
     networks:
-      - manus-network
+      - agent-cad-network
 
   redis:
     image: redis:7.0
     restart: unless-stopped
     networks:
-      - manus-network
+      - agent-cad-network
 
 volumes:
   mongodb_data:
-    name: manus-mongodb-data
+    name: agent-cad-mongodb-data
 
 networks:
-  manus-network:
-    name: manus-network
+  agent-cad-network:
+    name: agent-cad-network
     driver: bridge

@@ -2,15 +2,15 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 
-const MANUS_FILE_URI_PREFIX = 'manus-file://';
-const MANUS_FILE_URI_REGEX = /manus-file:\/\/([a-f0-9]{24})/g;
+const AGENT_CAD_FILE_URI_PREFIX = 'agent-cad-file://';
+const AGENT_CAD_FILE_URI_REGEX = /agent-cad-file:\/\/([a-f0-9]{24})/g;
 const RESOLVE_TIMEOUT_MS = 30_000;
 const MAX_FILENAME_LENGTH = 120;
 
 /**
- * Resolves `manus-file://{fileId}` URIs found in prompts by:
- *   1. Downloading the file from the Manus backend API to local disk
- *   2. Replacing the URI with a `<MANUS_FILE .../>` tag the agent can use
+ * Resolves `agent-cad-file://{fileId}` URIs found in prompts by:
+ *   1. Downloading the file from the AgentCad backend API to local disk
+ *   2. Replacing the URI with a `<AGENT_CAD_FILE .../>` tag the agent can use
  *
  * Mirrors kimi-claw's KimiFileResolver pattern:
  *   - Local download cache at `{downloadDir}/{fileId}_{sanitizedName}`
@@ -18,10 +18,10 @@ const MAX_FILENAME_LENGTH = 120;
  *   - Timeout control via AbortController
  *   - Graceful degradation on failure (tag with status="download_failed")
  */
-export class ManusFileResolver {
-  constructor({ manusApiBaseUrl, manusApiKey, downloadDir, uploadMetaDir, logger }) {
-    this.manusApiBaseUrl = manusApiBaseUrl;
-    this.manusApiKey = manusApiKey;
+export class AgentCadFileResolver {
+  constructor({ agentCadApiBaseUrl, agentCadApiKey, downloadDir, uploadMetaDir, logger }) {
+    this.agentCadApiBaseUrl = agentCadApiBaseUrl;
+    this.agentCadApiKey = agentCadApiKey;
     this.downloadDir = downloadDir;
     this.uploadMetaDir = uploadMetaDir;
     this.logger = logger;
@@ -30,12 +30,12 @@ export class ManusFileResolver {
   }
 
   /**
-   * Scan text for manus-file:// URIs and return unique fileIds.
+   * Scan text for agent-cad-file:// URIs and return unique fileIds.
    */
   buildResolutionPlan(text) {
     const fileIds = new Set();
     let match;
-    const re = new RegExp(MANUS_FILE_URI_REGEX.source, 'g');
+    const re = new RegExp(AGENT_CAD_FILE_URI_REGEX.source, 'g');
     while ((match = re.exec(text)) !== null) {
       fileIds.add(match[1]);
     }
@@ -43,8 +43,8 @@ export class ManusFileResolver {
   }
 
   /**
-   * Full pipeline: detect → resolve → replace all manus-file:// URIs in text.
-   * Returns the transformed text with <MANUS_FILE .../> tags.
+   * Full pipeline: detect → resolve → replace all agent-cad-file:// URIs in text.
+   * Returns the transformed text with <AGENT_CAD_FILE .../> tags.
    */
   async resolvePrompt(text) {
     if (typeof text !== 'string') return text;
@@ -52,7 +52,7 @@ export class ManusFileResolver {
     const fileIds = this.buildResolutionPlan(text);
     if (fileIds.length === 0) return text;
 
-    this.logger?.info?.(`[file-resolver] found ${fileIds.length} manus-file:// refs to resolve`);
+    this.logger?.info?.(`[file-resolver] found ${fileIds.length} agent-cad-file:// refs to resolve`);
 
     const resolutions = new Map();
     await Promise.all(fileIds.map(async (fileId) => {
@@ -62,10 +62,10 @@ export class ManusFileResolver {
 
     let resolved = text;
     for (const [fileId, result] of resolutions) {
-      const uriPattern = new RegExp(`manus-file://${fileId}`, 'g');
+      const uriPattern = new RegExp(`agent-cad-file://${fileId}`, 'g');
       const tag = result.ok
-        ? buildManusFileRefText(result)
-        : buildManusFileFailedRefText(result);
+        ? buildAgentCadFileRefText(result)
+        : buildAgentCadFileFailedRefText(result);
       resolved = resolved.replace(uriPattern, tag);
     }
 
@@ -161,7 +161,7 @@ export class ManusFileResolver {
   }
 
   /**
-   * Fetch file metadata from the Manus backend.
+   * Fetch file metadata from the AgentCad backend.
    * GET /api/v1/claw/resolve/{fileId} with X-Claw-Api-Key header.
    */
   async _fetchFileMeta(fileId) {
@@ -169,11 +169,11 @@ export class ManusFileResolver {
     const timer = setTimeout(() => controller.abort(), RESOLVE_TIMEOUT_MS);
 
     try {
-      const url = `${this.manusApiBaseUrl}/api/v1/claw/resolve/${encodeURIComponent(fileId)}`;
+      const url = `${this.agentCadApiBaseUrl}/api/v1/claw/resolve/${encodeURIComponent(fileId)}`;
       const resp = await fetch(url, {
         method: 'GET',
         headers: {
-          'X-Claw-Api-Key': this.manusApiKey || '',
+          'X-Claw-Api-Key': this.agentCadApiKey || '',
           'Accept': 'application/json',
         },
         signal: controller.signal,
@@ -206,10 +206,10 @@ export class ManusFileResolver {
     const timer = setTimeout(() => controller.abort(), RESOLVE_TIMEOUT_MS);
 
     try {
-      const downloadUrl = `${this.manusApiBaseUrl}/api/v1/claw/resolve/${encodeURIComponent(fileId)}/download`;
+      const downloadUrl = `${this.agentCadApiBaseUrl}/api/v1/claw/resolve/${encodeURIComponent(fileId)}/download`;
       const resp = await fetch(downloadUrl, {
         method: 'GET',
-        headers: { 'X-Claw-Api-Key': this.manusApiKey || '' },
+        headers: { 'X-Claw-Api-Key': this.agentCadApiKey || '' },
         signal: controller.signal,
       });
 
@@ -240,12 +240,12 @@ function escapeXmlAttribute(str) {
     .replace(/>/g, '&gt;');
 }
 
-function buildManusFileRefText({ fileId, localPath, name }) {
-  return `<MANUS_FILE type="file" path="${escapeXmlAttribute(localPath)}" name="${escapeXmlAttribute(name)}" id="${escapeXmlAttribute(fileId)}" />`;
+function buildAgentCadFileRefText({ fileId, localPath, name }) {
+  return `<AGENT_CAD_FILE type="file" path="${escapeXmlAttribute(localPath)}" name="${escapeXmlAttribute(name)}" id="${escapeXmlAttribute(fileId)}" />`;
 }
 
-function buildManusFileFailedRefText({ fileId, name, reason }) {
-  return `<MANUS_FILE type="file" path="" name="${escapeXmlAttribute(name)}" id="${escapeXmlAttribute(fileId)}" status="download_failed" reason="${escapeXmlAttribute(reason)}" />`;
+function buildAgentCadFileFailedRefText({ fileId, name, reason }) {
+  return `<AGENT_CAD_FILE type="file" path="" name="${escapeXmlAttribute(name)}" id="${escapeXmlAttribute(fileId)}" status="download_failed" reason="${escapeXmlAttribute(reason)}" />`;
 }
 
 /**

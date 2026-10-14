@@ -2,7 +2,7 @@
 
 > Currently under development: Settings
 
-## Claw (Manus × Claw)
+## Claw (Agent-CAD + Claw)
 
  * [x] Integrated [OpenClaw](https://github.com/anthropics/openclaw) AI assistant
  * [x] One-click deployment with per-user isolated containers

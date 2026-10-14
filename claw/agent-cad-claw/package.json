@@ -1,7 +1,7 @@
 {
-  "name": "manus-claw",
+  "name": "agent-cad-claw",
   "version": "0.1.0",
-  "description": "OpenClaw plugin that bridges manus backend with the local OpenClaw Gateway.",
+  "description": "OpenClaw plugin that bridges agent-cad backend with the local OpenClaw Gateway.",
   "type": "module",
   "main": "src/index.js",
   "files": [

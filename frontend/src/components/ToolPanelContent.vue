@@ -2,7 +2,7 @@
   <div class="bg-[var(--background-gray-main)] sm:bg-[var(--background-menu-white)] sm:rounded-[22px] shadow-[0px_0px_8px_0px_rgba(0,0,0,0.02)] border border-black/8 dark:border-[var(--border-light)] flex h-full w-full">
     <div class="flex-1 min-w-0 p-4 flex flex-col h-full">
       <div class="flex items-center gap-2 w-full">
-        <div class="text-[var(--text-primary)] text-lg font-semibold flex-1">{{ $t('Manus Computer') }}</div>
+        <div class="text-[var(--text-primary)] text-lg font-semibold flex-1">{{ $t('Agent-CAD Computer') }}</div>
         <button
           class="w-7 h-7 relative rounded-md inline-flex items-center justify-center gap-2.5 cursor-pointer hover:bg-[var(--fill-tsp-gray-main)]">
           <Minimize2 class="w-5 h-5 text-[var(--icon-tertiary)]" @click="hide" />
@@ -14,7 +14,7 @@
           <component :is="toolInfo.icon" :size="28" />
         </div>
         <div class="flex-1 flex flex-col gap-1 min-w-0">
-          <div class="text-[12px] text-[var(--text-tertiary)]">{{ $t('Manus is using') }} <span
+          <div class="text-[12px] text-[var(--text-tertiary)]">{{ $t('Agent-CAD is using') }} <span
               class="text-[var(--text-secondary)]">{{ toolInfo.name }}</span></div>
           <div title="{{ toolInfo.function }} {{ toolInfo.functionArg }}"
             class="max-w-[100%] w-[max-content] truncate text-[13px] rounded-full inline-flex items-center px-[10px] py-[3px] border border-[var(--border-light)] bg-[var(--fill-tsp-gray-main)] text-[var(--text-secondary)]">

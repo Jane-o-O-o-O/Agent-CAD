@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { homedir } from 'node:os';
 
-const DEFAULT_IDENTITY_PATH = path.join(homedir(), '.openclaw', 'plugins', 'manus-claw', 'device.json');
+const DEFAULT_IDENTITY_PATH = path.join(homedir(), '.openclaw', 'plugins', 'agent-cad-claw', 'device.json');
 const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
 
 function base64UrlEncode(buf) {

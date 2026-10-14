@@ -1,8 +1,8 @@
-# AI Manus × Claw 前端
+# Agent-CAD 前端
 
 [English](README.md) | 中文
 
-这是 AI Manus × Claw 的前端，使用 Vue 3 + TypeScript + Vite 构建。
+这是 Agent-CAD 的前端，使用 Vue 3 + TypeScript + Vite 构建。
 
 ## 特性
 

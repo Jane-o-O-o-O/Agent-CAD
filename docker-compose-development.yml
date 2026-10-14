@@ -18,7 +18,7 @@ services:
       - backend
     restart: unless-stopped
     networks:
-      - manus-network
+      - agent-cad-network
 
   backend:
     build:
@@ -56,14 +56,14 @@ services:
         required: true
     restart: unless-stopped
     networks:
-      - manus-network
+      - agent-cad-network
     env_file:
       - .env
     environment:
       - SANDBOX_ADDRESS=sandbox # Use single container as sandbox
       - CLAW_ENABLED=false
-      - MANUS_API_BASE_URL=http://backend:8000
-      - CLAW_API_KEY=${CLAW_DEV_API_KEY:-manus-dev-api-key-changeme}
+      - AGENT_CAD_API_BASE_URL=http://backend:8000
+      - CLAW_API_KEY=${CLAW_DEV_API_KEY:-agent-cad-dev-api-key-changeme}
       - DATA_PROCESSOR_BASE_URL=http://data-processor:8010
       - CAD_V2_DATA_DIR=/var/lib/agent-cad
 
@@ -87,7 +87,7 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     restart: unless-stopped
     networks:
-      - manus-network
+      - agent-cad-network
 
   data-processor:
     build:
@@ -101,7 +101,7 @@ services:
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8010", "--reload"]
     restart: unless-stopped
     networks:
-      - manus-network
+      - agent-cad-network
 
   mockserver:
     build:
@@ -116,7 +116,7 @@ services:
       - MOCK_DATA_FILE=default.yaml
       - MOCK_DELAY=1
     networks:
-      - manus-network
+      - agent-cad-network
 
   mongodb:
     image: mongo:7.0
@@ -126,20 +126,20 @@ services:
     ports:
       - "27017:27017"
     networks:
-      - manus-network
+      - agent-cad-network
 
   redis:
     image: redis:7.0
     restart: unless-stopped
     networks:
-      - manus-network
+      - agent-cad-network
 
 volumes:
   cad_v2_data:
   mongodb_data:
-    name: manus-mongodb-data
+    name: agent-cad-mongodb-data
 
 networks:
-  manus-network:
-    name: manus-network
+  agent-cad-network:
+    name: agent-cad-network
     driver: bridge

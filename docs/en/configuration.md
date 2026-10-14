@@ -2,6 +2,8 @@
 
 ## Configuration Items
 
+For an existing deployment, set the Claw callback configuration to `AGENT_CAD_API_BASE_URL` and rebuild the backend and Claw images together. The default database is `agent_cad`, the MongoDB volume is `agent-cad-mongodb-data`, and the Docker network is `agent-cad-network`. Existing data is not migrated automatically: explicitly retain your current database and volume names, or migrate the data before switching. Build the `agent-cad/<service>` images locally, or set `IMAGE_REGISTRY` to your own image registry.
+
 ### Model Provider Configuration
 
 | Configuration | Default Value | Required | Description |
@@ -23,7 +25,7 @@
 | Configuration | Default Value | Required | Description |
 |---------------|---------------|----------|-------------|
 | `MONGODB_URI` | `mongodb://mongodb:27017` | No | MongoDB connection string |
-| `MONGODB_DATABASE` | `manus` | No | Database name |
+| `MONGODB_DATABASE` | `agent_cad` | No | Database name |
 | `MONGODB_USERNAME` | - | No | MongoDB username |
 | `MONGODB_PASSWORD` | - | No | MongoDB password |
 
@@ -45,10 +47,10 @@
 | Configuration | Default Value | Required | Description |
 |---------------|---------------|----------|-------------|
 | `SANDBOX_ADDRESS` | - | No | Sandbox server address |
-| `SANDBOX_IMAGE` | `simpleyyt/manus-sandbox` | No | Docker sandbox image name |
+| `SANDBOX_IMAGE` | `agent-cad/sandbox` | No | Docker sandbox image name |
 | `SANDBOX_NAME_PREFIX` | `sandbox` | No | Sandbox container name prefix |
 | `SANDBOX_TTL_MINUTES` | `30` | No | Sandbox time-to-live in minutes |
-| `SANDBOX_NETWORK` | `manus-network` | No | Docker network name |
+| `SANDBOX_NETWORK` | `agent-cad-network` | No | Docker network name |
 | `SANDBOX_CHROME_ARGS` | - | No | Chrome browser startup arguments |
 | `SANDBOX_HTTPS_PROXY` | - | No | HTTPS proxy settings |
 | `SANDBOX_HTTP_PROXY` | - | No | HTTP proxy settings |
@@ -59,14 +61,14 @@
 | Configuration | Default Value | Required | Description |
 |---------------|---------------|----------|-------------|
 | `CLAW_ENABLED` | `true` | No | Enable Claw feature; set to `false` to hide the sidebar entry |
-| `CLAW_IMAGE` | `simpleyyt/manus-claw` | No | Claw Docker image name |
-| `CLAW_NAME_PREFIX` | `manus-claw` | No | Claw container name prefix |
+| `CLAW_IMAGE` | `agent-cad/claw` | No | Claw Docker image name |
+| `CLAW_NAME_PREFIX` | `agent-cad-claw` | No | Claw container name prefix |
 | `CLAW_TTL_SECONDS` | `3600` | No | Claw container time-to-live in seconds; set to `0` for unlimited |
 | `CLAW_NETWORK` | - | No | Docker network bridge name for Claw containers |
 | `CLAW_READY_TIMEOUT` | `300` | No | Max seconds to wait for Claw container to become ready (default 5 minutes) |
 | `CLAW_ADDRESS` | - | No | Fixed Claw address (for development; skips Docker container creation) |
 | `CLAW_API_KEY` | - | No | Static API key (for development / fixed container) |
-| `MANUS_API_BASE_URL` | `http://backend:8000` | No | Backend API URL used by Claw containers for callbacks |
+| `AGENT_CAD_API_BASE_URL` | `http://backend:8000` | No | Backend API URL used by Claw containers for callbacks |
 
 ### Search Engine Configuration
 
@@ -177,7 +179,7 @@ Used only when `SEARCH_PROVIDER=custom`. Integrate any third-party search REST A
 |---------------|---------------|----------|-------------|
 | `AUTH_PROVIDER` | `password` | No | Authentication provider (`password`, `none`, or `local`) |
 | `SHOW_GITHUB_BUTTON` | `true` | No | Whether to show the GitHub button in the top bar |
-| `GITHUB_REPOSITORY_URL` | `https://github.com/simpleyyt/ai-manus` | No | GitHub button target URL |
+| `GITHUB_REPOSITORY_URL` | `https://github.com/Jane-o-O-o-O/Agent-CAD` | No | GitHub button target URL |
 
 #### Password Authentication Configuration
 

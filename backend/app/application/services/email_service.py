@@ -96,7 +96,7 @@ class EmailService:
             <p><strong>This code will expire in 5 minutes.</strong></p>
             <p>If you did not request this password reset, please ignore this email.</p>
             <br>
-            <p>Best regards,<br>AI Manus Team</p>
+            <p>Best regards,<br>Agent-CAD Team</p>
         </body>
         </html>
         """

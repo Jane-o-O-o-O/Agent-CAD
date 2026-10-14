@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     
     # MongoDB configuration
     mongodb_uri: str = "mongodb://mongodb:27017"
-    mongodb_database: str = "manus"
+    mongodb_database: str = "agent_cad"
     mongodb_username: str | None = None
     mongodb_password: str | None = None
     
@@ -125,14 +125,14 @@ class Settings(BaseSettings):
     
     # Claw (OpenClaw) configuration
     claw_enabled: bool = False
-    claw_image: str = "simpleyyt/manus-claw"
-    claw_name_prefix: str = "manus-claw"
+    claw_image: str = "agent-cad/claw"
+    claw_name_prefix: str = "agent-cad-claw"
     claw_ttl_seconds: int = 3600
     claw_network: str | None = None  # Docker network bridge name for claw containers
     claw_ready_timeout: int = 300  # Max seconds to wait for claw container to become ready
     claw_address: str | None = None  # If set, use this fixed host instead of creating Docker containers
     claw_api_key: str | None = None  # Static API key accepted by the LLM proxy (for dev/fixed container)
-    manus_api_base_url: str = "http://backend:8000"  # URL of this backend accessible from claw containers
+    agent_cad_api_base_url: str = "http://backend:8000"  # URL of this backend accessible from claw containers
 
     # MCP configuration
     mcp_config_path: str = "/etc/mcp.json"

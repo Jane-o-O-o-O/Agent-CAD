@@ -43,7 +43,7 @@ class Claw(BaseModel):
 
     @property
     def http_base_url(self) -> Optional[str]:
-        """HTTP base URL for the manus-claw plugin server"""
+        """HTTP base URL for the agent-cad-claw plugin server"""
         if self.container_ip:
             return f"http://{self.container_ip}:18788"
         return None

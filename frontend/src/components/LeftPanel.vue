@@ -66,14 +66,14 @@
             <div class="claw-nav-icon w-[18px] h-[18px]" />
           </div>
           <div class="flex-1 min-w-0 flex gap-[4px] items-center text-[14px] text-[var(--text-primary)]">
-            <span class="truncate">Manus Claw</span>
+            <span class="truncate">Agent-CAD Claw</span>
           </div>
         </div>
-        <!-- 所有任务分组标�?+ 会话列表 -->
+        <!-- 所有任务分组标�?+ 会话列表 -->
         <div v-if="!cadV2Standalone" class="flex flex-col flex-1 min-h-0 -mx-[8px] mt-[4px] overflow-hidden">
           <div class="w-full border-t border-[var(--border-main)] transition-opacity duration-200" :class="isListScrolled ? 'opacity-100' : 'opacity-0'"></div>
 
-          <!-- 滚动容器：标�?+ 列表一起滚�?-->
+          <!-- 滚动容器：标�?+ 列表一起滚�?-->
           <div ref="scrollContainerRef" class="flex flex-col flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-5 px-[8px]" @scroll="handleListScroll">
 
             <!-- 分组标题 -->

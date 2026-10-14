@@ -254,7 +254,7 @@ Some backend tests require MongoDB, Redis, and the backend service to be running
 
 ## Acknowledgements
 
-Agent-CAD evolves from the open-source AI Manus Agent foundation and specializes its session, sandbox, streaming, and tool infrastructure for CAD engineering workflows. The project also builds on AgentScope, ezdxf, Docling, FastAPI, Vue, MongoDB, Redis, and the wider open-source ecosystem.
+Agent-CAD builds on AgentScope, ezdxf, Docling, FastAPI, Vue, MongoDB, Redis, and the wider open-source ecosystem.
 
 ## License
 

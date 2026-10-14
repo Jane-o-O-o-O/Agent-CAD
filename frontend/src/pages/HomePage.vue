@@ -13,7 +13,7 @@
             </button>
             <div class="flex items-center gap-1 rounded-xl border border-[var(--border-light)] bg-[var(--cad-panel-strong)] px-2 py-1">
               <Bot :size="30" />
-              <ManusLogoTextIcon />
+              <AgentCadLogoTextIcon />
             </div>
           </div>
 
@@ -96,7 +96,7 @@ import {
   Bot,
   PanelLeft,
 } from 'lucide-vue-next';
-import ManusLogoTextIcon from '../components/icons/ManusLogoTextIcon.vue';
+import AgentCadLogoTextIcon from '../components/icons/AgentCadLogoTextIcon.vue';
 import type { FileInfo } from '../api/file';
 import { useLeftPanel } from '../composables/useLeftPanel';
 import { useFilePanel } from '../composables/useFilePanel';

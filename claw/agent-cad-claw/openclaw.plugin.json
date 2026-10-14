@@ -1,7 +1,7 @@
 {
-  "id": "manus-claw",
-  "name": "manus-claw",
-  "description": "Connector plugin that bridges manus backend with the local OpenClaw Gateway via HTTP server.",
+  "id": "agent-cad-claw",
+  "name": "agent-cad-claw",
+  "description": "Connector plugin that bridges agent-cad backend with the local OpenClaw Gateway via HTTP server.",
   "version": "0.1.0",
   "configSchema": {
     "type": "object",

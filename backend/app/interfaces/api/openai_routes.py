@@ -1,5 +1,5 @@
 """
-OpenAI-compatible API proxy for manus-claw.
+OpenAI-compatible API proxy for agent-cad-claw.
 All LLM requests from OpenClaw containers go through this endpoint,
 authenticated using per-user API keys.
 """
@@ -104,7 +104,7 @@ def _openai_error_response(status_code: int, message: str, error_type: str) -> J
 def _apply_chat_request_defaults(body: dict, settings) -> dict:
     """Apply configured OpenAI-compatible defaults without overwriting explicit requests."""
     configured_model = settings.claw_model_name or settings.model_name
-    if configured_model and body.get("model") in ("default", "manus-proxy/default", None):
+    if configured_model and body.get("model") in ("default", "agent-cad-proxy/default", None):
         body = {**body, "model": configured_model}
     if _is_deepseek_request(body, settings) and settings.deepseek_thinking_type:
         if isinstance(body.get("extra_body"), dict):
@@ -130,7 +130,7 @@ def _is_deepseek_request(body: dict, settings) -> bool:
 async def chat_completions(request: Request):
     """
     OpenAI-compatible chat completions proxy.
-    Authenticates using per-user manus API keys and forwards to the configured LLM backend.
+    Authenticates using per-user agent-cad API keys and forwards to the configured LLM backend.
     """
     api_key = _extract_bearer_token(request)
     if not api_key:

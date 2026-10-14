@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: ${IMAGE_REGISTRY:-simpleyyt}/manus-frontend:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-agent-cad}/frontend:${IMAGE_TAG:-latest}
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -14,12 +14,12 @@ services:
       - backend
     restart: unless-stopped
     networks:
-      - manus-network
+      - agent-cad-network
     environment:
       - BACKEND_URL=http://backend:8000
 
   backend:
-    image: ${IMAGE_REGISTRY:-simpleyyt}/manus-backend:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-agent-cad}/backend:${IMAGE_TAG:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -38,14 +38,14 @@ services:
       - cad_v2_data:/var/lib/agent-cad
       #- ./mcp.json:/etc/mcp.json # Mount MCP servers directory
     networks:
-      - manus-network
+      - agent-cad-network
     env_file:
       - .env
     environment:
       - CAD_V2_DATA_DIR=/var/lib/agent-cad
 
   sandbox:
-    image: ${IMAGE_REGISTRY:-simpleyyt}/manus-sandbox:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-agent-cad}/sandbox:${IMAGE_TAG:-latest}
     build:
       context: ./sandbox
       dockerfile: Dockerfile
@@ -56,10 +56,10 @@ services:
     command: /bin/sh -c "exit 0"  # prevent sandbox from starting, ensure image is pulled
     restart: "no"
     networks:
-      - manus-network
+      - agent-cad-network
 
   claw:
-    image: ${IMAGE_REGISTRY:-simpleyyt}/manus-claw:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-agent-cad}/claw:${IMAGE_TAG:-latest}
     build:
       context: ./claw
       dockerfile: Dockerfile
@@ -70,7 +70,7 @@ services:
     entrypoint: /bin/sh -c "exit 0"  # prevent claw from starting, ensure image is pulled
     restart: "no"
     networks:
-      - manus-network
+      - agent-cad-network
 
   mongodb:
     image: mongo:7.0
@@ -80,20 +80,20 @@ services:
     #ports:
     #  - "27017:27017"
     networks:
-      - manus-network
+      - agent-cad-network
 
   redis:
     image: redis:7.0
     restart: unless-stopped
     networks:
-      - manus-network
+      - agent-cad-network
 
 volumes:
   cad_v2_data:
   mongodb_data:
-    name: manus-mongodb-data
+    name: agent-cad-mongodb-data
 
 networks:
-  manus-network:
-    name: manus-network
+  agent-cad-network:
+    name: agent-cad-network
     driver: bridge

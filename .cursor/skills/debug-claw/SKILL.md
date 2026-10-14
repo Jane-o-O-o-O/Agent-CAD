@@ -1,7 +1,7 @@
 ---
 name: debug-claw
 description: >-
-  Debug and test the OpenClaw (Claw) integration in ai-manus. Use when
+  Debug and test the OpenClaw (Claw) integration in agent-cad. Use when
   investigating Claw chat issues, history merge problems, file upload/download
   failures, WebSocket connectivity, or container startup errors.
 ---
@@ -14,9 +14,9 @@ Claw has three data layers that interact during debugging:
 
 | Layer | Location | Contains |
 |-------|----------|----------|
-| **MongoDB** | `manus.claws` collection | User/assistant messages, attachment metadata, claw status |
+| **MongoDB** | `agent_cad.claws` collection | User/assistant messages, attachment metadata, claw status |
 | **Claw .jsonl** | Container `~/.openclaw/agents/main/sessions/` | OpenClaw native session history (user/assistant/toolResult) |
-| **manus-claw plugin** | Container `/home/node/.openclaw/plugins/manus-claw/` | Upload metadata cache, file resolver cache |
+| **agent-cad-claw plugin** | Container `/home/node/.openclaw/plugins/agent-cad-claw/` | Upload metadata cache, file resolver cache |
 
 The backend merges MongoDB + .jsonl on every `/api/v1/claw/history` call.
 
@@ -41,7 +41,7 @@ docker compose -f docker-compose-development.yml logs -f claw  # follow
 
 ```bash
 docker compose -f docker-compose-development.yml exec -T mongodb mongosh --quiet --eval '
-var claw = db.getSiblingDB("manus").claws.findOne({user_id: "anonymous"});
+var claw = db.getSiblingDB("agent_cad").claws.findOne({user_id: "anonymous"});
 if (!claw) { print("No claw found"); } else {
     var msgs = claw.messages || [];
     print("status=" + claw.status + " msgs=" + msgs.length);
@@ -54,7 +54,7 @@ if (!claw) { print("No claw found"); } else {
 ### 2. Claw .jsonl (raw session history from container)
 
 ```bash
-# Via manus-claw HTTP API (port 18788 on host)
+# Via agent-cad-claw HTTP API (port 18788 on host)
 curl -s 'http://localhost:18788/history?session_id=default&limit=20' | python3 -m json.tool
 ```
 
@@ -83,7 +83,7 @@ print(f"Merged: {len(merged)} messages")
 # Source 3: MongoDB
 r = subprocess.run(['docker', 'compose', '-f', 'docker-compose-development.yml', 'exec', '-T', 'mongodb',
     'mongosh', '--quiet', '--eval',
-    'var c=db.getSiblingDB("manus").claws.findOne({user_id:"anonymous"}); '
+    'var c=db.getSiblingDB("agent_cad").claws.findOne({user_id:"anonymous"}); '
     'print(c ? (c.messages||[]).length : 0);'
 ], capture_output=True, text=True)
 print(f"MongoDB: {r.stdout.strip()} messages")
@@ -121,14 +121,14 @@ asyncio.run(send_and_wait("你好"))
 Send a message asking Claw to create and upload a file:
 
 ```python
-# Ask claw to use manus_upload_file tool
+# Ask claw to use agent_cad_upload_file tool
 asyncio.run(send_and_wait("创建一个 hello.txt 文件并发送给我"))
 ```
 
 Then verify:
-1. Check claw logs for `[manus_upload_file]` entries
+1. Check claw logs for `[agent_cad_upload_file]` entries
 2. Check merged history for `attachments` role messages
-3. Check upload metadata cache: `docker exec ai-manus-claw-1 ls /home/node/.openclaw/plugins/manus-claw/upload_meta/`
+3. Check upload metadata cache: `docker exec agent-cad-claw-1 ls /home/node/.openclaw/plugins/agent-cad-claw/upload_meta/`
 
 ## Testing File Download (User → Agent)
 
@@ -145,8 +145,8 @@ await ws.send(json.dumps({
 
 Then verify:
 1. Backend log: `[claw-ws] pushed {filename} to workspace`
-2. Claw workspace: `docker exec ai-manus-claw-1 ls /home/node/.openclaw/workspace/`
-3. Message content should contain `<MANUS_FILE ... />` tags
+2. Claw workspace: `docker exec agent-cad-claw-1 ls /home/node/.openclaw/workspace/`
+3. Message content should contain `<AGENT_CAD_FILE ... />` tags
 
 ## Testing History Merge (Dedup)
 
@@ -194,7 +194,7 @@ print(f'Recovered: {len(msgs)} messages')
 | 500 on chat | Backend log for proxy errors | Check `OPENAI_API_KEY`, `OPENAI_BASE_URL` in env |
 | Files not displayed after refresh | Compare MongoDB vs .jsonl attachments | Check `HttpClawClient.get_history()` parses `toolResult` |
 | Duplicate messages after refresh | Run merge comparison script above | Check `_merge_histories` dedup logic in `claw_service.py` |
-| `manus-file://` not resolved | Claw log for `[file-resolver]` | Check `/claw/resolve/{id}` endpoints, API key auth |
+| `agent-cad-file://` not resolved | Claw log for `[file-resolver]` | Check `/claw/resolve/{id}` endpoints, API key auth |
 | WS not connected | Browser console, backend WS log | Check `_resolve_ws_user`, auth provider config |
 
 ## Key Files
@@ -204,8 +204,8 @@ print(f'Recovered: {len(msgs)} messages')
 | `backend/app/application/services/claw_service.py` | Merge logic, chat processing, CRUD |
 | `backend/app/infrastructure/external/claw/http_claw_client.py` | Parses claw .jsonl history |
 | `backend/app/interfaces/api/claw_routes.py` | REST + WebSocket endpoints |
-| `claw/manus-claw/src/gateway-bridge.js` | Gateway ↔ backend bridge, prompt processing |
-| `claw/manus-claw/src/index.js` | Plugin entry, `manus_upload_file` tool |
-| `claw/manus-claw/src/manus-file-resolver.js` | `manus-file://` URI resolution |
-| `claw/manus-claw/src/http-server.js` | Claw HTTP API (chat, history, workspace) |
+| `claw/agent-cad-claw/src/gateway-bridge.js` | Gateway ↔ backend bridge, prompt processing |
+| `claw/agent-cad-claw/src/index.js` | Plugin entry, `agent_cad_upload_file` tool |
+| `claw/agent-cad-claw/src/agent-cad-file-resolver.js` | `agent-cad-file://` URI resolution |
+| `claw/agent-cad-claw/src/http-server.js` | Claw HTTP API (chat, history, workspace) |
 | `frontend/src/pages/ClawPage.vue` | Claw chat UI, WS handling, history loading |

@@ -2,7 +2,7 @@
 
 > 当前开发中的功能：配置
 
-## Claw（Manus × Claw）
+## Claw（Agent-CAD + Claw）
 
  * [x] 集成 [OpenClaw](https://github.com/anthropics/openclaw) AI 助手
  * [x] 一键部署、用户隔离容器

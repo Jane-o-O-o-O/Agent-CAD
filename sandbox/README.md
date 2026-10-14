@@ -1,8 +1,8 @@
-# AI Manus Sandbox Service
+# Agent-CAD Sandbox Service
 
 English | [中文](README_zh.md)
 
-AI Manus Sandbox is an isolated execution environment based on Docker containers, providing AI Agents with secure Shell command execution, file operations, and browser automation capabilities. The service offers API interfaces through FastAPI and supports interaction with backend services.
+Agent-CAD Sandbox is an isolated execution environment based on Docker containers, providing AI Agents with secure Shell command execution, file operations, and browser automation capabilities. The service offers API interfaces through FastAPI and supports interaction with backend services.
 
 ## Technical Architecture
 
@@ -70,10 +70,10 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
 
 ```bash
 # Build the image
-docker build -t manus-sandbox .
+docker build -t agent-cad/sandbox .
 
 # Run the container
-docker run -p 8080:8080 -p 9222:9222 -p 5900:5900 -p 5901:5901 manus-sandbox
+docker run -p 8080:8080 -p 9222:9222 -p 5900:5900 -p 5901:5901 agent-cad/sandbox
 ```
 
 ## Port Information

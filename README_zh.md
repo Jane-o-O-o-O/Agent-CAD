@@ -254,7 +254,7 @@ npm run build
 
 ## 致谢
 
-Agent-CAD 基于开源 AI Manus Agent 基础能力演进，并将其会话、沙箱、实时事件和工具基础设施专业化为 CAD 工程工作流。项目同时受益于 AgentScope、ezdxf、Docling、FastAPI、Vue、MongoDB、Redis 及更广泛的开源生态。
+Agent-CAD 受益于 AgentScope、ezdxf、Docling、FastAPI、Vue、MongoDB、Redis 及更广泛的开源生态。
 
 ## 开源许可
 

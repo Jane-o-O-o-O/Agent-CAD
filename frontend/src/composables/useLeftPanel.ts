@@ -2,7 +2,7 @@ import { ref, watch } from 'vue'
 import type { LeftPanelState } from '../types/panel'
 
 // Local storage key for left panel state
-const LEFT_PANEL_STATE_KEY = 'manus-left-panel-state'
+const LEFT_PANEL_STATE_KEY = 'agent-cad-left-panel-state'
 
 // Read initial state from localStorage
 const getInitialLeftPanelState = (): boolean => {

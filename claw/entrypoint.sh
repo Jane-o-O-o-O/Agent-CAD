@@ -12,7 +12,7 @@ if [ -z "${OPENCLAW_GATEWAY_TOKEN}" ]; then
 fi
 
 echo "[entrypoint] Gateway token: ${OPENCLAW_GATEWAY_TOKEN}"
-echo "[entrypoint] Manus API base URL: ${MANUS_API_BASE_URL:-http://backend:8000}/v1"
+echo "[entrypoint] AgentCad API base URL: ${AGENT_CAD_API_BASE_URL:-http://backend:8000}/v1"
 
 # Write openclaw.json configuration
 cat > "${CONFIG_FILE}" << EOF
@@ -23,7 +23,7 @@ cat > "${CONFIG_FILE}" << EOF
   "agents": {
     "defaults": {
       "model": {
-        "primary": "manus-proxy/default"
+        "primary": "agent-cad-proxy/default"
       },
       "workspace": "/home/node/.openclaw/workspace",
       "compaction": {
@@ -44,11 +44,11 @@ cat > "${CONFIG_FILE}" << EOF
   "plugins": {
     "load": {
       "paths": [
-        "/home/node/.openclaw/extensions/manus-claw"
+        "/home/node/.openclaw/extensions/agent-cad-claw"
       ]
     },
     "entries": {
-      "manus-claw": {
+      "agent-cad-claw": {
         "enabled": true,
         "config": {
           "gateway": {
@@ -76,9 +76,9 @@ cat > "${CONFIG_FILE}" << EOF
   "models": {
     "mode": "merge",
     "providers": {
-      "manus-proxy": {
-        "baseUrl": "${MANUS_API_BASE_URL:-http://backend:8000}/v1",
-        "apiKey": "${MANUS_API_KEY}",
+      "agent-cad-proxy": {
+        "baseUrl": "${AGENT_CAD_API_BASE_URL:-http://backend:8000}/v1",
+        "apiKey": "${AGENT_CAD_API_KEY}",
         "api": "openai-completions",
         "models": [
           {

@@ -1,8 +1,8 @@
-# AI Manus 沙盒服务
+# Agent-CAD 沙盒服务
 
 [English](README.md) | 中文
 
-AI Manus 沙盒是一个基于Docker容器的隔离执行环境，为 AI Agent 提供安全的 Shell 命令执行、文件操作和浏览器自动化能力。该服务通过 FastAPI 提供API接口，支持与后端服务交互。
+Agent-CAD 沙盒是一个基于Docker容器的隔离执行环境，为 AI Agent 提供安全的 Shell 命令执行、文件操作和浏览器自动化能力。该服务通过 FastAPI 提供API接口，支持与后端服务交互。
 
 ## 技术架构
 
@@ -71,10 +71,10 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
 
 ```bash
 # 构建镜像
-docker build -t manus-sandbox .
+docker build -t agent-cad/sandbox .
 
 # 运行容器
-docker run -p 8080:8080 -p 9222:9222 -p 5900:5900 -p 5901:5901 manus-sandbox
+docker run -p 8080:8080 -p 9222:9222 -p 5900:5900 -p 5901:5901 agent-cad/sandbox
 ```
 
 ## 端口说明

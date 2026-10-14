@@ -99,11 +99,11 @@ services:
       AUTH_PROVIDER: none
       JWT_SECRET_KEY: smoke-local-only-not-for-deployment
       MONGODB_URI: mongodb://mongodb:27017
-      MONGODB_DATABASE: manus_smoke
+      MONGODB_DATABASE: agent_cad_smoke
       REDIS_HOST: redis
       SANDBOX_ADDRESS: sandbox
       CLAW_ENABLED: "false"
-      MANUS_API_BASE_URL: http://backend:8000
+      AGENT_CAD_API_BASE_URL: http://backend:8000
       DATA_PROCESSOR_BASE_URL: http://data-processor:8010
       CAD_V2_DATA_DIR: /var/lib/agent-cad
       CAD_V2_API_KEY: ""
@@ -149,7 +149,7 @@ volumes:
   cad_v2_data:
     name: ${FULL_STACK_SMOKE_PROJECT}-cad-v2-data
 networks:
-  manus-network:
+  agent-cad-network:
     name: ${FULL_STACK_SMOKE_PROJECT}-network
 YAML
 

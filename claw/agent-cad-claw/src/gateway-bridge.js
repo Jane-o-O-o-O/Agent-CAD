@@ -10,7 +10,7 @@ import { randomUUID } from 'node:crypto';
  * Fallback end:     event:chat,  payload.state="final"
  *
  * File uploads are handled by the plugin's registerTool() API (see index.js).
- * When the agent calls manus_upload_file, OpenClaw invokes the tool's execute()
+ * When the agent calls agent_cad_upload_file, OpenClaw invokes the tool's execute()
  * function directly. execute() calls bridge.notifyFileUploaded() to push a
  * file SSE event to the active frontend request.
  */
@@ -41,7 +41,7 @@ export class GatewayBridge {
   }
 
   /**
-   * Called by the manus_upload_file tool execute() in index.js after a
+   * Called by the agent_cad_upload_file tool execute() in index.js after a
    * successful upload. Pushes a file event to all active SSE connections.
    */
   notifyFileUploaded(fileInfo) {
@@ -198,9 +198,9 @@ export class GatewayBridge {
   }
 
   async sendPrompt(sessionId, message, requestId) {
-    // Pre-process: resolve manus-file:// URIs → <MANUS_FILE /> tags
+    // Pre-process: resolve agent-cad-file:// URIs → <AGENT_CAD_FILE /> tags
     let resolvedMessage = message;
-    if (this.fileResolver && typeof message === 'string' && message.includes('manus-file://')) {
+    if (this.fileResolver && typeof message === 'string' && message.includes('agent-cad-file://')) {
       try {
         resolvedMessage = await this.fileResolver.resolvePrompt(message);
       } catch (err) {
@@ -208,7 +208,7 @@ export class GatewayBridge {
       }
     }
 
-    const sessionKey = `manus:${sessionId}`;
+    const sessionKey = `agent-cad:${sessionId}`;
     const gwRequestId = `gw_${randomUUID().replace(/-/g, '')}`;
     this._gwRequestMap.set(gwRequestId, requestId);
 
@@ -220,7 +220,7 @@ export class GatewayBridge {
         agentId: this.agentId,
         sessionKey,
         message: resolvedMessage,
-        idempotencyKey: `manus_${sessionId}_${Date.now()}`,
+        idempotencyKey: `agent_cad_${sessionId}_${Date.now()}`,
       }
     });
 
@@ -253,7 +253,7 @@ export class GatewayBridge {
   async fetchGatewayHistory(sessionId, limit = 100) {
     if (!this.isGatewayReady()) return [];
 
-    const sessionKey = `manus:${sessionId}`;
+    const sessionKey = `agent-cad:${sessionId}`;
     try {
       const result = await this.gatewayClient.request('chat.history', {
         sessionKey,

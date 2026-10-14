@@ -60,7 +60,7 @@ class HttpClawClient:
                     file_id = a.get("file_id", "")
                     if not file_id:
                         uri = a.get("uri", "")
-                        match = re.search(r'manus-file://([a-f0-9]{24})', uri)
+                        match = re.search(r'agent-cad-file://([a-f0-9]{24})', uri)
                         if match:
                             file_id = match.group(1)
                     if file_id and file_id not in seen_file_ids:

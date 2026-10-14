@@ -23,7 +23,7 @@ class DockerClawRuntime:
         docker_client = docker.from_env()
 
         claw_network = self.settings.claw_network
-        manus_api_base_url = self.settings.manus_api_base_url
+        agent_cad_api_base_url = self.settings.agent_cad_api_base_url
         container_name = f"{self.settings.claw_name_prefix}-{claw_id[:8]}"
 
         container_config = {
@@ -33,8 +33,8 @@ class DockerClawRuntime:
             "remove": True,
             "environment": {
                 "CLAW_TTL_SECONDS": str(self.settings.claw_ttl_seconds),
-                "MANUS_API_KEY": api_key,
-                "MANUS_API_BASE_URL": manus_api_base_url,
+                "AGENT_CAD_API_KEY": api_key,
+                "AGENT_CAD_API_BASE_URL": agent_cad_api_base_url,
             },
         }
         if claw_network:

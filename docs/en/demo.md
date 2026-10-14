@@ -1,20 +1,15 @@
-# ✨ Demo Scenarios
+# Example Scenarios
 
-## Computer Takeover
+## CAD Engineering Workflow
 
-> Task: Check Zhihu trending topics
+Create a parametric part in the CAD workbench, edit dimensions, inspect the 3D model, validate its geometry, and export engineering files.
 
-[](https://raw.githubusercontent.com/Simpleyyt/picgo-image/master/takeover.mp4 ':include controls width="100%"')
+See the [CAD Technical Design](../agent-cad-technical-design.md).
 
 ## File Processing
 
-> Task: Convert to JPG
-
-![](https://raw.githubusercontent.com/Simpleyyt/picgo-image/master/file.mp4 ':include controls width="100%"')
-
+Upload engineering files, read, analyze, or convert them in a session, and download the results.
 
 ## MCP Tool Integration
 
-> Task: Analyze the GitHub repositories of user simpleyyt
-
-![](https://raw.githubusercontent.com/Simpleyyt/picgo-image/master/mcp.mp4 ':include controls width="100%"') 
+Configure an external MCP service to access GitHub, file systems, or other data sources. See [MCP Configuration](mcp.md).

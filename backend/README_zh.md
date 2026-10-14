@@ -1,8 +1,8 @@
-# AI Manus × Claw 后端服务
+# Agent-CAD + Claw 后端服务
 
 [English](README.md) | 中文
 
-AI Manus × Claw 是一个基于 FastAPI 和 LangChain Chat Model 的智能对话代理系统。该后端采用领域驱动设计(DDD)架构，支持智能对话、文件操作、Shell命令执行、浏览器自动化，以及集成 [OpenClaw](https://github.com/anthropics/openclaw) AI 助手管理（Claw）等功能。
+Agent-CAD + Claw 是一个基于 FastAPI 和 LangChain Chat Model 的智能对话代理系统。该后端采用领域驱动设计(DDD)架构，支持智能对话、文件操作、Shell命令执行、浏览器自动化，以及集成 [OpenClaw](https://github.com/anthropics/openclaw) AI 助手管理（Claw）等功能。
 
 ## 项目架构
 
@@ -40,7 +40,7 @@ backend/
    - 网络搜索集成
 4. **沙盒环境**：使用Docker容器提供隔离的执行环境
 5. **VNC可视化**：通过WebSocket连接支持远程查看沙盒环境
-6. **Claw（Manus × Claw）**：为每个用户管理 OpenClaw 容器生命周期，合并聊天历史（MongoDB + OpenClaw `.jsonl` 会话），WebSocket 实时通信，文件上传/解析，以及为 Claw 容器提供 OpenAI 兼容 LLM 代理
+6. **Claw（Agent-CAD + Claw）**：为每个用户管理 OpenClaw 容器生命周期，合并聊天历史（MongoDB + OpenClaw `.jsonl` 会话），WebSocket 实时通信，文件上传/解析，以及为 Claw 容器提供 OpenAI 兼容 LLM 代理
 
 ## 环境要求
 
@@ -79,14 +79,14 @@ GOOGLE_SEARCH_API_KEY=                   # Google Search API 密钥，用于网�
 GOOGLE_SEARCH_ENGINE_ID=                 # Google 自定义搜索引擎 ID（可选）
 
 # Sandbox configuration
-SANDBOX_IMAGE=simpleyyt/manus-sandbox          # 沙盒环境 Docker 镜像
+SANDBOX_IMAGE=agent-cad/sandbox          # 沙盒环境 Docker 镜像
 SANDBOX_NAME_PREFIX=sandbox              # 沙盒容器名称前缀
 SANDBOX_TTL_MINUTES=30                   # 沙盒容器生存时间（分钟）
-SANDBOX_NETWORK=manus-network            # Docker 网络名称，用于沙盒容器间通信
+SANDBOX_NETWORK=agent-cad-network            # Docker 网络名称，用于沙盒容器间通信
 
 # Database configuration
 MONGODB_URI=mongodb://localhost:27017    # MongoDB 连接 URL
-MONGODB_DATABASE=manus                   # MongoDB 数据库名称
+MONGODB_DATABASE=agent_cad                   # MongoDB 数据库名称
 REDIS_HOST=localhost                     # Redis 主机地址
 REDIS_PORT=6379                          # Redis 端口
 REDIS_DB=0                               # Redis 数据库编号
@@ -108,10 +108,10 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ### Docker部署
 ```bash
 # 构建Docker镜像
-docker build -t manus-ai-agent .
+docker build -t agent-cad/backend .
 
 # 运行容器
-docker run -p 8000:8000 --env-file .env -v /var/run/docker.sock:/var/run/docker.sock manus-ai-agent
+docker run -p 8000:8000 --env-file .env -v /var/run/docker.sock:/var/run/docker.sock agent-cad/backend
 ```
 
 > 注意：如果使用Docker部署，需要挂载Docker套接字以便后端可以创建沙盒容器。

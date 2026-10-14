@@ -6,7 +6,7 @@
       <div class="items-center hidden px-5 pt-5 pb-3 md:flex">
         <div class="flex">
           <Bot :size="30" />
-          <ManusLogoTextIcon width="69.47368421052632" height="30" />
+          <AgentCadLogoTextIcon width="69.47368421052632" height="30" />
         </div>
       </div>
       <h3
@@ -68,7 +68,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Bot, ChevronLeft } from 'lucide-vue-next'
-import ManusLogoTextIcon from '@/components/icons/ManusLogoTextIcon.vue'
+import AgentCadLogoTextIcon from '@/components/icons/AgentCadLogoTextIcon.vue'
 
 export interface TabItem {
   id: string

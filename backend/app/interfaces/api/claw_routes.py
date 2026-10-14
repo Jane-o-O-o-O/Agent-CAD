@@ -80,7 +80,7 @@ async def upload_claw_file(
     claw_service: ClawService = Depends(get_claw_service),
     file_service: FileService = Depends(get_file_service),
 ) -> APIResponse[FileInfoResponse]:
-    """Upload a file from the claw workspace to Manus storage (authenticated by claw API key)"""
+    """Upload a file from the claw workspace to Agent-CAD storage (authenticated by claw API key)"""
     user_id = await claw_service.verify_api_key(x_claw_api_key)
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid claw API key")
@@ -121,7 +121,7 @@ async def resolve_claw_file_meta(
     claw_service: ClawService = Depends(get_claw_service),
     file_service: FileService = Depends(get_file_service),
 ) -> APIResponse[FileInfoResponse]:
-    """Get file metadata for manus-file:// resolution (authenticated by claw API key)"""
+    """Get file metadata for agent-cad-file:// resolution (authenticated by claw API key)"""
     user_id = await claw_service.verify_api_key(x_claw_api_key)
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid claw API key")
@@ -138,7 +138,7 @@ async def resolve_claw_file_download(
     claw_service: ClawService = Depends(get_claw_service),
     file_service: FileService = Depends(get_file_service),
 ):
-    """Download file content for manus-file:// resolution (authenticated by claw API key)"""
+    """Download file content for agent-cad-file:// resolution (authenticated by claw API key)"""
     user_id = await claw_service.verify_api_key(x_claw_api_key)
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid claw API key")
@@ -246,7 +246,7 @@ async def claw_ws(websocket: WebSocket, token: str | None = None):
 
     async def _process_files(file_ids: list[str], uid: str) -> tuple[str, list[ClawAttachment]]:
         """Download files from GridFS, push to Claw workspace, return
-        (MANUS_FILE reference tags for the message, attachment metadata for history).
+        (AGENT_CAD_FILE reference tags for the message, attachment metadata for history).
 
         Mirrors kimi-claw's file resolution: download → save to workspace → reference tag.
         """
@@ -268,7 +268,7 @@ async def claw_ws(websocket: WebSocket, token: str | None = None):
                 ))
 
                 if not claw_base_url:
-                    refs.append(f'<MANUS_FILE name="{filename}" id="{fid}" status="no_claw" />')
+                    refs.append(f'<AGENT_CAD_FILE name="{filename}" id="{fid}" status="no_claw" />')
                     continue
 
                 # Push file to Claw workspace
@@ -284,7 +284,7 @@ async def claw_ws(websocket: WebSocket, token: str | None = None):
                     local_path = result.get("path", "")
 
                 refs.append(
-                    f'<MANUS_FILE path="{local_path}" name="{filename}" '
+                    f'<AGENT_CAD_FILE path="{local_path}" name="{filename}" '
                     f'id="{fid}" type="{ct}" size="{info.size}" />'
                 )
                 logger.info(f"[claw-ws] pushed {filename} to workspace: {local_path}")
@@ -292,7 +292,7 @@ async def claw_ws(websocket: WebSocket, token: str | None = None):
             except Exception as e:
                 logger.warning(f"[claw-ws] failed to process file {fid}: {e}")
                 refs.append(
-                    f'<MANUS_FILE name="{fid}" id="{fid}" status="download_failed" '
+                    f'<AGENT_CAD_FILE name="{fid}" id="{fid}" status="download_failed" '
                     f'reason="{str(e)[:100]}" />'
                 )
 

@@ -5,7 +5,7 @@
         <a href="/">
           <div class="flex">
             <Bot :size="30" />
-            <ManusLogoTextIcon />
+            <AgentCadLogoTextIcon />
           </div>
         </a>
       </div>
@@ -21,8 +21,8 @@
           <h1 class="text-[20px] font-bold text-center text-[var(--text-primary)] max-sm:text-[18px]">
             {{ 
               isResettingPassword ? t('Reset Password') 
-              : isRegistering ? t('Register to Manus') 
-              : t('Login to Manus') 
+              : isRegistering ? t('Register to Agent-CAD')
+              : t('Login to Agent-CAD')
             }}
           </h1>
         </div>
@@ -45,7 +45,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Bot } from 'lucide-vue-next'
-import ManusLogoTextIcon from '@/components/icons/ManusLogoTextIcon.vue'
+import AgentCadLogoTextIcon from '@/components/icons/AgentCadLogoTextIcon.vue'
 import LoginForm from '@/components/login/LoginForm.vue'
 import RegisterForm from '@/components/login/RegisterForm.vue'
 import ResetPasswordForm from '@/components/login/ResetPasswordForm.vue'

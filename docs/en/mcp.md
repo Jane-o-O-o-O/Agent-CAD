@@ -2,13 +2,7 @@
 
 ## Introduction
 
-MCP (Model Context Protocol) is an open standard protocol for providing secure connections between language model applications and external data sources and tools. In AI Manus, MCP allows AI assistants to access and use various external services and tools, such as GitHub API, file systems, databases, and more.
-
-## Demo
-
-> Task: Analyze the GitHub repositories of user simpleyyt
-
-![](https://raw.githubusercontent.com/Simpleyyt/picgo-image/master/mcp.mp4 ':include controls width="100%"')
+MCP (Model Context Protocol) is an open standard protocol for providing secure connections between language model applications and external data sources and tools. In Agent-CAD, MCP allows AI assistants to access and use various external services and tools, such as GitHub API, file systems, databases, and more.
 
 ## Configuration Guide
 
@@ -65,7 +59,7 @@ Configure MCP service in `docker-compose.yml`:
 ...
 services:
   backend:
-    image: simpleyyt/manus-backend
+    image: agent-cad/backend
     volumes:
       - ./mcp.json:/etc/mcp.json  # Mount MCP configuration file
       - ...
@@ -78,4 +72,4 @@ services:
 ## Additional Resources
 
 - [MCP Official Documentation](https://modelcontextprotocol.io/)
-- [MCP Server List](https://github.com/modelcontextprotocol/servers) 
+- [MCP Server List](https://github.com/modelcontextprotocol/servers)

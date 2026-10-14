@@ -7,7 +7,7 @@
           <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 sm:flex-none"><a href="/" class="hidden sm:flex">
               <div class="flex items-center gap-[3px]">
                 <Bot :size="24" class="w-6 h-6" />
-                <ManusLogoTextIcon :height="30" :width="65" />
+                <AgentCadLogoTextIcon :height="30" :width="65" />
               </div>
             </a>
             <div
@@ -80,7 +80,7 @@
           </svg>
         </button>
         <div class="text-center text-[var(--text-primary)] whitespace-pre-line"
-          v-html="$t('You are viewing a completed Manus task. Replay will start automatically in {countdown} seconds.', { countdown: `<strong>${countdown}</strong>` })">
+          v-html="$t('You are viewing a completed Agent-CAD task. Replay will start automatically in {countdown} seconds.', { countdown: `<strong>${countdown}</strong>` })">
         </div>
       </div>
     </div>
@@ -110,7 +110,7 @@ import {
 import ToolPanel from '../components/ToolPanel.vue'
 import PlanPanel from '../components/PlanPanel.vue';
 import { ArrowDown, FileSearch, Link, Bot } from 'lucide-vue-next';
-import ManusLogoTextIcon from '../components/icons/ManusLogoTextIcon.vue';
+import AgentCadLogoTextIcon from '../components/icons/AgentCadLogoTextIcon.vue';
 import { showErrorToast, showSuccessToast } from '../utils/toast';
 import type { FileInfo } from '../api/file';
 import { useSessionFileList } from '../composables/useSessionFileList'

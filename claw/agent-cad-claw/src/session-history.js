@@ -48,7 +48,7 @@ export class SessionHistory {
         const entry = entries.find(
           s => s.sessionId === sessionId || s.sessionKey === sessionId
               || s.id === sessionId
-              // Also match partial sessionKey suffix (e.g. "manus-main" matches "agent:main:manus:main")
+              // Also match partial sessionKey suffix (e.g. "agent-cad-main" matches "agent:main:agent-cad:main")
               || (s.sessionKey && s.sessionKey.includes(sessionId)),
         );
         if (entry?.sessionFile) {

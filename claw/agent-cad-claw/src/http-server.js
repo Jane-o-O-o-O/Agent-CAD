@@ -48,7 +48,7 @@ const MIME_TYPES = {
   '.sh': 'application/x-sh',
 };
 
-export class ManusClawHttpServer {
+export class AgentCadClawHttpServer {
   constructor({ port, host, logger, gatewayBridge, workspaceDir, openclawHome, agentId }) {
     this.port = port || 18788;
     this.host = host || '0.0.0.0';
@@ -66,10 +66,10 @@ export class ManusClawHttpServer {
   start() {
     this.server = http.createServer((req, res) => this._handleRequest(req, res));
     this.server.listen(this.port, this.host, () => {
-      this.logger?.info?.(`[manus-claw] HTTP server listening on ${this.host}:${this.port}`);
+      this.logger?.info?.(`[agent-cad-claw] HTTP server listening on ${this.host}:${this.port}`);
     });
     this.server.on('error', (err) => {
-      this.logger?.error?.(`[manus-claw] HTTP server error: ${String(err)}`);
+      this.logger?.error?.(`[agent-cad-claw] HTTP server error: ${String(err)}`);
     });
   }
 
@@ -185,7 +185,7 @@ export class ManusClawHttpServer {
       return sendJSON(res, 400, { error: 'message is required' });
     }
 
-    const sessionId = session_id || 'manus-main';
+    const sessionId = session_id || 'agent-cad-main';
 
     if (!this.gatewayBridge?.isGatewayReady?.()) {
       return sendJSON(res, 503, { error: 'Gateway not ready' });
@@ -274,8 +274,8 @@ export class ManusClawHttpServer {
     const rawSessionId = url.searchParams.get('session_id') || 'default';
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '200', 10), 500);
 
-    // Map to the sessionKey format OpenClaw uses internally: "manus:{rawSessionId}"
-    const sessionId = `manus:${rawSessionId}`;
+    // Map to the sessionKey format OpenClaw uses internally: "agent-cad:{rawSessionId}"
+    const sessionId = `agent-cad:${rawSessionId}`;
 
     // 1. Local first: read from .jsonl
     const localEntries = this.sessionHistory.readEntries(sessionId, limit);
@@ -308,7 +308,7 @@ export class ManusClawHttpServer {
           } else if (btype === 'resource_link') {
             const uri = block.uri;
             if (uri) {
-              const m = uri.match(/^manus-file:\/\/(.+)$/);
+              const m = uri.match(/^agent-cad-file:\/\/(.+)$/);
               attachments.push({
                 file_id: m ? m[1] : undefined,
                 uri,
@@ -336,9 +336,9 @@ export class ManusClawHttpServer {
         content = content.text || JSON.stringify(content);
       }
 
-      // Extract <MANUS_FILE .../> tags from text content
-      if (typeof content === 'string' && content.includes('<MANUS_FILE')) {
-        const tagRegex = /<MANUS_FILE\b([^>]*)\/>/g;
+      // Extract <AGENT_CAD_FILE .../> tags from text content
+      if (typeof content === 'string' && content.includes('<AGENT_CAD_FILE')) {
+        const tagRegex = /<AGENT_CAD_FILE\b([^>]*)\/>/g;
         let match;
         while ((match = tagRegex.exec(content)) !== null) {
           const attrs = match[1];
@@ -355,7 +355,7 @@ export class ManusClawHttpServer {
             });
           }
         }
-        content = content.replace(/<MANUS_FILE\b[^>]*\/>/g, '').trim();
+        content = content.replace(/<AGENT_CAD_FILE\b[^>]*\/>/g, '').trim();
       }
 
       const msg = {
