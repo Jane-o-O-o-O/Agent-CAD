@@ -1,11 +1,15 @@
 FROM python:3.12-slim
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends libseccomp2 \
+# The OCP novtk wheel still links OpenGL/X11 and fontconfig's system Expat.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libexpat1 libgl1 libseccomp2 libx11-6 \
     && rm -rf /var/lib/apt/lists/*
 RUN groupadd --gid 10001 cad && useradd --uid 10001 --gid cad --create-home cad \
     && mkdir -p /var/lib/agent-cad && chown cad:cad /var/lib/agent-cad
 COPY requirements-cad-v2.txt ./
 RUN pip install --no-cache-dir -r requirements-cad-v2.txt
+# HTTP health alone does not load OCP: fail the image build if native CAD is broken.
+RUN python -c "from build123d import Box; shape = Box(1, 2, 3); assert shape.is_valid and abs(shape.volume - 6) < 1e-9"
 COPY app ./app
 ENV PYTHONPATH=/app PYTHONDONTWRITEBYTECODE=1 CAD_V2_DATA_DIR=/var/lib/agent-cad CAD_V2_ISOLATION=strict
 USER cad

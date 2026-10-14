@@ -7,11 +7,15 @@ RUN sed -i 's|http://deb.debian.org/debian|http://mirrors.aliyun.com/debian|g' /
     sed -i 's|http://deb.debian.org/debian-security|http://mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources
 
 # Install system tools used by the backend and deterministic CAD file intake.
+# OCP novtk still links OpenGL/X11 and fontconfig's system Expat.
 RUN apt-get update && apt-get install -y \
     build-essential \
     cargo \
     curl \
+    libexpat1 \
+    libgl1 \
     libseccomp2 \
+    libx11-6 \
     libreoffice \
     poppler-utils \
     rustc \
@@ -33,6 +37,8 @@ ENV UV_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 # Install dependencies
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
+# Catch missing CAD shared libraries before the API can report healthy.
+RUN /app/.venv/bin/python -c "from build123d import Box; shape = Box(1, 2, 3); assert shape.is_valid and abs(shape.volume - 6) < 1e-9"
 
 # Copy project files
 COPY . .
