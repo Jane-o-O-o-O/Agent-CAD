@@ -132,15 +132,21 @@ uv run pytest
 
 ### 3.3 Frontend
 
-No automated test runner is configured. Validate with:
+The CAD V2 workspace has a Node test runner. Validate with:
 
 ```bash
 cd frontend
+npm test             # CAD job/revision/SSE state regression tests
 npm run type-check    # vue-tsc type checking
 npm run build         # production build (catches template + TS errors)
 ```
 
 For manual UI testing, start the full dev stack (`./dev.sh up -d`) and open `http://localhost:5173`.
+For standalone V2, use the deployment instructions below. After building, run
+`python frontend/tests/browser_cad_v2.py --output /tmp/cad-v2-browser` from the
+repository root in a CAD Python environment with Playwright/Chromium installed.
+This starts its own local server and tests real login, WebGL loading, parameter
+rebuilds, revision-bound exports and history restoration without model calls.
 
 ### 3.4 Mockserver
 
@@ -164,6 +170,39 @@ curl -X POST http://localhost:8090/v1/chat/completions \
 ---
 
 ## 4 · Common Environment Notes
+
+### Exact 3D CAD V2 without the legacy infrastructure
+
+Use Linux and Python 3.12. The full application dependencies are large because
+document processing includes ML libraries; the independent CAD runtime is locked
+in `backend/requirements-cad-v2.txt`.
+
+```bash
+cd backend
+uv venv --python 3.12 .venv-cad
+uv pip install --python .venv-cad/bin/python -r requirements-cad-v2.txt
+export CAD_V2_LOCAL_TOKEN='set-your-own-private-token-at-least-16-characters'
+export CAD_V2_DATA_DIR="$PWD/.cad-v2-data"
+.venv-cad/bin/python -m uvicorn app.interfaces.cad_v2_app:app --host 127.0.0.1 --port 8000 --workers 1
+```
+
+Start frontend with `BACKEND_URL=http://127.0.0.1:8000 npm run dev`, then open
+`/chat/cad-v2` and log in with `local@localhost` and the configured token.
+Only one supervisor may open the same SQLite data directory. Never delete it
+to bypass a lock. Keep the persistent volume and absolute data-root stable when
+backing up/restoring revisions. Local token logout clears browser state; rotate
+the environment token and restart to revoke it.
+
+For tests, install pytest, pytest-asyncio, requests, ezdxf, agentscope==2.0.0,
+`mcp>=1.9,<2` and pydantic-settings in the CAD environment. Run
+`python -m pytest tests/cad_v2 tests/test_agentscope_runtime.py tests/test_skills.py -q`.
+These tests do not require Mongo, Redis or paid models; CAD tests execute the real
+kernel and subprocesses. Do not run the unrelated HTTP/sandbox tests without their
+services. `python -m benchmarks.cad_v2.run --output /tmp/cad-v2-benchmark` runs the
+fixed 30-design corpus. Frontend uses `npm test`, `npm run type-check`, `npm run build`.
+Keep production model credentials out of worker environments, reports and commits.
+
+<!-- Added 2026-10-14: independently runnable exact CAD V2, real-kernel testing and revision persistence. -->
 
 ### Generate a real CAD sample without infrastructure
 

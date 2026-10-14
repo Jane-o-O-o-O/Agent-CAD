@@ -4,7 +4,7 @@
 
 ### AI 原生 CAD 工程智能体
 
-**将工程需求、参考文件与自然语言指令，转化为结构化二维图纸和经过校验的 DXF 交付物。**
+**生成、编辑和验证参数化三维机械零件，同时保留原有二维 DXF 工作流。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-16a34a.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB.svg?logo=python&logoColor=white)](backend/pyproject.toml)
@@ -18,6 +18,45 @@
 </div>
 
 ---
+
+## V2 精确 CAD 工作台
+
+新增 CAD IR 2.0、build123d/OpenCascade 实体建模、受限子进程任务、实际几何与 STEP 重导入验证、参数及特征编辑、不可变历史版本，以及 `/chat/cad-v2` 三维工作台。STEP/STL/GLB/IR/Python 五种产物绑定同一版本；原 `/api/v1/cad/*` 二维接口保留。
+
+固定的 **20 个基础 + 10 个中等 IR 设计，真实内核验证 30/30 通过**。这是已审查 IR 的几何成绩，不是通用自然语言成功率。详见[基准报告](docs/refactor/benchmark-report.md)、[V2 架构](docs/refactor/architecture-v2.md)、[迁移指南](docs/refactor/migration-guide.md)、[最终交付报告](docs/refactor/final-report.md)。
+
+### 独立启动，无需 Mongo、Redis 或浏览器沙箱
+
+已测试 Linux、Python 3.12、Node 24。在后端终端运行：
+
+```bash
+cd backend
+uv venv --python 3.12 .venv-cad
+uv pip install --python .venv-cad/bin/python -r requirements-cad-v2.txt
+export CAD_V2_LOCAL_TOKEN='replace-with-your-private-ascii-token'
+export CAD_V2_DATA_DIR="$PWD/.cad-v2-data"
+.venv-cad/bin/python -m uvicorn app.interfaces.cad_v2_app:app --host 127.0.0.1 --port 8000 --workers 1
+```
+
+在前端终端运行：
+
+```bash
+cd frontend
+npm ci
+BACKEND_URL=http://127.0.0.1:8000 npm run dev -- --host 127.0.0.1
+```
+
+打开 `http://127.0.0.1:5173/chat/cad-v2`，使用 `local@localhost` 登录，密码为自己设置的 `CAD_V2_LOCAL_TOKEN`。此模式是本地单用户运行方式；完整项目仍使用原有认证。
+
+离线可直接输入：
+
+> 生成一块长 80 mm、宽 50 mm、厚 8 mm 的安装板，在四角开四个直径 6 mm 的通孔，孔中心的水平距离为 60 mm，垂直距离为 30 mm。
+
+生成后输入：`将四个孔的直径改成 8 mm，其他保持不变。` 复杂需求需配置 `CAD_V2_API_BASE`、`CAD_V2_API_KEY`、`CAD_V2_MODEL`（默认 `gpt-6.1-sol`）；完整 IR 可完全离线执行。密钥仅通过环境变量注入，参考 `backend/.env.cad-v2.example`。
+
+可选容器配置：`docker compose -f docker-compose.cad-v2.yml up --build`，SQLite 与工程文件使用持久卷。本次环境没有 Docker，未声称容器启动验收通过。
+
+当前支持单主机、单 API supervisor，数据目录须为本地持久存储。执行器只接受可信 IR，不运行模型 Python；进程和资源限制不等同于操作系统文件/网络沙箱。复杂曲面修饰、装配、通用约束求解和分布式执行仍有限制，无法验证的约束会阻止发布。
 
 ## 关于 Agent-CAD
 
@@ -97,7 +136,7 @@ flowchart LR
 
 ### 当前产品边界
 
-Agent-CAD 当前聚焦于可编辑的**二维工程图，并以 DXF 作为主要交付格式**。原生 DWG 编写、生产级三维实体、装配体、STEP/STL 输出及自动化标准认证尚未作为已完成能力进行宣传。
+原有链路聚焦可编辑的**二维 DXF 工程图**；独立 V2 工作台增加上述精确三维实体与 STEP/STL 交付。原生 DWG 编写、装配体、通用自由曲面和自动化标准认证尚未完成。
 
 ## 技术栈
 

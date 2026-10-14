@@ -1,0 +1,11 @@
+FROM python:3.12-slim
+WORKDIR /app
+RUN groupadd --gid 10001 cad && useradd --uid 10001 --gid cad --create-home cad \
+    && mkdir -p /var/lib/agent-cad && chown cad:cad /var/lib/agent-cad
+COPY requirements-cad-v2.txt ./
+RUN pip install --no-cache-dir -r requirements-cad-v2.txt
+COPY app ./app
+ENV PYTHONPATH=/app PYTHONDONTWRITEBYTECODE=1 CAD_V2_DATA_DIR=/var/lib/agent-cad
+USER cad
+EXPOSE 8000
+CMD ["python", "-m", "uvicorn", "app.interfaces.cad_v2_app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

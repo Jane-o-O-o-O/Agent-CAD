@@ -117,6 +117,8 @@ scipy==1.18.1
     #   ocp-gordon
     #   scikit-learn
     #   svgpathtools
+socksio==1.0.0
+    # via httpx
 stack-data==0.6.3
     # via ipython
 starlette==1.8.0
