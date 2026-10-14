@@ -6,10 +6,13 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Set hostname to sandbox
 ENV HOSTNAME=sandbox
 
-# Configure apt source to use Aliyun mirror
-RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|http://mirrors.aliyun.com/ubuntu/|g' /etc/apt/sources.list && \
-    sed -i 's|http://security.ubuntu.com/ubuntu/|http://mirrors.aliyun.com/ubuntu/|g' /etc/apt/sources.list && \
-    sed -i 's|http://ports.ubuntu.com/ubuntu-ports/|http://mirrors.aliyun.com/ubuntu-ports/|g' /etc/apt/sources.list
+# Preserve the local mirror default; CI can keep the image's official apt sources.
+ARG USE_ALIYUN_MIRROR=true
+RUN if [ "$USE_ALIYUN_MIRROR" = "true" ]; then \
+      sed -i 's|http://archive.ubuntu.com/ubuntu/|http://mirrors.aliyun.com/ubuntu/|g' /etc/apt/sources.list && \
+      sed -i 's|http://security.ubuntu.com/ubuntu/|http://mirrors.aliyun.com/ubuntu/|g' /etc/apt/sources.list && \
+      sed -i 's|http://ports.ubuntu.com/ubuntu-ports/|http://mirrors.aliyun.com/ubuntu-ports/|g' /etc/apt/sources.list; \
+    fi
 
 # Update and install basic tools
 RUN apt-get update && apt-get install -y \

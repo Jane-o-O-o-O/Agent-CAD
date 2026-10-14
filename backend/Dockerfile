@@ -2,9 +2,12 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Configure apt source to use Aliyun mirror
-RUN sed -i 's|http://deb.debian.org/debian|http://mirrors.aliyun.com/debian|g' /etc/apt/sources.list.d/debian.sources && \
-    sed -i 's|http://deb.debian.org/debian-security|http://mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources
+# Preserve the local mirror default; CI can keep the image's official apt sources.
+ARG USE_ALIYUN_MIRROR=true
+RUN if [ "$USE_ALIYUN_MIRROR" = "true" ]; then \
+      sed -i 's|http://deb.debian.org/debian|http://mirrors.aliyun.com/debian|g' /etc/apt/sources.list.d/debian.sources && \
+      sed -i 's|http://deb.debian.org/debian-security|http://mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources; \
+    fi
 
 # Install system tools used by the backend and deterministic CAD file intake.
 # OCP novtk still links OpenGL/X11 and fontconfig's system Expat.
