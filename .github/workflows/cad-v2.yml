@@ -49,7 +49,7 @@ jobs:
           python-version: '3.12'
       - name: Install real browser acceptance runtime
         run: |
-          pip install -r backend/requirements-cad-v2.txt playwright==1.51.0
+          pip install -r backend/requirements-cad-v2.txt playwright==1.51.0 pytest==9.1.1
           python -m playwright install --with-deps chromium
       - name: Real login, WebGL, rebuild, downloads and history
         run: python frontend/tests/browser_cad_v2.py --output /tmp/cad-v2-browser
