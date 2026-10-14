@@ -47,6 +47,15 @@
           </div>
         </div>
 
+        <RouterLink
+          to="/chat/cad-v2"
+          class="cad-nav-row flex items-center rounded-[10px] transition-colors w-full gap-[12px] h-[40px] ps-[9px] pe-[2px]"
+          :class="route.path === '/chat/cad-v2' ? 'is-active' : ''">
+          <Box :size="18" class="shrink-0 text-[var(--text-primary)]" />
+          <span class="flex-1 text-[14px] text-[var(--text-primary)]">三维 CAD 工作台</span>
+          <span class="mr-2 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] text-emerald-700">V2</span>
+        </RouterLink>
+
         <!-- Claw 入口 -->
         <div
           v-if="clawEnabled"
@@ -61,7 +70,7 @@
           </div>
         </div>
         <!-- 所有任务分组标�?+ 会话列表 -->
-        <div class="flex flex-col flex-1 min-h-0 -mx-[8px] mt-[4px] overflow-hidden">
+        <div v-if="!cadV2Standalone" class="flex flex-col flex-1 min-h-0 -mx-[8px] mt-[4px] overflow-hidden">
           <div class="w-full border-t border-[var(--border-main)] transition-opacity duration-200" :class="isListScrolled ? 'opacity-100' : 'opacity-0'"></div>
 
           <!-- 滚动容器：标�?+ 列表一起滚�?-->
@@ -109,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { PanelLeft, Command, MessageSquareDashed, ChevronUp, SquarePen } from 'lucide-vue-next';
+import { PanelLeft, Command, MessageSquareDashed, ChevronUp, SquarePen, Box } from 'lucide-vue-next';
 import SessionItem from './SessionItem.vue';
 import { useLeftPanel } from '../composables/useLeftPanel';
 import { computed, ref, onMounted, watch, onUnmounted } from 'vue';
@@ -129,6 +138,7 @@ const cancelGetSessionsSSE = ref<(() => void) | null>(null)
 const isAllTasksCollapsed = ref(false)
 const isListScrolled = ref(false)
 const clawEnabled = ref(false)
+const cadV2Standalone = ref(false)
 const scrollContainerRef = ref<HTMLElement | null>(null)
 const isHomeRoute = computed(() => route.path === '/' || route.path === '/home' || route.path === '/chat' || route.path === '/chat/home')
 
@@ -140,6 +150,7 @@ const handleListScroll = () => {
 
 // Function to fetch sessions data
 const updateSessions = async () => {
+  if (cadV2Standalone.value) return
   try {
     const response = await getSessions()
     sessions.value = response.sessions
@@ -150,6 +161,7 @@ const updateSessions = async () => {
 
 // Function to fetch sessions data
 const fetchSessions = async () => {
+  if (cadV2Standalone.value) return
   try {
     if (cancelGetSessionsSSE.value) {
       cancelGetSessionsSSE.value()
@@ -175,7 +187,7 @@ const fetchSessions = async () => {
 }
 
 const handleNewTaskClick = () => {
-  router.push('/chat')
+  router.push(cadV2Standalone.value ? '/chat/cad-v2' : '/chat')
 }
 
 const handleClawClick = () => {
@@ -197,11 +209,10 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 onMounted(async () => {
-  getCachedClientConfig().then(cfg => {
-    clawEnabled.value = cfg?.claw_enabled ?? false
-  })
-
-  fetchSessions()
+  const cfg = await getCachedClientConfig()
+  clawEnabled.value = cfg?.claw_enabled ?? false
+  cadV2Standalone.value = cfg?.cad_v2_standalone ?? false
+  if (!cadV2Standalone.value) void fetchSessions()
 
   // Add keyboard event listener
   window.addEventListener('keydown', handleKeydown)

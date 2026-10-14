@@ -2,6 +2,7 @@
   <div class="w-full max-w-[384px] py-[24px] pt-0 px-[12px] relative" style="z-index:1">
     <div class="flex flex-col justify-center gap-[40px] text-[var(--text-primary)] max-sm:gap-[12px]">
       <form @submit.prevent="handleSubmit" class="flex flex-col items-stretch gap-[20px]">
+        <p v-if="localAuth" class="text-xs leading-5 text-[var(--text-tertiary)]">本地 CAD 工作台：使用 local@localhost，密码为启动服务时设置的私有口令。</p>
         <div class="relative">
           <div class="transition-all duration-500 ease-out opacity-100 scale-100">
             <div class="flex flex-col gap-[12px]">
@@ -32,7 +33,7 @@
                     class="text-[13px] text-[var(--text-primary)] font-medium after:content-[&quot;*&quot;] after:text-[var(--function-error)] after:ml-[4px]">
                     <span>{{ t('Password') }}</span>
                   </label>
-                  <span
+                  <span v-if="!localAuth"
                     class="underline text-[var(--text-tertiary)] text-[13px] leading-[18px] transition-opacity cursor-pointer select-none hover:opacity-80 active:opacity-80"
                     @click="emits('switchToReset')">{{ t('Forgot Password?') }}</span>
                 </div>
@@ -91,7 +92,7 @@ import { Eye, EyeOff, LoaderCircle } from 'lucide-vue-next'
 import { useAuth } from '@/api'
 import { validateUserInput } from '@/utils/auth'
 import { showErrorToast, showSuccessToast } from '@/utils/toast'
-import { getCachedAuthProvider } from '@/api/config'
+import { getCachedClientConfig } from '@/api/config'
 
 const { t } = useI18n()
 
@@ -104,6 +105,14 @@ const emits = defineEmits<{
 
 const { login, isLoading, authError } = useAuth()
 const hasRegister = ref(false)
+const localAuth = ref(false)
+
+// The standalone service has one fixed local identity, not a public email account.
+// Keep registration/profile email validation and other login providers unchanged.
+const validateLoginInput = (data: { email?: string; password?: string }) =>
+  validateUserInput(localAuth.value && data.email === 'local@localhost'
+    ? { ...data, email: undefined }
+    : data)
 
 // Form state
 const showPassword = ref(false)
@@ -131,14 +140,14 @@ const validateField = (field: string) => {
   const errors: Record<string, string> = {}
 
   if (field === 'email') {
-    const result = validateUserInput({ email: formData.value.email })
+    const result = validateLoginInput({ email: formData.value.email })
     if (result.errors.email) {
       errors.email = result.errors.email
     }
   }
 
   if (field === 'password') {
-    const result = validateUserInput({ password: formData.value.password })
+    const result = validateLoginInput({ password: formData.value.password })
     if (result.errors.password) {
       errors.password = result.errors.password
     }
@@ -162,7 +171,7 @@ const validateForm = () => {
     password: formData.value.password
   }
 
-  const result = validateUserInput(data)
+  const result = validateLoginInput(data)
   validationErrors.value = { ...result.errors }
 
   return Object.keys(validationErrors.value).length === 0
@@ -200,8 +209,10 @@ const handleSubmit = async () => {
 }
 
 onMounted(async () => {
-  const authProvider = await getCachedAuthProvider()
-  hasRegister.value = authProvider === 'password'
+  const config = await getCachedClientConfig()
+  hasRegister.value = config?.auth_provider === 'password'
+  localAuth.value = config?.cad_v2_standalone === true
+  if (localAuth.value) formData.value.email = 'local@localhost'
 })
 
 // Expose clearForm method for parent component

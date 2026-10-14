@@ -6,7 +6,7 @@ import { clearStoredTokens, getStoredToken, getStoredRefreshToken, storeToken } 
 
 // API configuration
 export const API_CONFIG = {
-  host: import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : ''),
+  host: import.meta.env.VITE_API_URL || '',
   version: 'v1',
   timeout: 30000, // Request timeout in milliseconds
 };
