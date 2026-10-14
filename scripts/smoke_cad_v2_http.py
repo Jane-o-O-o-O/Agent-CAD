@@ -86,7 +86,11 @@ def main():
                     groups = [(int(lines[i].strip()), lines[i + 1].strip()) for i in range(0, len(lines), 2)]
                     assert (0, "SECTION") in groups and (2, "ENTITIES") in groups and groups[-1] == (0, "EOF")
                     assert groups.count((0, "LINE")) >= 12
-                    assert groups.count((0, "DIMENSION")) >= 6
+                    # This unperforated box has one callout per overall size;
+                    # the three views deliberately do not duplicate dimensions.
+                    assert groups.count((0, "DIMENSION")) == 3
+                    assert all(groups.count((1000, role)) == 1 for role in
+                               ("overall_width", "overall_depth", "overall_height"))
                     units = groups.index((9, "$INSUNITS"))
                     assert groups[units + 1] == (70, "4")  # DXF millimetres
                 if format == "svg":
