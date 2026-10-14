@@ -191,3 +191,31 @@ def test_blind_pocket_is_not_an_unexpected_through_hole():
         f('pocket','Pocket',{'depth':2},['hole','sk'])],
         {'holes':[{'diameter':4,'positions':[[5,10,0]],'through':True}]})
     assert validate(result)['status']=='passed'
+
+
+@pytest.mark.parametrize('kind,expected,axis',[
+    ('dimension',80,'x'),
+    ('volume',32000-4*math.pi*9*8,None),
+    ('solid_count',1,None),
+])
+def test_constraint_can_target_final_feature_but_not_intermediate(kind,expected,axis,tmp_path):
+    ir=plate_ir()
+    constraint={'id':'explicit_target','type':kind,'feature_id':'holes','expected':expected}
+    if axis is not None:
+        constraint['axis']=axis
+    ir['constraints']=[constraint]
+    engine=Build123dBackend()
+    result=engine.build(compile_ir(ir))
+    report=engine.validate(result)
+    assert report['status']=='passed'
+    check=next(c for c in report['checks'] if c['name']=='constraint.explicit_target')
+    assert check['actual']==pytest.approx(expected)
+    engine.export(result,tmp_path/'final')
+    assert result.geometry['step_roundtrip_checks']['status']=='passed'
+    # The identical expected values are not asserted against an intermediate feature's
+    # geometry by accidentally reading the final solid instead.
+    ir['constraints'][0]['feature_id']='plate'
+    report=engine.validate(engine.build(compile_ir(ir)))
+    assert report['status']=='unverified'
+    check=next(c for c in report['checks'] if c['name']=='constraint.explicit_target')
+    assert check['status']=='unverified' and check['actual'] is None

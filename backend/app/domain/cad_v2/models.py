@@ -308,6 +308,8 @@ class CADDocumentIR(StrictModel):
     @classmethod
     def validate_parameter_names(cls, value: dict[str, Parameter]) -> dict[str, Parameter]:
         for name in value:
+            if name == "pi":
+                raise ValueError("pi is a reserved arithmetic constant")
             if not name.isidentifier() or not name.isascii() or name.startswith("_"):
                 raise ValueError("parameter names must be public ASCII identifiers")
         return value

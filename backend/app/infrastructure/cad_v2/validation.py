@@ -181,10 +181,11 @@ def validate(result: BuildResult) -> dict[str, Any]:
         name=f"constraint.{c['id']}"
         target=c.get("expected")
         tol=c.get("tolerance",tolerance)
-        if c["type"]=="dimension" and c.get("axis") and not c.get("feature_id"):
+        final_target=c.get("feature_id") in (None,compiled.output_feature)
+        if c["type"]=="dimension" and c.get("axis") and final_target:
             actual=geom["bbox"]["size"]["xyz".index(c["axis"])]
             checks.append(_check(name,target,actual,isinstance(target,(float,int)) and math.isclose(target,actual,abs_tol=tol,rel_tol=0),tol,"Final B-Rep bounding box"))
-        elif c["type"] in {"volume","solid_count"} and not c.get("feature_id"):
+        elif c["type"] in {"volume","solid_count"} and final_target:
             actual=geom["volume" if c["type"]=="volume" else "solids"]
             checks.append(_check(name,target,actual,isinstance(target,(float,int)) and math.isclose(target,actual,abs_tol=tol,rel_tol=0),tol,"Final B-Rep mass/topology"))
         elif c["type"]=="hole" and isinstance(target,dict) and {"diameter","positions"}<=target.keys():

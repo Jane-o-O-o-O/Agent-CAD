@@ -121,6 +121,7 @@ async def plan(prompt: str, document_id: str) -> CADDocumentIR:
             "If a necessary engineering dimension is missing or contradictory return {\"clarification\":\"specific question\"}. "
             "Retain every explicit dimension, hole, position and feature; never simplify the design. "
             "Use editable named length parameters and expressions in feature params AND expected_geometry. "
+            "Expressions allow numeric literals, named parameters, pi, and + - * / ** only; no function calls. "
             "Feature order must be topological; inputs refer to earlier stable feature ids. "
             "Box origin is its minimum corner; Cylinder origin is its bottom center, axis +Z. "
             "Rectangle sketch origin is its minimum corner in its plane; Circle origin is its center. "
