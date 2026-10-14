@@ -8,6 +8,8 @@ from app.core.config import get_settings
 from app.infrastructure.storage.mongodb import get_mongodb
 from app.infrastructure.storage.redis import get_redis
 from app.interfaces.dependencies import get_agent_service
+from app.application.services.cad_v2_service import get_cad_v2_service
+from app.interfaces.api.cad_v2_routes import CADRequestSizeLimit
 from app.interfaces.api.routes import router
 from app.interfaces.api.openai_routes import router as openai_router
 from app.infrastructure.logging import setup_logging
@@ -43,10 +45,12 @@ async def lifespan(app: FastAPI):
     await get_redis().initialize()
     
     try:
+        await get_cad_v2_service().start()
         yield
     finally:
         # Code executed on shutdown
         logger.info("Application shutdown - Manus AI Agent terminating")
+        await get_cad_v2_service().shutdown()
         # Disconnect from MongoDB
         await get_mongodb().shutdown()
         # Disconnect from Redis
@@ -64,6 +68,7 @@ async def lifespan(app: FastAPI):
                 logger.error(f"Error during AgentService cleanup: {str(e)}")
 
 app = FastAPI(title="Manus AI Agent", lifespan=lifespan)
+app.add_middleware(CADRequestSizeLimit)
 
 # Configure CORS
 app.add_middleware(
