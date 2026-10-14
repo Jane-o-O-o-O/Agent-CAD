@@ -12,6 +12,8 @@ services:
       CAD_V2_MODEL: ${CAD_V2_MODEL:-gpt-6.1-sol}
       CAD_V2_MAX_CONCURRENCY: "2"
       CAD_V2_MAX_REPAIRS: "3"
+      # Fails closed if the host kernel/container policy lacks Landlock ABI 3.
+      CAD_V2_ISOLATION: strict
     volumes:
       - cad_v2_data:/var/lib/agent-cad
     read_only: true
@@ -27,8 +29,15 @@ services:
     environment:
       BACKEND_URL: http://cad-v2:8000
     ports:
-      - "127.0.0.1:5173:80"
-    depends_on: [cad-v2]
+      - "127.0.0.1:${CAD_V2_PORT:-5173}:80"
+    depends_on:
+      cad-v2:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1/api/v1/auth/status]
+      interval: 10s
+      timeout: 5s
+      retries: 6
     restart: unless-stopped
 volumes:
   cad_v2_data:
