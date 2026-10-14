@@ -1,15 +1,22 @@
 import asyncio
 import json
+import math
 
 import httpx
 import pytest
 
 from app.application.services.cad_v2_planner import edit_prompt, plan
 from app.domain.cad_v2.compiler import apply_edits, compile_ir
+from app.domain.cad_v2.expressions import evaluate_expression, expression_dependencies
 from app.domain.cad_v2.errors import InfrastructureError, RequirementError, SchemaValidationError
 from app.infrastructure.cad_v2.model_gateway import ModelConfig, StructuredModelGateway
 
 PROMPT = "生成一块长 80 mm、宽 50 mm、厚 8 mm 的安装板，在四角开四个直径 6 mm 的通孔，孔中心的水平距离为 60 mm，垂直距离为 30 mm。"
+
+
+def test_builtin_pi_is_numeric_and_not_an_unresolved_parameter():
+    assert expression_dependencies("pi*r**2*h") == {"r", "h"}
+    assert evaluate_expression("pi*r**2*h", {"r": 3, "h": 8}) == pytest.approx(math.pi * 72)
 
 
 def test_acceptance_requirement_and_edit_preserve_envelope():

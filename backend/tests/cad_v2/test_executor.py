@@ -1,6 +1,7 @@
 """Actual subprocess lifecycle and artifacts, separate from provider/network tests."""
 import asyncio
 import json
+import os
 from pathlib import Path
 import sys
 import pytest
@@ -29,7 +30,8 @@ async def test_worker_real_export_and_true_stages(tmp_path):
         assert (directory/item['filename']).stat().st_size==item['size']
     assert json.loads((directory/'model.ir.json').read_text())['document_id']=='executor-box'
     # Exported Python is a reproducible trusted IR replay, not LLM-produced arbitrary code.
-    replay=await asyncio.create_subprocess_exec(sys.executable,str(directory/'model.py'),str(tmp_path/'replay'),stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.PIPE)
+    replay_env = {**os.environ, 'PYTHONPATH': str(Path(__file__).resolve().parents[2])}
+    replay=await asyncio.create_subprocess_exec(sys.executable,str(directory/'model.py'),str(tmp_path/'replay'),env=replay_env,stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.PIPE)
     stdout,stderr=await replay.communicate()
     assert replay.returncode==0,stderr.decode()
     assert (tmp_path/'replay'/'model.step').is_file()

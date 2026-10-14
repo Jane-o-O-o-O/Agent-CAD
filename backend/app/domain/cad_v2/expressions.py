@@ -11,6 +11,7 @@ from .models import Parameter
 MAX_VALUE = 1e12
 MAX_NODES = 64
 _ALLOWED_BINARY = (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Pow)
+CONSTANTS = {"pi": math.pi}
 
 
 def _finite(value: float) -> float:
@@ -40,7 +41,7 @@ def parse_expression(expression: str) -> ast.Expression:
 
 
 def expression_dependencies(expression: str) -> set[str]:
-    return {node.id for node in ast.walk(parse_expression(expression)) if isinstance(node, ast.Name)}
+    return {node.id for node in ast.walk(parse_expression(expression)) if isinstance(node, ast.Name)} - CONSTANTS.keys()
 
 
 def evaluate_expression(value: float | str, parameters: Mapping[str, float]) -> float:
@@ -54,6 +55,8 @@ def evaluate_expression(value: float | str, parameters: Mapping[str, float]) -> 
         if isinstance(node, ast.Constant):
             return _finite(float(node.value))
         if isinstance(node, ast.Name):
+            if node.id in CONSTANTS:
+                return CONSTANTS[node.id]
             if node.id not in parameters:
                 raise DependencyError("unknown parameter", details={"parameter": node.id})
             return _finite(parameters[node.id])
