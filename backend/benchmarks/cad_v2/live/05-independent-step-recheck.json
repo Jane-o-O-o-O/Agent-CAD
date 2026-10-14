@@ -1,0 +1,193 @@
+{
+  "scope": "Independent acceptance of the unchanged published STEP; no additional model call or geometry rebuild",
+  "recorded_at": "2026-10-14T02:31:15.101238+00:00",
+  "source_job_id": "b44d0ef4-51d0-48bc-bece-0404dd566b24",
+  "revision_id": "bf3bdf28-3c75-4efb-8fa3-c096fdcecb7d",
+  "original_runner_status": "failed",
+  "original_runner_error": {
+    "code": "AttributeError",
+    "message": "'NoneType' object has no attribute 'solids'"
+  },
+  "model_calls_in_this_run": 0,
+  "artifacts": {
+    "glb": {
+      "filename": "model.glb",
+      "sha256": "8ac0de8ca5e64582fd0c5e13eee918445e821b13986e22b1e44d8b4217f29c30",
+      "size": 24980
+    },
+    "ir": {
+      "filename": "model.cad-ir.json",
+      "sha256": "7d9746f3003d22ee29c8b922ddfdbed22a85a59c7e3be9d6f6c8a37812c1026d",
+      "size": 7591
+    },
+    "python": {
+      "filename": "model.py",
+      "sha256": "43ee73bc2b849ad1126756cc0f4e3f8540f0b3f9ec95c735abafe00246e650f0",
+      "size": 6776
+    },
+    "step": {
+      "filename": "model.step",
+      "sha256": "1a02644d943ca27383da16f0a7693745ff875d51d52c5027d336e69debb188d7",
+      "size": 23342
+    },
+    "stl": {
+      "filename": "model.stl",
+      "sha256": "1418ba8c157bcf5577046c0dbf86a5a0e2500b453260153b8085c1eb30a3046d",
+      "size": 34484
+    }
+  },
+  "independent_checks": [
+    {
+      "name": "five_revision_formats",
+      "expected": [
+        "glb",
+        "ir",
+        "python",
+        "step",
+        "stl"
+      ],
+      "actual": [
+        "glb",
+        "ir",
+        "python",
+        "step",
+        "stl"
+      ],
+      "status": "passed",
+      "evidence": "Published revision manifest; engineering and preview artifacts share one revision"
+    },
+    {
+      "name": "artifact_consistency",
+      "expected": true,
+      "actual": true,
+      "status": "passed",
+      "evidence": "Byte hashes, GLB header, persisted IR equality and revision-specific paths"
+    },
+    {
+      "name": "reimport_valid_solid",
+      "expected": {
+        "valid": true,
+        "solids": 1
+      },
+      "actual": {
+        "valid": true,
+        "solids": 1
+      },
+      "status": "passed",
+      "evidence": "Actual STEP import and B-Rep topology"
+    },
+    {
+      "name": "absolute_bounds",
+      "expected": {
+        "min": [
+          0,
+          0,
+          0
+        ],
+        "size": [
+          80,
+          50,
+          20
+        ]
+      },
+      "actual": {
+        "min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          80.0,
+          50.0,
+          20.0
+        ]
+      },
+      "status": "passed",
+      "evidence": "Reimported exact B-Rep bounding box, not expected_geometry supplied by the model"
+    },
+    {
+      "name": "analytic_volume",
+      "expected": 35204.42450666159,
+      "actual": 35204.42450666171,
+      "status": "passed",
+      "evidence": "Plate + cylindrical boss − continuous cylindrical bore; fixed analytic specification"
+    },
+    {
+      "name": "bore_profile",
+      "expected": {
+        "radius": 3,
+        "axis_xy": [
+          40,
+          25
+        ],
+        "axial_length": 20
+      },
+      "actual": [
+        {
+          "radius": 3.0,
+          "origin": [
+            40.0,
+            25.0,
+            -1.0
+          ],
+          "direction": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "inward": true,
+          "angular_span": 6.28318530718,
+          "axial_length": 20.0
+        }
+      ],
+      "status": "passed",
+      "evidence": "OCP cylindrical surface radius/axis and summed axial face spans in reimported STEP"
+    },
+    {
+      "name": "bore_is_through",
+      "expected": 0,
+      "actual": 0.0,
+      "status": "passed",
+      "evidence": "Exact B-Rep intersection with a clearance cylinder spanning below plate through above boss"
+    },
+    {
+      "name": "boss_profile",
+      "expected": {
+        "radius": 10,
+        "axis_xy": [
+          40,
+          25
+        ],
+        "axial_length": 12
+      },
+      "actual": [
+        {
+          "radius": 10.0,
+          "origin": [
+            40.0,
+            25.0,
+            8.0
+          ],
+          "direction": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "inward": false,
+          "angular_span": 6.28318530718,
+          "axial_length": 12.0
+        }
+      ],
+      "status": "passed",
+      "evidence": "Outward cylindrical B-Rep surfaces in actual STEP"
+    },
+    {
+      "name": "real_structured_model_path",
+      "expected": "structured-model",
+      "actual": "structured-model",
+      "status": "passed",
+      "evidence": "Persisted revision metadata from the original live call"
+    }
+  ],
+  "status": "completed"
+}

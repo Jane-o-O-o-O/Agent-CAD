@@ -1,0 +1,14 @@
+{
+  "scope": "single live model sample",
+  "status": "failed",
+  "error": {
+    "code": "DependencyError",
+    "message": "unknown parameter",
+    "feature_id": null,
+    "details": {
+      "parameter": "pi"
+    },
+    "recoverable": false
+  },
+  "elapsed_seconds": 39.24840664200019
+}

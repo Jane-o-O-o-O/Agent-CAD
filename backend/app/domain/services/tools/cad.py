@@ -3,6 +3,7 @@ from math import cos, hypot, radians, sin
 from typing import Any, Dict, List, Optional, Tuple
 
 import ezdxf
+from ezdxf.enums import TextEntityAlignment
 
 from app.application.services.cad_service import CADService
 from app.domain.external.sandbox import Sandbox
@@ -445,7 +446,7 @@ class CADToolkit(BaseToolkit):
             text,
             dxfattribs={"layer": layer, "height": text_height},
         )
-        text_entity.set_placement(text_position, align="MIDDLE_CENTER")
+        text_entity.set_placement(text_position, align=TextEntityAlignment.MIDDLE_CENTER)
 
     def _add_visible_radial_dimension(self, modelspace, dimension: Dict[str, Any], dimension_type: str) -> None:
         center = self._point_tuple(dimension["center"])
@@ -467,7 +468,7 @@ class CADToolkit(BaseToolkit):
             text,
             dxfattribs={"layer": layer, "height": text_height},
         )
-        text_entity.set_placement(leader_end, align="MIDDLE_LEFT")
+        text_entity.set_placement(leader_end, align=TextEntityAlignment.MIDDLE_LEFT)
 
     def _add_dimension_tick(self, modelspace, point: Tuple[float, float], normal: Tuple[float, float], layer: str) -> None:
         size = 3.2

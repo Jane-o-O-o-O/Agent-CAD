@@ -1,0 +1,183 @@
+{
+  "schema_version": "2.0",
+  "document_id": "25cd7a3f-3159-4058-9ada-9629578a8eac",
+  "units": "mm",
+  "coordinate_system": "right-handed-Z-up",
+  "parameters": {
+    "depth": {
+      "kind": "length",
+      "value": 50.0,
+      "expression": null,
+      "editable": true,
+      "label": "宽度 / Width",
+      "min": 0.001,
+      "max": null
+    },
+    "height": {
+      "kind": "length",
+      "value": 8.0,
+      "expression": null,
+      "editable": true,
+      "label": "厚度 / Thickness",
+      "min": 0.001,
+      "max": null
+    },
+    "hole_diameter": {
+      "kind": "length",
+      "value": 8.0,
+      "expression": null,
+      "editable": true,
+      "label": "孔径 / Hole diameter",
+      "min": 0.001,
+      "max": null
+    },
+    "pitch_x": {
+      "kind": "length",
+      "value": 60.0,
+      "expression": null,
+      "editable": true,
+      "label": "水平孔距 / X pitch",
+      "min": 0.001,
+      "max": null
+    },
+    "pitch_y": {
+      "kind": "length",
+      "value": 30.0,
+      "expression": null,
+      "editable": true,
+      "label": "垂直孔距 / Y pitch",
+      "min": 0.001,
+      "max": null
+    },
+    "width": {
+      "kind": "length",
+      "value": 80.0,
+      "expression": null,
+      "editable": true,
+      "label": "长度 / Length",
+      "min": 0.001,
+      "max": null
+    }
+  },
+  "features": [
+    {
+      "id": "plate",
+      "inputs": [],
+      "depends_on": [],
+      "editable": true,
+      "label": null,
+      "validation_conditions": [],
+      "type": "Box",
+      "params": {
+        "width": "width",
+        "depth": "depth",
+        "height": "height",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "id": "mounting_holes",
+      "inputs": [
+        "plate"
+      ],
+      "depends_on": [],
+      "editable": true,
+      "label": null,
+      "validation_conditions": [],
+      "type": "Hole",
+      "params": {
+        "diameter": "hole_diameter",
+        "positions": [
+          [
+            "(width-pitch_x)/2",
+            "(depth-pitch_y)/2",
+            0.0
+          ],
+          [
+            "(width-pitch_x)/2",
+            "(depth+pitch_y)/2",
+            0.0
+          ],
+          [
+            "(width+pitch_x)/2",
+            "(depth-pitch_y)/2",
+            0.0
+          ],
+          [
+            "(width+pitch_x)/2",
+            "(depth+pitch_y)/2",
+            0.0
+          ]
+        ],
+        "depth": null,
+        "direction": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "through": true
+      }
+    }
+  ],
+  "output_feature": "mounting_holes",
+  "dependencies": {},
+  "constraints": [],
+  "expected_geometry": {
+    "bbox": [
+      "width",
+      "depth",
+      "height"
+    ],
+    "solids": 1,
+    "volume": "width*depth*height-4*3.141592653589793*(hole_diameter/2)**2*height",
+    "volume_min": null,
+    "volume_max": null,
+    "holes": [
+      {
+        "diameter": "hole_diameter",
+        "positions": [
+          [
+            "(width-pitch_x)/2",
+            "(depth-pitch_y)/2",
+            0.0
+          ],
+          [
+            "(width-pitch_x)/2",
+            "(depth+pitch_y)/2",
+            0.0
+          ],
+          [
+            "(width+pitch_x)/2",
+            "(depth-pitch_y)/2",
+            0.0
+          ],
+          [
+            "(width+pitch_x)/2",
+            "(depth+pitch_y)/2",
+            0.0
+          ]
+        ],
+        "depth": null,
+        "direction": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "through": true,
+        "feature_id": "mounting_holes"
+      }
+    ],
+    "tolerance": 0.0001
+  },
+  "metadata": {
+    "assumptions": [
+      "four-hole pattern centered on plate"
+    ],
+    "planning_mode": "deterministic-explicit-plate",
+    "prompt": "生成一块长 80 mm、宽 50 mm、厚 8 mm 的安装板，在四角开四个直径 6 mm 的通孔，孔中心的水平距离为 60 mm，垂直距离为 30 mm。"
+  }
+}

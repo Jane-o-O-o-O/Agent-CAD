@@ -20,6 +20,8 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    // Docker Compose reaches Vite by service name; keep other hosts restricted.
+    allowedHosts: ['frontend-dev'],
     ...(process.env.BACKEND_URL && {
       proxy: {
         '/api': {
@@ -30,4 +32,4 @@ export default defineConfig({
       },
     }),
   },
-}); 
+});

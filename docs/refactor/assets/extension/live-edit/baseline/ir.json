@@ -1,0 +1,106 @@
+{
+  "assembly": null,
+  "constraints": [
+    {
+      "axis": "z",
+      "description": null,
+      "expected": 8.0,
+      "feature_id": null,
+      "id": "height",
+      "tolerance": 0.0001,
+      "type": "dimension"
+    }
+  ],
+  "coordinate_system": "right-handed-Z-up",
+  "dependencies": {},
+  "document_id": "a069c8c0-49c5-485f-86d2-aa45f916c553",
+  "expected_geometry": {
+    "bbox": [
+      80.0,
+      50.0,
+      8.0
+    ],
+    "holes": [
+      {
+        "depth": null,
+        "diameter": 6.0,
+        "direction": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "feature_id": "bore",
+        "positions": [
+          [
+            10.0,
+            10.0,
+            0.0
+          ]
+        ],
+        "through": true
+      }
+    ],
+    "solids": 1,
+    "tolerance": 0.0001,
+    "volume": "80*50*8-pi*3**2*8",
+    "volume_max": null,
+    "volume_min": null
+  },
+  "features": [
+    {
+      "depends_on": [],
+      "editable": true,
+      "id": "plate",
+      "inputs": [],
+      "label": null,
+      "params": {
+        "depth": 50.0,
+        "height": 8.0,
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "width": 80.0
+      },
+      "type": "Box",
+      "validation_conditions": []
+    },
+    {
+      "depends_on": [],
+      "editable": true,
+      "id": "bore",
+      "inputs": [
+        "plate"
+      ],
+      "label": null,
+      "params": {
+        "depth": null,
+        "diameter": 6.0,
+        "direction": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "positions": [
+          [
+            10.0,
+            10.0,
+            0.0
+          ]
+        ],
+        "through": true
+      },
+      "type": "Hole",
+      "validation_conditions": []
+    }
+  ],
+  "metadata": {
+    "planning_mode": "provided-ir",
+    "purpose": "Fixed independent live-edit baseline"
+  },
+  "output_feature": "bore",
+  "parameters": {},
+  "schema_version": "2.0",
+  "units": "mm"
+}

@@ -1,0 +1,81 @@
+{
+  "status": "passed",
+  "recorded_at": "2026-10-14T02:37:59.012694+00:00",
+  "scope": "Built Vue SPA, local login, HTTP/SSE, real OCP workers, WebGL, revision exports and restore",
+  "checks": [
+    {
+      "name": "real_local_login_and_workbench_navigation",
+      "status": "passed",
+      "detail": true
+    },
+    {
+      "name": "prompt_HTTP_worker_SSE_WebGL_generation",
+      "status": "passed",
+      "detail": {
+        "revision": "f42b2dd9-3b07-4095-8333-b937a3136e90",
+        "stages": "completed"
+      }
+    },
+    {
+      "name": "standard_views_projection_wireframe_grid_axes_controls",
+      "status": "passed",
+      "detail": true
+    },
+    {
+      "name": "parameter_editor_publishes_new_geometry",
+      "status": "passed",
+      "detail": {
+        "before": "f42b2dd9-3b07-4095-8333-b937a3136e90",
+        "after": "1273676f-d968-4675-9fea-42d6d652903c"
+      }
+    },
+    {
+      "name": "downloaded_STEP_diameter_8",
+      "status": "passed",
+      "detail": {
+        "volume": 30391.504561361988,
+        "bbox": [
+          80.0,
+          50.0,
+          8.0
+        ]
+      }
+    },
+    {
+      "name": "five_UI_downloads_match_displayed_revision_hashes",
+      "status": "passed",
+      "detail": true
+    },
+    {
+      "name": "downloaded_STEP_diameter_6",
+      "status": "passed",
+      "detail": {
+        "volume": 31095.221315766117,
+        "bbox": [
+          80.0,
+          50.0,
+          8.0
+        ]
+      }
+    },
+    {
+      "name": "history_preview_and_download_share_old_revision",
+      "status": "passed",
+      "detail": true
+    },
+    {
+      "name": "UI_restore_builds_new_revision",
+      "status": "passed",
+      "detail": true
+    },
+    {
+      "name": "browser_reload_recovers_revision",
+      "status": "passed",
+      "detail": true
+    }
+  ],
+  "page_errors": [],
+  "api_failures": [],
+  "model_calls": 0,
+  "browser": "134.0.6998.35"
+}

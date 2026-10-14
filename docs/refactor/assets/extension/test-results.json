@@ -1,0 +1,1393 @@
+{
+  "recorded_at": "2026-10-14T04:20:43.554070+00:00",
+  "code_commit": "7c2f4394f14eb720b76657571b23de4fc55a50fa",
+  "backend": {
+    "command": "CAD_V2_ISOLATION=process-dev python -m pytest tests/cad_v2 tests/test_agentscope_runtime.py tests/test_skills.py -q -o log_cli=false -o addopts= --junitxml=<output>",
+    "total": 226,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "passed": 225,
+    "seconds": 97.843,
+    "checks": [
+      {
+        "name": "tests.cad_v2.test_acceptance.test_acceptance_a_b_e_prompt_edit_and_step_roundtrip",
+        "seconds": 10.2,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_acceptance.test_failed_edit_does_not_replace_last_valid_revision",
+        "seconds": 3.254,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_acceptance.test_acceptance_c_real_selection_failure_and_minimal_repair",
+        "seconds": 6.353,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_acceptance.test_acceptance_d_l_bracket_two_faces_holes_fillet",
+        "seconds": 3.719,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_api.test_authenticated_create_revision_export_and_durable_sse",
+        "seconds": 0.043,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_api.test_api_rejects_unauthenticated_invalid_requests_and_other_owner",
+        "seconds": 0.037,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_api.test_api_edit_conflict_restore_and_version_specific_download",
+        "seconds": 0.044,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_api.test_local_app_requires_explicit_private_token_at_startup",
+        "seconds": 0.013,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_api.test_local_login_refresh_logout_uses_explicit_configured_credential",
+        "seconds": 0.018,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_api.test_local_login_failed_attempt_budget_and_no_implicit_default",
+        "seconds": 0.017,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_assembly.test_real_flange_shaft_spacer_assembly_export",
+        "seconds": 0.16,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_assembly.test_collision_and_mate_violation_are_measured_failures",
+        "seconds": 0.073,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_assembly.test_reusable_part_instances_and_atomic_parametric_instance_edits",
+        "seconds": 0.2,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_assembly.test_assembly_references_and_stable_ids[<lambda>0]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_assembly.test_assembly_references_and_stable_ids[<lambda>1]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_assembly.test_assembly_references_and_stable_ids[<lambda>2]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_assembly.test_assembly_references_and_stable_ids[<lambda>3]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_assembly.test_protected_instances_and_dangling_mates",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_assembly.test_multi_solid_pattern_cannot_masquerade_as_a_part",
+        "seconds": 0.019,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_assembly.test_assembly_length_units_and_rotation_pose",
+        "seconds": 0.017,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_assembly.test_glb_export_rejects_a_corrupted_component_pose",
+        "seconds": 0.116,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_assembly.test_step_component_integrity_is_not_inferred_from_aggregate_bounds",
+        "seconds": 0.135,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_drawings.test_plate_three_views_units_native_dimensions_and_hidden_bores",
+        "seconds": 0.127,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_drawings.test_asymmetric_stepped_bracket_is_three_different_projections",
+        "seconds": 0.052,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_drawings.test_translation_keeps_dimensions_relative_to_measured_bbox",
+        "seconds": 0.077,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_drawings.test_zero_rotation_box_has_no_fake_hidden_or_center_lines",
+        "seconds": 0.037,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_drawings.test_oblique_cylinder_retains_exact_ellipses_and_declares_svg_sampling",
+        "seconds": 0.04,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_drawings.test_side_hole_is_dimensioned_in_front_from_final_geometry",
+        "seconds": 0.053,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_drawings.test_sphere_uses_exact_projected_silhouette_circles_arcs",
+        "seconds": 0.269,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_drawings.test_svg_title_and_revision_are_escaped_and_report_is_deterministic",
+        "seconds": 0.042,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_drawings.test_curved_hlr_nurbs_survive_independent_dxf_read",
+        "seconds": 0.108,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_drawings.test_flat_shape_is_rejected_instead_of_fabricating_three_views",
+        "seconds": 0.002,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_executor.test_worker_real_export_and_true_stages",
+        "seconds": 6.203,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_executor.test_worker_geometry_failure_does_not_leave_artifacts",
+        "seconds": 3.047,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_executor.test_timeout_kills_real_worker_and_cleans_output",
+        "seconds": 0.013,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_executor.test_cancel_event_kills_real_worker",
+        "seconds": 0.164,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_executor.test_task_cancellation_cleans_worker_and_output",
+        "seconds": 0.141,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_executor.test_existing_artifact_directory_is_never_overwritten",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_executor.test_unverified_requirements_are_not_published",
+        "seconds": 3.107,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_extension_workflow.test_service_natural_subset_multiple_operations_preserve_independent_properties",
+        "seconds": 6.63,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_extension_workflow.test_service_clarification_resumes_original_multi_edit_and_rejects_wrong_owner_or_base",
+        "seconds": 6.614,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_extension_workflow.test_service_assembly_instance_edits_bom_and_restore_survive_restart",
+        "seconds": 10.262,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing.test_real_defect_recovers_with_original_holes_constraints_and_step[shape_fix-vertex_mismatch]",
+        "seconds": 0.154,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing.test_real_defect_recovers_with_original_holes_constraints_and_step[orient_solids-<lambda>]",
+        "seconds": 0.119,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing.test_real_defect_recovers_with_original_holes_constraints_and_step[sew_closed_shells-separate_faces]",
+        "seconds": 0.113,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing.test_sewing_cannot_invent_missing_faces",
+        "seconds": 0.006,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing.test_large_defects_do_not_expand_tolerances_until_they_pass",
+        "seconds": 0.01,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing.test_repaired_solid_count_must_match_original_requirement",
+        "seconds": 0.009,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing.test_sewing_cannot_turn_an_enclosed_cavity_into_added_material",
+        "seconds": 0.018,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing.test_healing_does_not_override_unsatisfied_design_constraints",
+        "seconds": 0.065,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing.test_untrusted_or_excessive_healing_policies_are_rejected[policy0]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing.test_untrusted_or_excessive_healing_policies_are_rejected[policy1]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing.test_untrusted_or_excessive_healing_policies_are_rejected[policy2]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing.test_untrusted_or_excessive_healing_policies_are_rejected[policy3]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing.test_untrusted_or_excessive_healing_policies_are_rejected[policy4]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing.test_untrusted_or_excessive_healing_policies_are_rejected[policy5]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing.test_policy_uses_bounded_distinct_execution_candidates_and_keeps_ir_intact",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing.test_backend_and_policy_recover_actual_face_soup_after_bounded_failed_candidates",
+        "seconds": 0.169,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing_replay.test_healing_survives_restart_source_restore_and_only_unchanged_feature_subgraphs",
+        "seconds": 0.613,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing_replay.test_actual_worker_report_and_python_export_keep_trusted_policy",
+        "seconds": 3.514,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_healing_replay.test_policy_validation_and_replay_compilation_do_not_load_the_kernel",
+        "seconds": 0.165,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_intent_edits.test_add_then_delete_hole_with_explicit_intent_changes_preserves_dimensions",
+        "seconds": 0.065,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_intent_edits.test_adding_hole_without_explicit_new_expectation_does_not_weaken_validation",
+        "seconds": 0.018,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_intent_edits.test_explicit_constraint_replacement_still_requires_supported_verification",
+        "seconds": 0.006,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_normalized_errors[RequirementError]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_normalized_errors[SchemaValidationError]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_normalized_errors[ParameterError]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_normalized_errors[DependencyError]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_normalized_errors[GeometryKernelError]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_normalized_errors[BooleanOperationError]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_normalized_errors[InvalidTopologyError]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_normalized_errors[ConstraintViolationError]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_normalized_errors[ExportError]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_normalized_errors[ExecutionTimeoutError]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_normalized_errors[InfrastructureError]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_backend_port_is_structural",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_schema_and_deterministic_compilation",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_schema_rejects_unsupported_fields[schema_version-1.0]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_schema_rejects_unsupported_fields[units-feet]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_schema_rejects_unsupported_fields[coordinate_system-left-handed]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_schema_rejects_unsupported_fields[extra-True]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_nonfinite_or_boolean_numeric_input[nan]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_nonfinite_or_boolean_numeric_input[inf]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_nonfinite_or_boolean_numeric_input[True]",
+        "seconds": 0.003,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_rejects_unsafe_and_unbounded_expressions[__import__('os').system('echo hi')]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_rejects_unsafe_and_unbounded_expressions[x.real]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_rejects_unsafe_and_unbounded_expressions[[1][0]]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_rejects_unsafe_and_unbounded_expressions[abs(-2)]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_rejects_unsafe_and_unbounded_expressions[True]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_rejects_unsafe_and_unbounded_expressions[1e999]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_rejects_unsafe_and_unbounded_expressions[10**100]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_rejects_unsafe_and_unbounded_expressions[1/0]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_rejects_unsafe_and_unbounded_expressions['12']",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_rejects_unsafe_and_unbounded_expressions[(lambda:1)()]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_parameter_dependencies_and_bounds",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_reject_parameter_cycles_and_missing_references[parameters0]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_reject_parameter_cycles_and_missing_references[parameters1]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_units_convert_geometry_and_volume_once[mm-1]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_units_convert_geometry_and_volume_once[cm-10]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_units_convert_geometry_and_volume_once[m-1000]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_units_convert_geometry_and_volume_once[inch-25.4]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_feature_graph_rejects_invalid_designs[duplicate]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_feature_graph_rejects_invalid_designs[unknown]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_feature_graph_rejects_invalid_designs[cycle]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_feature_graph_rejects_invalid_designs[forward]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_feature_graph_rejects_invalid_designs[invalid_input]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_dependency_graph_is_checked_and_kept",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_pattern_resource_and_geometry_limits[params0]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_pattern_resource_and_geometry_limits[params1]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_pattern_resource_and_geometry_limits[params2]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_selector_rejects_topological_indices",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_geometry_input_types_and_zero_direction",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_python_export_embeds_only_literal_data",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_atomic_parameter_edit_updates_linked_expectations",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_protected_fields_and_dangling_deletions",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_feature_patch_and_addition_are_validated",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_explicit_output_switch_supports_atomic_feature_addition",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_hole_constraints_use_same_units_and_expressions_as_geometry[cm-10]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_hole_constraints_use_same_units_and_expressions_as_geometry[inch-25.4]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_invalid_hole_expectations_fail_before_kernel[payload0]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_invalid_hole_expectations_fail_before_kernel[payload1]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_invalid_hole_expectations_fail_before_kernel[payload2]",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_ir.test_invalid_hole_expectations_fail_before_kernel[payload3]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_isolation.test_explicit_development_opt_out_and_strict_default",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_isolation.test_real_seccomp_denies_network_process_escape_and_capabilities",
+        "seconds": 0.045,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_isolation.test_real_strict_filesystem_and_network_probes",
+        "seconds": 0.046,
+        "status": "skipped",
+        "reason": "Strict OS isolation unavailable on this host: Landlock ABI query: Function not implemented (errno=38)"
+      },
+      {
+        "name": "tests.cad_v2.test_isolation.test_strict_executor_fails_closed_when_landlock_unavailable",
+        "seconds": 0.046,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_isolation.test_explicit_development_worker_reports_actual_mode",
+        "seconds": 3.241,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_isolation.test_worker_output_and_callbacks_cannot_escape_wall_clock_budget[False]",
+        "seconds": 0.155,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_isolation.test_worker_output_and_callbacks_cannot_escape_wall_clock_budget[True]",
+        "seconds": 0.157,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_isolation.test_abnormal_exit_cannot_publish_a_success_file",
+        "seconds": 0.025,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_mounting_plate_real_holes_and_step_roundtrip",
+        "seconds": 0.119,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_core_operations[features0-6000-bbox0]",
+        "seconds": 0.007,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_core_operations[features1-628.3185307179587-bbox1]",
+        "seconds": 0.004,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_core_operations[features2-523.5987755982989-bbox2]",
+        "seconds": 0.003,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_core_operations[features3-1000-bbox3]",
+        "seconds": 0.009,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_core_operations[features4-392.6990816987241-bbox4]",
+        "seconds": 0.005,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_core_operations[features5-150-bbox5]",
+        "seconds": 0.008,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_core_operations[features6-1759.291886010284-bbox6]",
+        "seconds": 0.006,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_core_operations[features7-1500-bbox7]",
+        "seconds": 0.019,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_core_operations[features8-500-bbox8]",
+        "seconds": 0.02,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_core_operations[features9-500-bbox9]",
+        "seconds": 0.016,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_core_operations[features10-6000-bbox10]",
+        "seconds": 0.009,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_core_operations[features11-3700-bbox11]",
+        "seconds": 0.021,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_patterns[LinearPattern-params0]",
+        "seconds": 0.009,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_patterns[CircularPattern-params1]",
+        "seconds": 0.011,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_semantic_edges_feature_changes[Fillet-radius]",
+        "seconds": 0.02,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_semantic_edges_feature_changes[Chamfer-length]",
+        "seconds": 0.025,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_actual_recoverable_precision_selector_failure",
+        "seconds": 0.016,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_ambiguous_selector_never_selects_first_edge",
+        "seconds": 0.003,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_empty_boolean_and_outside_hole_fail",
+        "seconds": 0.01,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_blind_hole_depth_is_measured",
+        "seconds": 0.038,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_unimplemented_intent_is_unverified_not_passed",
+        "seconds": 0.046,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_yz_sketch_origin_is_world_translation",
+        "seconds": 0.008,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_extra_hole_rejected_by_complete_hole_requirements",
+        "seconds": 0.088,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_cut_away_fillet_is_not_verified_from_intermediate_trace",
+        "seconds": 0.021,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_transformed_holes_use_final_complete_collection",
+        "seconds": 0.069,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_arbitrary_feature_validation_condition_is_unverified",
+        "seconds": 0.048,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_backend_public_geometry_ports",
+        "seconds": 0.01,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_unrelated_branch_transform_does_not_invalidate_finish",
+        "seconds": 0.045,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_blind_pocket_is_not_an_unexpected_through_hole",
+        "seconds": 0.042,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_constraint_can_target_final_feature_but_not_intermediate[dimension-80-x]",
+        "seconds": 0.161,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_constraint_can_target_final_feature_but_not_intermediate[volume-31095.22131576614-None]",
+        "seconds": 0.152,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_kernel.test_constraint_can_target_final_feature_but_not_intermediate[solid_count-1-None]",
+        "seconds": 0.184,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_multiple_subset_edits_preserve_other_geometry_and_build_real_kernel",
+        "seconds": 0.203,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_add_move_and_remove_holes_across_revisions_have_measured_expectations",
+        "seconds": 0.209,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_multi_edit_unit_conversion_and_complete_grammar",
+        "seconds": 0.013,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_ambiguous_offline_selection_does_not_guess",
+        "seconds": 0.003,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_structured_model_complex_add_and_move_preserves_ids_and_requirements",
+        "seconds": 0.08,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_model_clarification_is_exposed_without_mutations",
+        "seconds": 0.028,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_model_cannot_return_full_replacement_or_protected_fields[payload0]",
+        "seconds": 0.028,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_model_cannot_return_full_replacement_or_protected_fields[payload1]",
+        "seconds": 0.03,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_model_cannot_return_full_replacement_or_protected_fields[payload2]",
+        "seconds": 0.03,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_model_cannot_weaken_unrelated_requirements",
+        "seconds": 0.138,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_model_shared_parameter_cannot_change_unrelated_geometry",
+        "seconds": 0.003,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_model_cannot_hide_existing_geometry_by_output_change",
+        "seconds": 0.003,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_model_cannot_delete_and_recreate_existing_id",
+        "seconds": 0.002,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_structured_assembly_move_and_add_instance_preserve_part_and_mates",
+        "seconds": 0.053,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_move_intent_cannot_change_dimensions_or_unrequested_mate",
+        "seconds": 0.002,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_model_cannot_change_all_bores_for_a_subset_request",
+        "seconds": 0.004,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_natural_edits.test_single_move_preserves_diameter_and_unselected_bores",
+        "seconds": 0.007,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_planning.test_builtin_pi_is_numeric_and_not_an_unresolved_parameter",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_planning.test_acceptance_requirement_and_edit_preserve_envelope",
+        "seconds": 0.004,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_planning.test_missing_requirements_are_not_invented[\\u751f\\u6210\\u5b89\\u88c5\\u677f]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_planning.test_missing_requirements_are_not_invented[\\u957f80\\u5bbd50\\u539a8\\u7684\\u5b89\\u88c5\\u677f\\uff0c\\u56db\\u4e2a\\u76f4\\u5f846\\u7684\\u901a\\u5b54]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_planning.test_missing_requirements_are_not_invented[\\u957f80\\u5bbd50\\u539a8\\u5b89\\u88c5\\u677f\\uff0c\\u56db\\u4e2a\\u76f4\\u5f846\\u7684\\u5b54\\uff0c\\u6c34\\u5e73\\u8ddd\\u79bb60\\uff0c\\u5782\\u76f4\\u8ddd\\u79bb30]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_planning.test_unconfigured_complex_planner_is_explicit",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_planning.test_parser_rejects_mixed_units_and_unconsumed_design_intent",
+        "seconds": 0.002,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_planning.test_edit_does_not_change_a_subset_or_ignore_units",
+        "seconds": 0.002,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_planning.test_gateway_retries_only_recoverable_provider_errors",
+        "seconds": 0.506,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_planning.test_gateway_does_not_leak_provider_errors_or_retry_auth[401]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_planning.test_gateway_does_not_leak_provider_errors_or_retry_auth[403]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_planning.test_gateway_does_not_leak_provider_errors_or_retry_auth[400]",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_planning.test_gateway_rejects_non_json_output",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_repair.test_repair_preserves_design_and_has_a_bounded_explicit_patch",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_repair.test_infrastructure_kernel_and_oversized_repairs_are_refused",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_service.test_revision_persistence_edit_restore_and_immutable_artifacts",
+        "seconds": 0.027,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_service.test_failed_edit_and_stale_revision_preserve_last_valid",
+        "seconds": 0.014,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_service.test_owner_checks_cover_documents_revisions_jobs_artifacts",
+        "seconds": 0.011,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_service.test_idempotent_create_and_edit_deduplicate_and_reject_changed_payload",
+        "seconds": 0.022,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_service.test_concurrent_edits_publish_one_revision_with_cas",
+        "seconds": 0.026,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_service.test_running_and_queued_cancellation_kill_execution_without_publication",
+        "seconds": 0.009,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_service.test_restart_recovers_queued_but_marks_interrupted_running_failed",
+        "seconds": 0.011,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_service.test_supervisor_lock_and_unverified_geometry_refusal",
+        "seconds": 0.007,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_service.test_queue_budget_replays_existing_request_and_shutdown_cancels_all",
+        "seconds": 0.008,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_service.test_artifact_escape_rejected_and_orphan_cleanup_preserves_committed",
+        "seconds": 0.016,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_service.test_real_kernel_prompt_edit_and_step_roundtrip",
+        "seconds": 6.479,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_service.test_real_repair_preserves_design_dimensions_and_persists_history",
+        "seconds": 5.959,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_service.test_real_add_delete_feature_with_explicit_intent_and_output_diff",
+        "seconds": 9.128,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_tool_bridge.test_registration_schema_is_lazy_and_owner_is_not_a_tool_argument",
+        "seconds": 0.087,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_tool_bridge.test_empty_owner_is_rejected_without_constructing_service",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_tool_bridge.test_generate_and_edit_use_bound_owner_and_return_pending_job",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_tool_bridge.test_real_store_job_lookup_rejects_other_owner",
+        "seconds": 0.004,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_tool_bridge.test_failed_jobs_are_tool_failures_without_discarding_diagnosis",
+        "seconds": 0.003,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_tool_bridge.test_revision_downloads_and_preview_share_exact_owned_revision",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.cad_v2.test_tool_bridge.test_tool_uses_http_service_singleton_lazily",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.test_agentscope_runtime.test_local_toolkit_collects_decorated_tools",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.test_agentscope_runtime.test_data_processor_toolkit_collects_parse_tool",
+        "seconds": 0.0,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.test_agentscope_runtime.test_cad_toolkit_collects_ezdxf_final_output_tool",
+        "seconds": 0.02,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.test_agentscope_runtime.test_cad_generate_dxf_from_spec_writes_valid_dxf",
+        "seconds": 0.03,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.test_agentscope_runtime.test_agentscope_toolkit_exports_message_tool_schemas",
+        "seconds": 0.004,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.test_agentscope_runtime.test_agentscope_toolkit_exports_data_processor_schema",
+        "seconds": 0.003,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.test_agentscope_runtime.test_agentscope_toolkit_exports_cad_ezdxf_schema",
+        "seconds": 0.005,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.test_skills.test_loads_codex_style_skills",
+        "seconds": 0.003,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.test_skills.test_selects_relevant_skills_by_name_and_description",
+        "seconds": 0.002,
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "name": "tests.test_skills.test_build_context_includes_only_selected_skill_body",
+        "seconds": 0.001,
+        "status": "passed",
+        "reason": null
+      }
+    ]
+  },
+  "frontend": {
+    "state_tests": {
+      "command": "npm test",
+      "passed": 8,
+      "failed": 0
+    },
+    "typecheck": {
+      "command": "npm run type-check",
+      "exit_code": 0
+    },
+    "build": {
+      "command": "npm run build",
+      "exit_code": 0,
+      "warnings": [
+        "Existing nested CSS syntax warning",
+        "Existing large bundle warning",
+        "Outdated Browserslist dataset"
+      ]
+    },
+    "browser_report": "browser-acceptance.json"
+  },
+  "strict_isolation_note": "Dedicated seccomp and fail-closed tests ran; full Landlock filesystem test skipped due host ENOSYS. Other local functional worker tests explicitly use process-dev."
+}

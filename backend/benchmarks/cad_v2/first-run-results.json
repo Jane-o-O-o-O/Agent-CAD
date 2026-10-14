@@ -1,0 +1,572 @@
+{
+  "mode": "deterministic_ir_to_real_kernel",
+  "run": "first pre-fix execution",
+  "corpus_version": "2026-10-14.1",
+  "corpus_sha256": "922e9e9a9cee6c82526fe4dad0237edc76849dfe9aac42c8435e1ccb383e2fe5",
+  "environment": {
+    "python": "3.12.14",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+    "build123d": "0.11.1",
+    "ocp": "cadquery-ocp-novtk 7.9.3.1.1"
+  },
+  "summary": {
+    "execution_success_rate": {
+      "numerator": 26,
+      "denominator": 30,
+      "rate": 0.8666666666666667
+    },
+    "geometry_validity_rate": {
+      "numerator": 26,
+      "denominator": 30,
+      "rate": 0.8666666666666667
+    },
+    "constraint_satisfaction_rate": {
+      "numerator": 26,
+      "denominator": 30,
+      "rate": 0.8666666666666667
+    },
+    "export_success_rate": {
+      "numerator": 26,
+      "denominator": 30,
+      "rate": 0.8666666666666667
+    },
+    "complete_success_rate": {
+      "numerator": 26,
+      "denominator": 30,
+      "rate": 0.8666666666666667
+    },
+    "latency_seconds": {
+      "count": 30,
+      "mean": 0.05502783333333333,
+      "median": 0.0274555,
+      "p95": 0.169325
+    },
+    "failure_categories": {
+      "GeometryKernelError": 3,
+      "InvalidTopologyError": 1
+    },
+    "edit_success_rate": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null
+    },
+    "repair_recovery_rate": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null
+    },
+    "metric_notes": "Generation denominator includes every selected case, including static-validation and kernel failures. Edit/repair not attempted by fixture runner; see acceptance workflow evidence. Latency covers compile, real build, validation and all three exports; excludes process startup, model calls and browser rendering."
+  },
+  "cases": [
+    {
+      "name": "01_box",
+      "category": "basic",
+      "prompt": "40×30×10 mm 长方体。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.023158,
+      "complete_success": true
+    },
+    {
+      "name": "02_cylinder",
+      "category": "basic",
+      "prompt": "直径20、长25 mm 的圆柱。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.018664,
+      "complete_success": true
+    },
+    {
+      "name": "03_hollow_tube",
+      "category": "basic",
+      "prompt": "外径40、内径20、长30 mm 空心轴套。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.026669,
+      "complete_success": true
+    },
+    {
+      "name": "04_sphere",
+      "category": "basic",
+      "prompt": "半径12 mm 球体。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.026767,
+      "complete_success": true
+    },
+    {
+      "name": "05_single_hole_plate",
+      "category": "basic",
+      "prompt": "80×50×8 mm 板中心开直径6 mm 通孔。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.033829,
+      "complete_success": true
+    },
+    {
+      "name": "06_four_hole_plate",
+      "category": "basic",
+      "prompt": "生成一块长 80 mm、宽 50 mm、厚 8 mm 的安装板，在四角开四个直径 6 mm 的通孔，孔中心的水平距离为 60 mm，垂直距离为 30 mm。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.091304,
+      "complete_success": true
+    },
+    {
+      "name": "07_rectangle_extrude",
+      "category": "basic",
+      "prompt": "60×40 mm 矩形草图拉伸6 mm。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.019234,
+      "complete_success": true
+    },
+    {
+      "name": "08_circle_extrude",
+      "category": "basic",
+      "prompt": "半径15 mm 圆草图拉伸12 mm。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.013408,
+      "complete_success": true
+    },
+    {
+      "name": "09_triangle_extrude",
+      "category": "basic",
+      "prompt": "顶点(0,0)、(30,0)、(0,20)的闭合草图拉伸10 mm。",
+      "execution_success": false,
+      "geometry_valid": false,
+      "constraints_satisfied": false,
+      "export_success": false,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": "GeometryKernelError",
+      "error": {
+        "code": "GeometryKernelError",
+        "message": "BRep_API: command not done",
+        "feature_id": "sketch",
+        "details": {
+          "operation": "Polyline",
+          "trace": []
+        },
+        "recoverable": false
+      },
+      "latency_seconds": 0.002384,
+      "complete_success": false
+    },
+    {
+      "name": "10_stepped_shaft",
+      "category": "basic",
+      "prompt": "同轴阶梯轴：直径20长30，上接直径30长10 mm。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.021561,
+      "complete_success": true
+    },
+    {
+      "name": "11_ring_flange",
+      "category": "basic",
+      "prompt": "外径60、内径24、厚8 mm 环形法兰。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.028144,
+      "complete_success": true
+    },
+    {
+      "name": "12_vertical_fillets",
+      "category": "basic",
+      "prompt": "40×30×10 mm 长方体四条竖边倒R2圆角。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.039942,
+      "complete_success": true
+    },
+    {
+      "name": "13_vertical_chamfers",
+      "category": "basic",
+      "prompt": "40×30×10 mm 长方体四条竖边倒角2 mm。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.033163,
+      "complete_success": true
+    },
+    {
+      "name": "14_linear_pattern",
+      "category": "basic",
+      "prompt": "10×8×6 mm 实体沿X间距20 mm 阵列3份，保留独立实体。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.036016,
+      "complete_success": true
+    },
+    {
+      "name": "15_circular_pattern",
+      "category": "basic",
+      "prompt": "半径3高10 mm 圆柱中心在(20,0,0)，绕Z轴完整阵列4份。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.022077,
+      "complete_success": true
+    },
+    {
+      "name": "16_translation",
+      "category": "basic",
+      "prompt": "20×10×5 mm 块平移到(15,-8,4)。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.018258,
+      "complete_success": true
+    },
+    {
+      "name": "17_rotation",
+      "category": "basic",
+      "prompt": "原点20×10×5 mm 块绕Z轴旋转90度。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.023008,
+      "complete_success": true
+    },
+    {
+      "name": "18_intersection",
+      "category": "basic",
+      "prompt": "两个20×20×10块沿X相差10 mm，取交集。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.026629,
+      "complete_success": true
+    },
+    {
+      "name": "19_split_cut",
+      "category": "basic",
+      "prompt": "60×30×10 mm 块切掉中间10 mm 宽贯通槽，保留两实体。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.037491,
+      "complete_success": true
+    },
+    {
+      "name": "20_revolve",
+      "category": "basic",
+      "prompt": "XZ平面径向10到20、轴向0到15 mm 矩形绕Z旋转360度。",
+      "execution_success": false,
+      "geometry_valid": false,
+      "constraints_satisfied": false,
+      "export_success": false,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": "InvalidTopologyError",
+      "error": {
+        "code": "InvalidTopologyError",
+        "message": "Kernel returned invalid topology",
+        "feature_id": "profile",
+        "details": {
+          "trace": []
+        },
+        "recoverable": false
+      },
+      "latency_seconds": 0.003306,
+      "complete_success": false
+    },
+    {
+      "name": "21_bolt_flange",
+      "category": "medium",
+      "prompt": "外径70厚8法兰：中心20通孔、节圆50上的6个6通孔，外缘四周保持。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.169325,
+      "complete_success": true
+    },
+    {
+      "name": "22_l_bracket",
+      "category": "medium",
+      "prompt": "L型支架：60×40×6底板，后边60×6×40立板从z=6起；底面与立面各2个直径6通孔；立板顶前外边R2。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.134679,
+      "complete_success": true
+    },
+    {
+      "name": "23_ribbed_base",
+      "category": "medium",
+      "prompt": "60×40×6底板、60×6×30立板，中央6厚三角加强筋，底板两孔6 mm。",
+      "execution_success": false,
+      "geometry_valid": false,
+      "constraints_satisfied": false,
+      "export_success": false,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": "GeometryKernelError",
+      "error": {
+        "code": "GeometryKernelError",
+        "message": "BRep_API: command not done",
+        "feature_id": "rib_profile",
+        "details": {
+          "operation": "Polyline",
+          "trace": [
+            {
+              "feature_id": "base",
+              "type": "Box",
+              "started_at": "2026-10-14T02:08:00.013679+00:00",
+              "duration_seconds": 0.001629,
+              "before_volume": 0.0,
+              "after_volume": 14400.0,
+              "before_faces": 0,
+              "after_faces": 6,
+              "solids": 1,
+              "evidence": {}
+            },
+            {
+              "feature_id": "wall",
+              "type": "Box",
+              "started_at": "2026-10-14T02:08:00.015336+00:00",
+              "duration_seconds": 0.001326,
+              "before_volume": 0.0,
+              "after_volume": 10800.0,
+              "before_faces": 0,
+              "after_faces": 6,
+              "solids": 1,
+              "evidence": {}
+            }
+          ]
+        },
+        "recoverable": false
+      },
+      "latency_seconds": 0.005107,
+      "complete_success": false
+    },
+    {
+      "name": "24_multilayer_steps",
+      "category": "medium",
+      "prompt": "80×60×5基台，居中60×40×8台阶，再居中40×20×12台阶，中心8 mm 通孔。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.07619,
+      "complete_success": true
+    },
+    {
+      "name": "25_three_step_shaft",
+      "category": "medium",
+      "prompt": "同轴三阶轴：直径30长20、直径24长25、直径16长15；贯通6孔和顶端直径10深3沉孔。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.068398,
+      "complete_success": true
+    },
+    {
+      "name": "26_symmetric_hole_array",
+      "category": "medium",
+      "prompt": "100×60×8板，x=20/40/60/80与y=15/45的8个6通孔，顶面中心20×20深2凹槽，四竖边1倒角。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.263149,
+      "complete_success": true
+    },
+    {
+      "name": "27_multiple_cuts",
+      "category": "medium",
+      "prompt": "80×50×10板切3个10×30贯通矩形槽(x=10/35/60,y=10)，四角5 mm 边距直径4通孔。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.156092,
+      "complete_success": true
+    },
+    {
+      "name": "28_connector",
+      "category": "medium",
+      "prompt": "50×30×20块顶面两16直径高15凸台，中心x=10/40,y=15；两6通孔；底面中央20×8深10凹槽。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.110237,
+      "complete_success": true
+    },
+    {
+      "name": "29_pattern_cut_flange",
+      "category": "medium",
+      "prompt": "外径70厚10盘，半径25的节圆六孔直径6，通过圆周阵列切除；顶面中心直径24深4凹槽。",
+      "execution_success": true,
+      "geometry_valid": true,
+      "constraints_satisfied": true,
+      "export_success": true,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": null,
+      "latency_seconds": 0.117482,
+      "complete_success": true
+    },
+    {
+      "name": "30_double_rib_bracket",
+      "category": "medium",
+      "prompt": "70×50×6底板，70×6×35立板，两6厚30×25直角三角加强筋；底面立面各两6孔，立板顶前外边倒角1。",
+      "execution_success": false,
+      "geometry_valid": false,
+      "constraints_satisfied": false,
+      "export_success": false,
+      "repair_count": 0,
+      "repair_attempted": false,
+      "failure_category": "GeometryKernelError",
+      "error": {
+        "code": "GeometryKernelError",
+        "message": "BRep_API: command not done",
+        "feature_id": "rib_profile",
+        "details": {
+          "operation": "Polyline",
+          "trace": [
+            {
+              "feature_id": "base",
+              "type": "Box",
+              "started_at": "2026-10-14T02:08:00.814891+00:00",
+              "duration_seconds": 0.001623,
+              "before_volume": 0.0,
+              "after_volume": 21000.0,
+              "before_faces": 0,
+              "after_faces": 6,
+              "solids": 1,
+              "evidence": {}
+            },
+            {
+              "feature_id": "wall",
+              "type": "Box",
+              "started_at": "2026-10-14T02:08:00.816464+00:00",
+              "duration_seconds": 0.001226,
+              "before_volume": 0.0,
+              "after_volume": 14700.0,
+              "before_faces": 0,
+              "after_faces": 6,
+              "solids": 1,
+              "evidence": {}
+            }
+          ]
+        },
+        "recoverable": false
+      },
+      "latency_seconds": 0.005164,
+      "complete_success": false
+    }
+  ],
+  "note": "Runner package-metadata lookup failed after all cases executed; this report reconstructs actual persisted per-case results without rerunning or altering expectations."
+}

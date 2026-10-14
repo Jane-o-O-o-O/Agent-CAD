@@ -4,7 +4,7 @@
 
 ### AI-Native CAD Engineering Agent
 
-**Turn engineering requirements, reference files, and natural-language instructions into structured 2D drawings and validated DXF deliverables.**
+**Parametric 3D mechanical parts with measured B-Rep validation, alongside the existing 2D DXF workflow.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-16a34a.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB.svg?logo=python&logoColor=white)](backend/pyproject.toml)
@@ -18,6 +18,45 @@
 </div>
 
 ---
+
+## V2 exact CAD workbench
+
+V2 adds a versioned CAD IR, build123d/OpenCascade solid modeling, bounded subprocess jobs, measured geometry checks and STEP reimport, parameter/feature edits, immutable revisions, and a Three.js viewer at `/chat/cad-v2`. STEP, STL, GLB, IR, replay Python, DXF and SVG engineering drawings belong to the same revision. Assemblies add named component instances, placement checks, collision checks and BOM exports; the workbench supports 3D/2D switching and component selection. The legacy `/api/v1/cad/*` routes remain available.
+
+The fixed **20 basic + 10 medium IR designs pass 30/30** real-kernel checks. This measures reviewed IR through the kernel, not general natural-language success. Read the [benchmark](docs/refactor/benchmark-report.md), [architecture](docs/refactor/architecture-v2.md), [migration guide](docs/refactor/migration-guide.md) and [original V2 report](docs/refactor/final-report.md) and [extension report](docs/refactor/extension-report.md) for exact evidence and limits.
+
+### Run V2 without Mongo, Redis or a browser sandbox
+
+Use Linux/Python 3.12 and Node 24. The default strict worker requires Landlock ABI ≥3 and libseccomp2; unsupported hosts reject jobs. For trusted local development only, explicitly set `CAD_V2_ISOLATION=process-dev` to run without filesystem/network confinement. In a backend terminal:
+
+```bash
+cd backend
+uv venv --python 3.12 .venv-cad
+uv pip install --python .venv-cad/bin/python -r requirements-cad-v2.txt
+export CAD_V2_LOCAL_TOKEN='replace-with-your-own-private-token-at-least-16-characters'
+export CAD_V2_DATA_DIR="$PWD/.cad-v2-data"
+.venv-cad/bin/python -m uvicorn app.interfaces.cad_v2_app:app --host 127.0.0.1 --port 8000 --workers 1
+```
+
+In a frontend terminal:
+
+```bash
+cd frontend
+npm ci
+BACKEND_URL=http://127.0.0.1:8000 npm run dev -- --host 127.0.0.1
+```
+
+Open `http://127.0.0.1:5173/chat/cad-v2`; log in as `local@localhost` using your `CAD_V2_LOCAL_TOKEN` as the password. This is a single-user local mode. The full application continues to use its existing authentication.
+
+Use this fully specified offline example:
+
+> 生成一块长 80 mm、宽 50 mm、厚 8 mm 的安装板，在四角开四个直径 6 mm 的通孔，孔中心的水平距离为 60 mm，垂直距离为 30 mm。
+
+Then submit: `将左边两个孔的直径改成8mm，并将右边两个孔向左移动5mm，其他保持不变。` The editor uses atomic incremental patches, preserves unrequested features and asks for clarification when needed. Complex prompts use `CAD_V2_API_BASE`, `CAD_V2_API_KEY`, `CAD_V2_MODEL` (default `gpt-6.1-sol`); keys are environment-only. Fully specified IR works without a model. See `backend/.env.cad-v2.example`.
+
+Optional CAD container configuration: `docker compose -f docker-compose.cad-v2.yml up --build`. It persists SQLite and artifacts in a named volume. `bash scripts/smoke_cad_v2_docker.sh` gates strict isolation, create/edit/restore, downloads and restart persistence. `bash scripts/smoke_full_stack_docker.sh` separately builds and probes the original seven-service development stack with isolated mock settings. Docker is unavailable in this implementation environment; these scripts and cloud CI are not claimed as passed.
+
+Supported deployment is **one host, one API supervisor** with local persistent storage. No arbitrary model Python is executed. Strict mode uses Landlock filesystem rules and seccomp default-deny syscall rules in addition to process/resource limits. This is not a VM or a guarantee for arbitrary uploaded code. Geometry recovery supports bounded shape fixing, solid orientation and closed-shell sewing while retaining engineering checks. Arbitrary geometry recovery, a general assembly constraint solver and distributed workers remain outside scope; unsupported constraints block publication.
 
 ## About Agent-CAD
 
@@ -97,7 +136,7 @@ flowchart LR
 
 ### Current Product Boundary
 
-Agent-CAD currently focuses on clean, editable **2D engineering drawings with DXF as the primary deliverable**. Native DWG authoring, production-grade 3D solids, assemblies, STEP/STL output, and automatic standards certification are not presented as completed capabilities.
+The original workflow focuses on editable **2D DXF**. The separate V2 workbench adds the exact 3D/STEP/STL capabilities described above. Native DWG authoring, assemblies, general free-form surfaces and automatic standards certification are not completed capabilities.
 
 ## Technology Stack
 

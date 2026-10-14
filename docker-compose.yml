@@ -35,11 +35,14 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - cad_v2_data:/var/lib/agent-cad
       #- ./mcp.json:/etc/mcp.json # Mount MCP servers directory
     networks:
       - manus-network
     env_file:
       - .env
+    environment:
+      - CAD_V2_DATA_DIR=/var/lib/agent-cad
 
   sandbox:
     image: ${IMAGE_REGISTRY:-simpleyyt}/manus-sandbox:${IMAGE_TAG:-latest}
@@ -86,6 +89,7 @@ services:
       - manus-network
 
 volumes:
+  cad_v2_data:
   mongodb_data:
     name: manus-mongodb-data
 

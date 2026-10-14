@@ -1,0 +1,3001 @@
+{
+  "scope": "One opt-in real structured edit model call, service revision workflow, real CAD worker and independent STEP checks",
+  "recorded_at": "2026-10-14T04:14:59.498773+00:00",
+  "status": "completed",
+  "prompt": "Move the existing bore to x=20 mm, y=10 mm, keeping its diameter 6 mm and its through depth. Also add a rectangular through slot, 10 mm along X and 8 mm along Y, with its minimum corner at x=35 mm, y=20 mm, cutting the full plate thickness from z=0 to z=8 mm. Preserve the plate feature, its 80 by 50 by 8 mm dimensions, the existing height constraint, and all other geometry and requirements.",
+  "requested_model": "gpt-6.1-sol",
+  "requested_isolation": "process-dev",
+  "limitations": "One fixed edit case, not a general success-rate benchmark; configured provider retries can make multiple attempts.",
+  "baseline_job": {
+    "base_revision": null,
+    "created_at": "2026-10-14T04:14:59.499665+00:00",
+    "document_id": "a069c8c0-49c5-485f-86d2-aa45f916c553",
+    "error": null,
+    "id": "05715ab4-f577-4834-b7ea-770040e48e73",
+    "progress": 100,
+    "repair_history": [],
+    "report": {
+      "artifacts": [
+        {
+          "filename": "model.step",
+          "format": "step",
+          "sha256": "9bd4c0aae335a3d5eba9a2d8cb089726cada2fcf2e3ac5a4b5eed847ed8eeef3",
+          "size": 19505
+        },
+        {
+          "filename": "model.stl",
+          "format": "stl",
+          "sha256": "357c3fcade4c42b397e37e0388aa05a6c7aadcb22c89a1b9755b3cf8589cc106",
+          "size": 17684
+        },
+        {
+          "filename": "model.glb",
+          "format": "glb",
+          "sha256": "eaeb18e39cfae1b0b466c4e8998bb097437e7c4a48d69d3e39813d91b0fbd6ef",
+          "size": 14120
+        },
+        {
+          "filename": "drawing.dxf",
+          "format": "dxf",
+          "sha256": "fe55f80eeef9ea8d794bed99c621588630b65a93146f705df3f84f7fe3a5ba9a",
+          "size": 70068
+        },
+        {
+          "filename": "drawing.svg",
+          "format": "svg",
+          "sha256": "68999b7df15cb7454801f343edc915f811357ce0e045ee11456ca65d064c10c7",
+          "size": 9295
+        },
+        {
+          "filename": "model.py",
+          "format": "python",
+          "sha256": "1852282ef4fd1826e9d86ffabc75cb5d2316b5344f39f83b81b233087ef929e1",
+          "size": 2073
+        },
+        {
+          "filename": "model.cad-ir.json",
+          "format": "ir",
+          "sha256": "1e77bdba9c7aba84a1aa41c15d233274bd07317ccd8018d913803e000eb6dcdc",
+          "size": 1947
+        }
+      ],
+      "elapsed_seconds": 2.498748,
+      "execution_options": {},
+      "executor_elapsed_seconds": 3.589493,
+      "geometry": {
+        "area": 10174.247779607691,
+        "bbox": {
+          "max": [
+            80.0,
+            50.0,
+            8.0
+          ],
+          "min": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "size": [
+            80.0,
+            50.0,
+            8.0
+          ]
+        },
+        "drawing": {
+          "bbox": {
+            "max": [
+              80.0,
+              50.0,
+              8.0
+            ],
+            "min": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "size": [
+              80.0,
+              50.0,
+              8.0
+            ]
+          },
+          "dimensions": [
+            {
+              "base": [
+                0.0,
+                -9.0
+              ],
+              "kind": "horizontal",
+              "label": "overall_width",
+              "p1": [
+                0.0,
+                0.0
+              ],
+              "p2": [
+                80.0,
+                0.0
+              ],
+              "source": "final_brep_bbox",
+              "value_mm": 80.0,
+              "view": "front"
+            },
+            {
+              "base": [
+                -9.0,
+                0.0
+              ],
+              "kind": "vertical",
+              "label": "overall_height",
+              "p1": [
+                0.0,
+                0.0
+              ],
+              "p2": [
+                0.0,
+                8.0
+              ],
+              "source": "final_brep_bbox",
+              "value_mm": 8.0,
+              "view": "front"
+            },
+            {
+              "base": [
+                -9.0,
+                0.0
+              ],
+              "kind": "vertical",
+              "label": "overall_depth",
+              "p1": [
+                0.0,
+                0.0
+              ],
+              "p2": [
+                0.0,
+                50.0
+              ],
+              "source": "final_brep_bbox",
+              "value_mm": 50.0,
+              "view": "top"
+            },
+            {
+              "base": [
+                89.0,
+                50.0
+              ],
+              "center": [
+                10.0,
+                10.0
+              ],
+              "count": 1,
+              "hole_indices": [
+                0
+              ],
+              "kind": "diameter",
+              "label": "hole_diameter",
+              "p1": [
+                7.0,
+                10.0
+              ],
+              "p2": [
+                13.0,
+                10.0
+              ],
+              "radius": 3.0,
+              "source": "final_brep_inward_cylinder",
+              "value_mm": 6.0,
+              "view": "top"
+            },
+            {
+              "base": [
+                0.0,
+                -9.0
+              ],
+              "kind": "horizontal",
+              "label": "hole_x",
+              "p1": [
+                0.0,
+                10.0
+              ],
+              "p2": [
+                10.0,
+                10.0
+              ],
+              "source": "final_brep_cylinder_axis",
+              "value_mm": 10.0,
+              "view": "top"
+            },
+            {
+              "base": [
+                98.0,
+                0.0
+              ],
+              "kind": "vertical",
+              "label": "hole_y",
+              "p1": [
+                10.0,
+                0.0
+              ],
+              "p2": [
+                10.0,
+                10.0
+              ],
+              "source": "final_brep_cylinder_axis",
+              "value_mm": 10.0,
+              "view": "top"
+            }
+          ],
+          "dxf_geometry": "analytic_curves_and_nurbs",
+          "holes": [
+            {
+              "axis_origin": [
+                10.0,
+                10.0,
+                0.0
+              ],
+              "diameter": 6.0,
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "radius": 3.0,
+              "source": "final_brep_inward_cylinder"
+            }
+          ],
+          "measurement_source": "final_brep",
+          "method": "exact_brep_hlr",
+          "projection": "third_angle",
+          "revision_id": null,
+          "scale": 1,
+          "scope": "Overall dimensions and visible axis-aligned complete cylindrical hole diameters/positions; no tolerance, fit or manufacturing certification",
+          "svg_curve_deflection_mm": 0.01,
+          "units": "mm",
+          "views": [
+            {
+              "bounds": {
+                "max": [
+                  80.0,
+                  8.0
+                ],
+                "min": [
+                  0.0,
+                  0.0
+                ],
+                "size": [
+                  80.0,
+                  8.0
+                ]
+              },
+              "curve_types": {
+                "line": 6
+              },
+              "entities": {
+                "center": 1,
+                "hidden": 2,
+                "visible": 4
+              },
+              "name": "front",
+              "normal": [
+                0,
+                -1,
+                0
+              ],
+              "offset": [
+                0.0,
+                0.0
+              ],
+              "svg_approximated_curves": 0,
+              "x_axis": [
+                1,
+                0,
+                0
+              ],
+              "y_axis": [
+                0,
+                0,
+                1
+              ]
+            },
+            {
+              "bounds": {
+                "max": [
+                  80.0,
+                  50.0
+                ],
+                "min": [
+                  0.0,
+                  0.0
+                ],
+                "size": [
+                  80.0,
+                  50.0
+                ]
+              },
+              "curve_types": {
+                "circle": 1,
+                "line": 4
+              },
+              "entities": {
+                "center": 2,
+                "hidden": 0,
+                "visible": 5
+              },
+              "name": "top",
+              "normal": [
+                0,
+                0,
+                1
+              ],
+              "offset": [
+                0.0,
+                62.0
+              ],
+              "svg_approximated_curves": 0,
+              "x_axis": [
+                1,
+                0,
+                0
+              ],
+              "y_axis": [
+                0,
+                1,
+                0
+              ]
+            },
+            {
+              "bounds": {
+                "max": [
+                  50.0,
+                  8.0
+                ],
+                "min": [
+                  0.0,
+                  0.0
+                ],
+                "size": [
+                  50.0,
+                  8.0
+                ]
+              },
+              "curve_types": {
+                "line": 6
+              },
+              "entities": {
+                "center": 1,
+                "hidden": 2,
+                "visible": 4
+              },
+              "name": "right",
+              "normal": [
+                1,
+                0,
+                0
+              ],
+              "offset": [
+                134.0,
+                0.0
+              ],
+              "svg_approximated_curves": 0,
+              "x_axis": [
+                0,
+                1,
+                0
+              ],
+              "y_axis": [
+                0,
+                0,
+                1
+              ]
+            }
+          ]
+        },
+        "edges": 15,
+        "faces": 7,
+        "preview": {
+          "source_units": "mm",
+          "source_up_axis": "Z",
+          "units": "m",
+          "up_axis": "Y"
+        },
+        "solids": 1,
+        "step_roundtrip": {
+          "area": 10174.247779607702,
+          "bbox": {
+            "max": [
+              80.0,
+              50.0,
+              8.0
+            ],
+            "min": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "size": [
+              80.0,
+              50.0,
+              8.0
+            ]
+          },
+          "edges": 15,
+          "faces": 7,
+          "solids": 1,
+          "units": "mm",
+          "valid": true,
+          "volume": 31773.805328941602
+        },
+        "step_roundtrip_checks": {
+          "count": 12,
+          "status": "passed"
+        },
+        "units": "mm",
+        "valid": true,
+        "volume": 31773.80532894153
+      },
+      "isolation": {
+        "filesystem": "unrestricted",
+        "mode": "process-dev",
+        "network": "unrestricted",
+        "os_enforced": false,
+        "requested_mode": "process-dev",
+        "warning": "Explicit development mode; resource limits only"
+      },
+      "status": "completed",
+      "trace": [
+        {
+          "after_faces": 6,
+          "after_volume": 32000.0,
+          "before_faces": 0,
+          "before_volume": 0.0,
+          "duration_seconds": 0.004147,
+          "evidence": {},
+          "feature_id": "plate",
+          "solids": 1,
+          "started_at": "2026-10-14T04:15:02.082809+00:00",
+          "type": "Box"
+        },
+        {
+          "after_faces": 7,
+          "after_volume": 31773.80532894153,
+          "before_faces": 6,
+          "before_volume": 32000.0,
+          "duration_seconds": 0.014036,
+          "evidence": {
+            "holes": [
+              {
+                "depth": null,
+                "diameter": 6.0,
+                "direction": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "position": [
+                  10.0,
+                  10.0,
+                  0.0
+                ],
+                "removed_volume": 226.1946710584707,
+                "through": true
+              }
+            ]
+          },
+          "feature_id": "bore",
+          "solids": 1,
+          "started_at": "2026-10-14T04:15:02.087197+00:00",
+          "type": "Hole"
+        }
+      ],
+      "validation": {
+        "checks": [
+          {
+            "actual": true,
+            "evidence": "OpenCascade BRepCheck_Analyzer",
+            "expected": true,
+            "name": "brep_valid",
+            "status": "passed",
+            "tolerance": null
+          },
+          {
+            "actual": 31773.80532894153,
+            "evidence": "B-Rep mass properties",
+            "expected": "> 0",
+            "name": "positive_volume",
+            "status": "passed",
+            "tolerance": null
+          },
+          {
+            "actual": 1,
+            "evidence": "Kernel solid traversal",
+            "expected": 1,
+            "name": "solid_count",
+            "status": "passed",
+            "tolerance": null
+          },
+          {
+            "actual": {
+              "max": [
+                80.0,
+                50.0,
+                8.0
+              ],
+              "min": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "size": [
+                80.0,
+                50.0,
+                8.0
+              ]
+            },
+            "evidence": "Kernel bounding box",
+            "expected": true,
+            "name": "finite_bounds",
+            "status": "passed",
+            "tolerance": null
+          },
+          {
+            "actual": [
+              80.0,
+              50.0,
+              8.0
+            ],
+            "evidence": "B-Rep bounding box",
+            "expected": [
+              80.0,
+              50.0,
+              8.0
+            ],
+            "name": "bounding_box",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": 31773.80532894153,
+            "evidence": "B-Rep volume",
+            "expected": 31773.805328941537,
+            "name": "volume",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": [
+              {
+                "angular_span": 6.283185307179586,
+                "axial_length": 8.0,
+                "direction": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "inward": true,
+                "origin": [
+                  10.0,
+                  10.0,
+                  -1.0
+                ],
+                "radius": 3.0
+              }
+            ],
+            "evidence": "OCP BRepAdaptor_Surface; inward cylindrical face and measured axis/radius",
+            "expected": {
+              "axis_position": [
+                10.0,
+                10.0,
+                0.0
+              ],
+              "diameter": 6.0
+            },
+            "name": "expected_hole.0.0.cylindrical_wall",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": true,
+            "evidence": {
+              "method": "exact B-Rep boolean intersection of bore-clearance cylinder across whole body bounds",
+              "remaining_material_volume": 0
+            },
+            "expected": true,
+            "name": "expected_hole.0.0.through",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": 1,
+            "evidence": {
+              "method": "Unique inward cylindrical axes/radii; exact B-Rep bore clearance distinguishes through bores from blind pockets",
+              "requested_modes": [
+                "through"
+              ]
+            },
+            "expected": 1,
+            "name": "complete_hole_profile_count",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": [
+              {
+                "angular_span": 6.283185307179586,
+                "axial_length": 8.0,
+                "direction": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "inward": true,
+                "origin": [
+                  10.0,
+                  10.0,
+                  -1.0
+                ],
+                "radius": 3.0
+              }
+            ],
+            "evidence": "OCP BRepAdaptor_Surface; inward cylindrical face and measured axis/radius",
+            "expected": {
+              "axis_position": [
+                10.0,
+                10.0,
+                0.0
+              ],
+              "diameter": 6.0
+            },
+            "name": "feature.bore.0.cylindrical_wall",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": true,
+            "evidence": {
+              "method": "exact B-Rep boolean intersection of bore-clearance cylinder across whole body bounds",
+              "remaining_material_volume": 0
+            },
+            "expected": true,
+            "name": "feature.bore.0.through",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": 8.0,
+            "evidence": "Final B-Rep bounding box",
+            "expected": 8.0,
+            "name": "constraint.height",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": {
+              "area": 10174.247779607702,
+              "bbox": {
+                "max": [
+                  80.0,
+                  50.0,
+                  8.0
+                ],
+                "min": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "size": [
+                  80.0,
+                  50.0,
+                  8.0
+                ]
+              },
+              "edges": 15,
+              "faces": 7,
+              "solids": 1,
+              "units": "mm",
+              "valid": true,
+              "volume": 31773.805328941602
+            },
+            "evidence": "Actual STEP export and reimport; volume, bounds and solid count compared",
+            "expected": {
+              "max": [
+                80.0,
+                50.0,
+                8.0
+              ],
+              "min": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "size": [
+                80.0,
+                50.0,
+                8.0
+              ]
+            },
+            "name": "step_roundtrip",
+            "status": "passed",
+            "tolerance": 1e-05
+          }
+        ],
+        "scope": "B-Rep validity, measured dimensions, supported hole and feature checks; not a manufacturing certification",
+        "status": "passed",
+        "tolerance_mm": 0.0001
+      }
+    },
+    "revision_id": "4fc0284e-e2fe-43bb-9410-a8fc5a5e9417",
+    "stage": "completed",
+    "status": "completed",
+    "updated_at": "2026-10-14T04:15:03.260985+00:00"
+  },
+  "baseline_artifacts": {
+    "dxf": {
+      "file": "baseline/drawing.dxf",
+      "size": 70068,
+      "sha256": "fe55f80eeef9ea8d794bed99c621588630b65a93146f705df3f84f7fe3a5ba9a"
+    },
+    "glb": {
+      "file": "baseline/model.glb",
+      "size": 14120,
+      "sha256": "eaeb18e39cfae1b0b466c4e8998bb097437e7c4a48d69d3e39813d91b0fbd6ef"
+    },
+    "ir": {
+      "file": "baseline/model.cad-ir.json",
+      "size": 1947,
+      "sha256": "1e77bdba9c7aba84a1aa41c15d233274bd07317ccd8018d913803e000eb6dcdc"
+    },
+    "python": {
+      "file": "baseline/model.py",
+      "size": 2073,
+      "sha256": "1852282ef4fd1826e9d86ffabc75cb5d2316b5344f39f83b81b233087ef929e1"
+    },
+    "step": {
+      "file": "baseline/model.step",
+      "size": 19505,
+      "sha256": "9bd4c0aae335a3d5eba9a2d8cb089726cada2fcf2e3ac5a4b5eed847ed8eeef3"
+    },
+    "stl": {
+      "file": "baseline/model.stl",
+      "size": 17684,
+      "sha256": "357c3fcade4c42b397e37e0388aa05a6c7aadcb22c89a1b9755b3cf8589cc106"
+    },
+    "svg": {
+      "file": "baseline/drawing.svg",
+      "size": 9295,
+      "sha256": "68999b7df15cb7454801f343edc915f811357ce0e045ee11456ca65d064c10c7"
+    }
+  },
+  "edit_job": {
+    "base_revision": "4fc0284e-e2fe-43bb-9410-a8fc5a5e9417",
+    "created_at": "2026-10-14T04:15:03.274880+00:00",
+    "document_id": "a069c8c0-49c5-485f-86d2-aa45f916c553",
+    "error": null,
+    "id": "d732abf6-19f9-4506-bb95-b7715e49d0fe",
+    "progress": 100,
+    "repair_history": [],
+    "report": {
+      "artifacts": [
+        {
+          "filename": "model.step",
+          "format": "step",
+          "sha256": "cb3899f03e8e49a8ff85987d57cecff3b33966f35601e437dc7a14e1c62b4bf2",
+          "size": 32948
+        },
+        {
+          "filename": "model.stl",
+          "format": "stl",
+          "sha256": "7525d834d1f713459186fd75c8e169775c11c02f9f3e35e07a5c538e3e46a58a",
+          "size": 18684
+        },
+        {
+          "filename": "model.glb",
+          "format": "glb",
+          "sha256": "26790edc4169c72830e8e63a22541f19e1d6966a96cf4360028de3db9cc9879a",
+          "size": 16276
+        },
+        {
+          "filename": "drawing.dxf",
+          "format": "dxf",
+          "sha256": "cf9c04ba5956c0c3a3c5923b3fe4a05c2d2891edfd7b8138ce682c84f36ef6c2",
+          "size": 71313
+        },
+        {
+          "filename": "drawing.svg",
+          "format": "svg",
+          "sha256": "c71707f916f1859bebd220517402d735f6c2980f3c59f87dbc0ade271916ca81",
+          "size": 9753
+        },
+        {
+          "filename": "model.py",
+          "format": "python",
+          "sha256": "4482fa656be86a04f73bcbaed094ab30c00417690002f69e030c6a169365ad3f",
+          "size": 3437
+        },
+        {
+          "filename": "model.cad-ir.json",
+          "format": "ir",
+          "sha256": "3ae3e3abe5f515f79499c2167f5b33ca3ff3731505c205ebc096db739cf0048d",
+          "size": 4039
+        }
+      ],
+      "elapsed_seconds": 2.537827,
+      "execution_options": {},
+      "executor_elapsed_seconds": 3.385582,
+      "geometry": {
+        "area": 10302.247779607691,
+        "bbox": {
+          "max": [
+            80.0,
+            50.0,
+            8.0
+          ],
+          "min": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "size": [
+            80.0,
+            50.0,
+            8.0
+          ]
+        },
+        "drawing": {
+          "bbox": {
+            "max": [
+              80.0,
+              50.0,
+              8.0
+            ],
+            "min": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "size": [
+              80.0,
+              50.0,
+              8.0
+            ]
+          },
+          "dimensions": [
+            {
+              "base": [
+                0.0,
+                -9.0
+              ],
+              "kind": "horizontal",
+              "label": "overall_width",
+              "p1": [
+                0.0,
+                0.0
+              ],
+              "p2": [
+                80.0,
+                0.0
+              ],
+              "source": "final_brep_bbox",
+              "value_mm": 80.0,
+              "view": "front"
+            },
+            {
+              "base": [
+                -9.0,
+                0.0
+              ],
+              "kind": "vertical",
+              "label": "overall_height",
+              "p1": [
+                0.0,
+                0.0
+              ],
+              "p2": [
+                0.0,
+                8.0
+              ],
+              "source": "final_brep_bbox",
+              "value_mm": 8.0,
+              "view": "front"
+            },
+            {
+              "base": [
+                -9.0,
+                0.0
+              ],
+              "kind": "vertical",
+              "label": "overall_depth",
+              "p1": [
+                0.0,
+                0.0
+              ],
+              "p2": [
+                0.0,
+                50.0
+              ],
+              "source": "final_brep_bbox",
+              "value_mm": 50.0,
+              "view": "top"
+            },
+            {
+              "base": [
+                89.0,
+                50.0
+              ],
+              "center": [
+                20.0,
+                10.0
+              ],
+              "count": 1,
+              "hole_indices": [
+                0
+              ],
+              "kind": "diameter",
+              "label": "hole_diameter",
+              "p1": [
+                17.0,
+                10.0
+              ],
+              "p2": [
+                23.0,
+                10.0
+              ],
+              "radius": 3.0,
+              "source": "final_brep_inward_cylinder",
+              "value_mm": 6.0,
+              "view": "top"
+            },
+            {
+              "base": [
+                0.0,
+                -9.0
+              ],
+              "kind": "horizontal",
+              "label": "hole_x",
+              "p1": [
+                0.0,
+                10.0
+              ],
+              "p2": [
+                20.0,
+                10.0
+              ],
+              "source": "final_brep_cylinder_axis",
+              "value_mm": 20.0,
+              "view": "top"
+            },
+            {
+              "base": [
+                98.0,
+                0.0
+              ],
+              "kind": "vertical",
+              "label": "hole_y",
+              "p1": [
+                20.0,
+                0.0
+              ],
+              "p2": [
+                20.0,
+                10.0
+              ],
+              "source": "final_brep_cylinder_axis",
+              "value_mm": 10.0,
+              "view": "top"
+            }
+          ],
+          "dxf_geometry": "analytic_curves_and_nurbs",
+          "holes": [
+            {
+              "axis_origin": [
+                20.0,
+                10.0,
+                0.0
+              ],
+              "diameter": 6.0,
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "radius": 3.0,
+              "source": "final_brep_inward_cylinder"
+            }
+          ],
+          "measurement_source": "final_brep",
+          "method": "exact_brep_hlr",
+          "projection": "third_angle",
+          "revision_id": null,
+          "scale": 1,
+          "scope": "Overall dimensions and visible axis-aligned complete cylindrical hole diameters/positions; no tolerance, fit or manufacturing certification",
+          "svg_curve_deflection_mm": 0.01,
+          "units": "mm",
+          "views": [
+            {
+              "bounds": {
+                "max": [
+                  80.0,
+                  8.0
+                ],
+                "min": [
+                  0.0,
+                  0.0
+                ],
+                "size": [
+                  80.0,
+                  8.0
+                ]
+              },
+              "curve_types": {
+                "line": 8
+              },
+              "entities": {
+                "center": 1,
+                "hidden": 4,
+                "visible": 4
+              },
+              "name": "front",
+              "normal": [
+                0,
+                -1,
+                0
+              ],
+              "offset": [
+                0.0,
+                0.0
+              ],
+              "svg_approximated_curves": 0,
+              "x_axis": [
+                1,
+                0,
+                0
+              ],
+              "y_axis": [
+                0,
+                0,
+                1
+              ]
+            },
+            {
+              "bounds": {
+                "max": [
+                  80.0,
+                  50.0
+                ],
+                "min": [
+                  0.0,
+                  0.0
+                ],
+                "size": [
+                  80.0,
+                  50.0
+                ]
+              },
+              "curve_types": {
+                "circle": 1,
+                "line": 8
+              },
+              "entities": {
+                "center": 2,
+                "hidden": 0,
+                "visible": 9
+              },
+              "name": "top",
+              "normal": [
+                0,
+                0,
+                1
+              ],
+              "offset": [
+                0.0,
+                62.0
+              ],
+              "svg_approximated_curves": 0,
+              "x_axis": [
+                1,
+                0,
+                0
+              ],
+              "y_axis": [
+                0,
+                1,
+                0
+              ]
+            },
+            {
+              "bounds": {
+                "max": [
+                  50.0,
+                  8.0
+                ],
+                "min": [
+                  0.0,
+                  0.0
+                ],
+                "size": [
+                  50.0,
+                  8.0
+                ]
+              },
+              "curve_types": {
+                "line": 8
+              },
+              "entities": {
+                "center": 1,
+                "hidden": 4,
+                "visible": 4
+              },
+              "name": "right",
+              "normal": [
+                1,
+                0,
+                0
+              ],
+              "offset": [
+                134.0,
+                0.0
+              ],
+              "svg_approximated_curves": 0,
+              "x_axis": [
+                0,
+                1,
+                0
+              ],
+              "y_axis": [
+                0,
+                0,
+                1
+              ]
+            }
+          ]
+        },
+        "edges": 27,
+        "faces": 11,
+        "preview": {
+          "source_units": "mm",
+          "source_up_axis": "Z",
+          "units": "m",
+          "up_axis": "Y"
+        },
+        "solids": 1,
+        "step_roundtrip": {
+          "area": 10302.247779607702,
+          "bbox": {
+            "max": [
+              80.0,
+              50.0,
+              8.0
+            ],
+            "min": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "size": [
+              80.0,
+              50.0,
+              8.0
+            ]
+          },
+          "edges": 27,
+          "faces": 11,
+          "solids": 1,
+          "units": "mm",
+          "valid": true,
+          "volume": 31133.805328941584
+        },
+        "step_roundtrip_checks": {
+          "count": 12,
+          "status": "passed"
+        },
+        "units": "mm",
+        "valid": true,
+        "volume": 31133.805328941533
+      },
+      "isolation": {
+        "filesystem": "unrestricted",
+        "mode": "process-dev",
+        "network": "unrestricted",
+        "os_enforced": false,
+        "requested_mode": "process-dev",
+        "warning": "Explicit development mode; resource limits only"
+      },
+      "status": "completed",
+      "trace": [
+        {
+          "after_faces": 6,
+          "after_volume": 32000.0,
+          "before_faces": 0,
+          "before_volume": 0.0,
+          "duration_seconds": 0.003835,
+          "evidence": {},
+          "feature_id": "plate",
+          "solids": 1,
+          "started_at": "2026-10-14T04:15:33.171174+00:00",
+          "type": "Box"
+        },
+        {
+          "after_faces": 7,
+          "after_volume": 31773.805328941537,
+          "before_faces": 6,
+          "before_volume": 32000.0,
+          "duration_seconds": 0.013978,
+          "evidence": {
+            "holes": [
+              {
+                "depth": null,
+                "diameter": 6.0,
+                "direction": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "position": [
+                  20.0,
+                  10.0,
+                  0.0
+                ],
+                "removed_volume": 226.19467105846343,
+                "through": true
+              }
+            ]
+          },
+          "feature_id": "bore",
+          "solids": 1,
+          "started_at": "2026-10-14T04:15:33.175246+00:00",
+          "type": "Hole"
+        },
+        {
+          "after_faces": 1,
+          "after_volume": 0,
+          "before_faces": 0,
+          "before_volume": 0.0,
+          "duration_seconds": 0.000772,
+          "evidence": {},
+          "feature_id": "slot_profile",
+          "solids": 0,
+          "started_at": "2026-10-14T04:15:33.189759+00:00",
+          "type": "Rectangle"
+        },
+        {
+          "after_faces": 6,
+          "after_volume": 639.9999999999999,
+          "before_faces": 1,
+          "before_volume": 0,
+          "duration_seconds": 0.001942,
+          "evidence": {},
+          "feature_id": "slot_tool",
+          "solids": 1,
+          "started_at": "2026-10-14T04:15:33.190644+00:00",
+          "type": "Extrude"
+        },
+        {
+          "after_faces": 11,
+          "after_volume": 31133.805328941533,
+          "before_faces": 7,
+          "before_volume": 31773.805328941537,
+          "duration_seconds": 0.009119,
+          "evidence": {},
+          "feature_id": "slot_cut",
+          "solids": 1,
+          "started_at": "2026-10-14T04:15:33.193298+00:00",
+          "type": "Cut"
+        }
+      ],
+      "validation": {
+        "checks": [
+          {
+            "actual": true,
+            "evidence": "OpenCascade BRepCheck_Analyzer",
+            "expected": true,
+            "name": "brep_valid",
+            "status": "passed",
+            "tolerance": null
+          },
+          {
+            "actual": 31133.805328941533,
+            "evidence": "B-Rep mass properties",
+            "expected": "> 0",
+            "name": "positive_volume",
+            "status": "passed",
+            "tolerance": null
+          },
+          {
+            "actual": 1,
+            "evidence": "Kernel solid traversal",
+            "expected": 1,
+            "name": "solid_count",
+            "status": "passed",
+            "tolerance": null
+          },
+          {
+            "actual": {
+              "max": [
+                80.0,
+                50.0,
+                8.0
+              ],
+              "min": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "size": [
+                80.0,
+                50.0,
+                8.0
+              ]
+            },
+            "evidence": "Kernel bounding box",
+            "expected": true,
+            "name": "finite_bounds",
+            "status": "passed",
+            "tolerance": null
+          },
+          {
+            "actual": [
+              80.0,
+              50.0,
+              8.0
+            ],
+            "evidence": "B-Rep bounding box",
+            "expected": [
+              80.0,
+              50.0,
+              8.0
+            ],
+            "name": "bounding_box",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": 31133.805328941533,
+            "evidence": "B-Rep volume",
+            "expected": 31133.805328941537,
+            "name": "volume",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": [
+              {
+                "angular_span": 6.283185307179586,
+                "axial_length": 8.0,
+                "direction": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "inward": true,
+                "origin": [
+                  20.0,
+                  10.0,
+                  -1.0
+                ],
+                "radius": 3.0
+              }
+            ],
+            "evidence": "OCP BRepAdaptor_Surface; inward cylindrical face and measured axis/radius",
+            "expected": {
+              "axis_position": [
+                20.0,
+                10.0,
+                0.0
+              ],
+              "diameter": 6.0
+            },
+            "name": "expected_hole.0.0.cylindrical_wall",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": true,
+            "evidence": {
+              "method": "exact B-Rep boolean intersection of bore-clearance cylinder across whole body bounds",
+              "remaining_material_volume": 0
+            },
+            "expected": true,
+            "name": "expected_hole.0.0.through",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": 1,
+            "evidence": {
+              "method": "Unique inward cylindrical axes/radii; exact B-Rep bore clearance distinguishes through bores from blind pockets",
+              "requested_modes": [
+                "through"
+              ]
+            },
+            "expected": 1,
+            "name": "complete_hole_profile_count",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": [
+              {
+                "angular_span": 6.283185307179586,
+                "axial_length": 8.0,
+                "direction": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "inward": true,
+                "origin": [
+                  20.0,
+                  10.0,
+                  -1.0
+                ],
+                "radius": 3.0
+              }
+            ],
+            "evidence": "OCP BRepAdaptor_Surface; inward cylindrical face and measured axis/radius",
+            "expected": {
+              "axis_position": [
+                20.0,
+                10.0,
+                0.0
+              ],
+              "diameter": 6.0
+            },
+            "name": "feature.bore.0.cylindrical_wall",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": true,
+            "evidence": {
+              "method": "exact B-Rep boolean intersection of bore-clearance cylinder across whole body bounds",
+              "remaining_material_volume": 0
+            },
+            "expected": true,
+            "name": "feature.bore.0.through",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": 8.0,
+            "evidence": "Final B-Rep bounding box",
+            "expected": 8.0,
+            "name": "constraint.height",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": {
+              "area": 10302.247779607702,
+              "bbox": {
+                "max": [
+                  80.0,
+                  50.0,
+                  8.0
+                ],
+                "min": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "size": [
+                  80.0,
+                  50.0,
+                  8.0
+                ]
+              },
+              "edges": 27,
+              "faces": 11,
+              "solids": 1,
+              "units": "mm",
+              "valid": true,
+              "volume": 31133.805328941584
+            },
+            "evidence": "Actual STEP export and reimport; volume, bounds and solid count compared",
+            "expected": {
+              "max": [
+                80.0,
+                50.0,
+                8.0
+              ],
+              "min": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "size": [
+                80.0,
+                50.0,
+                8.0
+              ]
+            },
+            "name": "step_roundtrip",
+            "status": "passed",
+            "tolerance": 1e-05
+          }
+        ],
+        "scope": "B-Rep validity, measured dimensions, supported hole and feature checks; not a manufacturing certification",
+        "status": "passed",
+        "tolerance_mm": 0.0001
+      }
+    },
+    "revision_id": "4c9b2195-b081-4e3b-a9c5-edb24b856709",
+    "stage": "completed",
+    "status": "completed",
+    "updated_at": "2026-10-14T04:15:34.128245+00:00"
+  },
+  "stages": [
+    "created",
+    "queued",
+    "planning",
+    "parsing",
+    "building",
+    "building",
+    "validating",
+    "exporting",
+    "publishing",
+    "completed"
+  ],
+  "current_revision": "4c9b2195-b081-4e3b-a9c5-edb24b856709",
+  "baseline_revision_id": "4fc0284e-e2fe-43bb-9410-a8fc5a5e9417",
+  "revision_id": "4c9b2195-b081-4e3b-a9c5-edb24b856709",
+  "ir": {
+    "assembly": null,
+    "constraints": [
+      {
+        "axis": "z",
+        "description": null,
+        "expected": 8.0,
+        "feature_id": null,
+        "id": "height",
+        "tolerance": 0.0001,
+        "type": "dimension"
+      }
+    ],
+    "coordinate_system": "right-handed-Z-up",
+    "dependencies": {},
+    "document_id": "a069c8c0-49c5-485f-86d2-aa45f916c553",
+    "expected_geometry": {
+      "bbox": [
+        80.0,
+        50.0,
+        8.0
+      ],
+      "holes": [
+        {
+          "depth": null,
+          "diameter": 6.0,
+          "direction": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "feature_id": "bore",
+          "positions": [
+            [
+              20.0,
+              10.0,
+              0.0
+            ]
+          ],
+          "through": true
+        }
+      ],
+      "solids": 1,
+      "tolerance": 0.0001,
+      "volume": "80*50*8-pi*3**2*8-10*8*8",
+      "volume_max": null,
+      "volume_min": null
+    },
+    "features": [
+      {
+        "depends_on": [],
+        "editable": true,
+        "id": "plate",
+        "inputs": [],
+        "label": null,
+        "params": {
+          "depth": 50.0,
+          "height": 8.0,
+          "origin": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "width": 80.0
+        },
+        "type": "Box",
+        "validation_conditions": []
+      },
+      {
+        "depends_on": [],
+        "editable": true,
+        "id": "bore",
+        "inputs": [
+          "plate"
+        ],
+        "label": null,
+        "params": {
+          "depth": null,
+          "diameter": 6.0,
+          "direction": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "positions": [
+            [
+              20.0,
+              10.0,
+              0.0
+            ]
+          ],
+          "through": true
+        },
+        "type": "Hole",
+        "validation_conditions": []
+      },
+      {
+        "depends_on": [],
+        "editable": true,
+        "id": "slot_profile",
+        "inputs": [],
+        "label": null,
+        "params": {
+          "height": 8.0,
+          "origin": [
+            35.0,
+            20.0,
+            0.0
+          ],
+          "plane": "XY",
+          "width": 10.0
+        },
+        "type": "Rectangle",
+        "validation_conditions": []
+      },
+      {
+        "depends_on": [],
+        "editable": true,
+        "id": "slot_tool",
+        "inputs": [
+          "slot_profile"
+        ],
+        "label": null,
+        "params": {
+          "amount": 8.0
+        },
+        "type": "Extrude",
+        "validation_conditions": []
+      },
+      {
+        "depends_on": [],
+        "editable": true,
+        "id": "slot_cut",
+        "inputs": [
+          "bore",
+          "slot_tool"
+        ],
+        "label": null,
+        "params": {},
+        "type": "Cut",
+        "validation_conditions": []
+      }
+    ],
+    "metadata": {
+      "last_edit": {
+        "intents": [
+          {
+            "action": "move",
+            "changes_envelope": false,
+            "instances": [],
+            "mates": [],
+            "parameters": [
+              "positions"
+            ],
+            "source": "Move the existing bore to x=20 mm, y=10 mm, keeping its diameter 6 mm and its through depth.",
+            "targets": [
+              "bore"
+            ]
+          },
+          {
+            "action": "add",
+            "changes_envelope": false,
+            "instances": [],
+            "mates": [],
+            "parameters": [
+              "width",
+              "height",
+              "origin",
+              "plane",
+              "amount"
+            ],
+            "source": "Also add a rectangular through slot, 10 mm along X and 8 mm along Y, with its minimum corner at x=35 mm, y=20 mm, cutting the full plate thickness from z=0 to z=8 mm.",
+            "targets": [
+              "slot_profile",
+              "slot_tool",
+              "slot_cut"
+            ]
+          }
+        ],
+        "model": "gpt-6.1-sol",
+        "planning_mode": "structured-incremental-edit",
+        "usage": {
+          "completion_tokens": 540,
+          "prompt_tokens": 22185,
+          "total_tokens": 22725
+        }
+      },
+      "planning_mode": "provided-ir",
+      "purpose": "Fixed independent live-edit baseline"
+    },
+    "output_feature": "slot_cut",
+    "parameters": {},
+    "schema_version": "2.0",
+    "units": "mm"
+  },
+  "report": {
+    "artifacts": [
+      {
+        "filename": "model.step",
+        "format": "step",
+        "sha256": "cb3899f03e8e49a8ff85987d57cecff3b33966f35601e437dc7a14e1c62b4bf2",
+        "size": 32948
+      },
+      {
+        "filename": "model.stl",
+        "format": "stl",
+        "sha256": "7525d834d1f713459186fd75c8e169775c11c02f9f3e35e07a5c538e3e46a58a",
+        "size": 18684
+      },
+      {
+        "filename": "model.glb",
+        "format": "glb",
+        "sha256": "26790edc4169c72830e8e63a22541f19e1d6966a96cf4360028de3db9cc9879a",
+        "size": 16276
+      },
+      {
+        "filename": "drawing.dxf",
+        "format": "dxf",
+        "sha256": "cf9c04ba5956c0c3a3c5923b3fe4a05c2d2891edfd7b8138ce682c84f36ef6c2",
+        "size": 71313
+      },
+      {
+        "filename": "drawing.svg",
+        "format": "svg",
+        "sha256": "c71707f916f1859bebd220517402d735f6c2980f3c59f87dbc0ade271916ca81",
+        "size": 9753
+      },
+      {
+        "filename": "model.py",
+        "format": "python",
+        "sha256": "4482fa656be86a04f73bcbaed094ab30c00417690002f69e030c6a169365ad3f",
+        "size": 3437
+      },
+      {
+        "filename": "model.cad-ir.json",
+        "format": "ir",
+        "sha256": "3ae3e3abe5f515f79499c2167f5b33ca3ff3731505c205ebc096db739cf0048d",
+        "size": 4039
+      }
+    ],
+    "elapsed_seconds": 2.537827,
+    "execution_options": {},
+    "executor_elapsed_seconds": 3.385582,
+    "geometry": {
+      "area": 10302.247779607691,
+      "bbox": {
+        "max": [
+          80.0,
+          50.0,
+          8.0
+        ],
+        "min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          80.0,
+          50.0,
+          8.0
+        ]
+      },
+      "drawing": {
+        "bbox": {
+          "max": [
+            80.0,
+            50.0,
+            8.0
+          ],
+          "min": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "size": [
+            80.0,
+            50.0,
+            8.0
+          ]
+        },
+        "dimensions": [
+          {
+            "base": [
+              0.0,
+              -9.0
+            ],
+            "kind": "horizontal",
+            "label": "overall_width",
+            "p1": [
+              0.0,
+              0.0
+            ],
+            "p2": [
+              80.0,
+              0.0
+            ],
+            "source": "final_brep_bbox",
+            "value_mm": 80.0,
+            "view": "front"
+          },
+          {
+            "base": [
+              -9.0,
+              0.0
+            ],
+            "kind": "vertical",
+            "label": "overall_height",
+            "p1": [
+              0.0,
+              0.0
+            ],
+            "p2": [
+              0.0,
+              8.0
+            ],
+            "source": "final_brep_bbox",
+            "value_mm": 8.0,
+            "view": "front"
+          },
+          {
+            "base": [
+              -9.0,
+              0.0
+            ],
+            "kind": "vertical",
+            "label": "overall_depth",
+            "p1": [
+              0.0,
+              0.0
+            ],
+            "p2": [
+              0.0,
+              50.0
+            ],
+            "source": "final_brep_bbox",
+            "value_mm": 50.0,
+            "view": "top"
+          },
+          {
+            "base": [
+              89.0,
+              50.0
+            ],
+            "center": [
+              20.0,
+              10.0
+            ],
+            "count": 1,
+            "hole_indices": [
+              0
+            ],
+            "kind": "diameter",
+            "label": "hole_diameter",
+            "p1": [
+              17.0,
+              10.0
+            ],
+            "p2": [
+              23.0,
+              10.0
+            ],
+            "radius": 3.0,
+            "source": "final_brep_inward_cylinder",
+            "value_mm": 6.0,
+            "view": "top"
+          },
+          {
+            "base": [
+              0.0,
+              -9.0
+            ],
+            "kind": "horizontal",
+            "label": "hole_x",
+            "p1": [
+              0.0,
+              10.0
+            ],
+            "p2": [
+              20.0,
+              10.0
+            ],
+            "source": "final_brep_cylinder_axis",
+            "value_mm": 20.0,
+            "view": "top"
+          },
+          {
+            "base": [
+              98.0,
+              0.0
+            ],
+            "kind": "vertical",
+            "label": "hole_y",
+            "p1": [
+              20.0,
+              0.0
+            ],
+            "p2": [
+              20.0,
+              10.0
+            ],
+            "source": "final_brep_cylinder_axis",
+            "value_mm": 10.0,
+            "view": "top"
+          }
+        ],
+        "dxf_geometry": "analytic_curves_and_nurbs",
+        "holes": [
+          {
+            "axis_origin": [
+              20.0,
+              10.0,
+              0.0
+            ],
+            "diameter": 6.0,
+            "direction": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "radius": 3.0,
+            "source": "final_brep_inward_cylinder"
+          }
+        ],
+        "measurement_source": "final_brep",
+        "method": "exact_brep_hlr",
+        "projection": "third_angle",
+        "revision_id": null,
+        "scale": 1,
+        "scope": "Overall dimensions and visible axis-aligned complete cylindrical hole diameters/positions; no tolerance, fit or manufacturing certification",
+        "svg_curve_deflection_mm": 0.01,
+        "units": "mm",
+        "views": [
+          {
+            "bounds": {
+              "max": [
+                80.0,
+                8.0
+              ],
+              "min": [
+                0.0,
+                0.0
+              ],
+              "size": [
+                80.0,
+                8.0
+              ]
+            },
+            "curve_types": {
+              "line": 8
+            },
+            "entities": {
+              "center": 1,
+              "hidden": 4,
+              "visible": 4
+            },
+            "name": "front",
+            "normal": [
+              0,
+              -1,
+              0
+            ],
+            "offset": [
+              0.0,
+              0.0
+            ],
+            "svg_approximated_curves": 0,
+            "x_axis": [
+              1,
+              0,
+              0
+            ],
+            "y_axis": [
+              0,
+              0,
+              1
+            ]
+          },
+          {
+            "bounds": {
+              "max": [
+                80.0,
+                50.0
+              ],
+              "min": [
+                0.0,
+                0.0
+              ],
+              "size": [
+                80.0,
+                50.0
+              ]
+            },
+            "curve_types": {
+              "circle": 1,
+              "line": 8
+            },
+            "entities": {
+              "center": 2,
+              "hidden": 0,
+              "visible": 9
+            },
+            "name": "top",
+            "normal": [
+              0,
+              0,
+              1
+            ],
+            "offset": [
+              0.0,
+              62.0
+            ],
+            "svg_approximated_curves": 0,
+            "x_axis": [
+              1,
+              0,
+              0
+            ],
+            "y_axis": [
+              0,
+              1,
+              0
+            ]
+          },
+          {
+            "bounds": {
+              "max": [
+                50.0,
+                8.0
+              ],
+              "min": [
+                0.0,
+                0.0
+              ],
+              "size": [
+                50.0,
+                8.0
+              ]
+            },
+            "curve_types": {
+              "line": 8
+            },
+            "entities": {
+              "center": 1,
+              "hidden": 4,
+              "visible": 4
+            },
+            "name": "right",
+            "normal": [
+              1,
+              0,
+              0
+            ],
+            "offset": [
+              134.0,
+              0.0
+            ],
+            "svg_approximated_curves": 0,
+            "x_axis": [
+              0,
+              1,
+              0
+            ],
+            "y_axis": [
+              0,
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      "edges": 27,
+      "faces": 11,
+      "preview": {
+        "source_units": "mm",
+        "source_up_axis": "Z",
+        "units": "m",
+        "up_axis": "Y"
+      },
+      "solids": 1,
+      "step_roundtrip": {
+        "area": 10302.247779607702,
+        "bbox": {
+          "max": [
+            80.0,
+            50.0,
+            8.0
+          ],
+          "min": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "size": [
+            80.0,
+            50.0,
+            8.0
+          ]
+        },
+        "edges": 27,
+        "faces": 11,
+        "solids": 1,
+        "units": "mm",
+        "valid": true,
+        "volume": 31133.805328941584
+      },
+      "step_roundtrip_checks": {
+        "count": 12,
+        "status": "passed"
+      },
+      "units": "mm",
+      "valid": true,
+      "volume": 31133.805328941533
+    },
+    "isolation": {
+      "filesystem": "unrestricted",
+      "mode": "process-dev",
+      "network": "unrestricted",
+      "os_enforced": false,
+      "requested_mode": "process-dev",
+      "warning": "Explicit development mode; resource limits only"
+    },
+    "status": "completed",
+    "trace": [
+      {
+        "after_faces": 6,
+        "after_volume": 32000.0,
+        "before_faces": 0,
+        "before_volume": 0.0,
+        "duration_seconds": 0.003835,
+        "evidence": {},
+        "feature_id": "plate",
+        "solids": 1,
+        "started_at": "2026-10-14T04:15:33.171174+00:00",
+        "type": "Box"
+      },
+      {
+        "after_faces": 7,
+        "after_volume": 31773.805328941537,
+        "before_faces": 6,
+        "before_volume": 32000.0,
+        "duration_seconds": 0.013978,
+        "evidence": {
+          "holes": [
+            {
+              "depth": null,
+              "diameter": 6.0,
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "position": [
+                20.0,
+                10.0,
+                0.0
+              ],
+              "removed_volume": 226.19467105846343,
+              "through": true
+            }
+          ]
+        },
+        "feature_id": "bore",
+        "solids": 1,
+        "started_at": "2026-10-14T04:15:33.175246+00:00",
+        "type": "Hole"
+      },
+      {
+        "after_faces": 1,
+        "after_volume": 0,
+        "before_faces": 0,
+        "before_volume": 0.0,
+        "duration_seconds": 0.000772,
+        "evidence": {},
+        "feature_id": "slot_profile",
+        "solids": 0,
+        "started_at": "2026-10-14T04:15:33.189759+00:00",
+        "type": "Rectangle"
+      },
+      {
+        "after_faces": 6,
+        "after_volume": 639.9999999999999,
+        "before_faces": 1,
+        "before_volume": 0,
+        "duration_seconds": 0.001942,
+        "evidence": {},
+        "feature_id": "slot_tool",
+        "solids": 1,
+        "started_at": "2026-10-14T04:15:33.190644+00:00",
+        "type": "Extrude"
+      },
+      {
+        "after_faces": 11,
+        "after_volume": 31133.805328941533,
+        "before_faces": 7,
+        "before_volume": 31773.805328941537,
+        "duration_seconds": 0.009119,
+        "evidence": {},
+        "feature_id": "slot_cut",
+        "solids": 1,
+        "started_at": "2026-10-14T04:15:33.193298+00:00",
+        "type": "Cut"
+      }
+    ],
+    "validation": {
+      "checks": [
+        {
+          "actual": true,
+          "evidence": "OpenCascade BRepCheck_Analyzer",
+          "expected": true,
+          "name": "brep_valid",
+          "status": "passed",
+          "tolerance": null
+        },
+        {
+          "actual": 31133.805328941533,
+          "evidence": "B-Rep mass properties",
+          "expected": "> 0",
+          "name": "positive_volume",
+          "status": "passed",
+          "tolerance": null
+        },
+        {
+          "actual": 1,
+          "evidence": "Kernel solid traversal",
+          "expected": 1,
+          "name": "solid_count",
+          "status": "passed",
+          "tolerance": null
+        },
+        {
+          "actual": {
+            "max": [
+              80.0,
+              50.0,
+              8.0
+            ],
+            "min": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "size": [
+              80.0,
+              50.0,
+              8.0
+            ]
+          },
+          "evidence": "Kernel bounding box",
+          "expected": true,
+          "name": "finite_bounds",
+          "status": "passed",
+          "tolerance": null
+        },
+        {
+          "actual": [
+            80.0,
+            50.0,
+            8.0
+          ],
+          "evidence": "B-Rep bounding box",
+          "expected": [
+            80.0,
+            50.0,
+            8.0
+          ],
+          "name": "bounding_box",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": 31133.805328941533,
+          "evidence": "B-Rep volume",
+          "expected": 31133.805328941537,
+          "name": "volume",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": [
+            {
+              "angular_span": 6.283185307179586,
+              "axial_length": 8.0,
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "inward": true,
+              "origin": [
+                20.0,
+                10.0,
+                -1.0
+              ],
+              "radius": 3.0
+            }
+          ],
+          "evidence": "OCP BRepAdaptor_Surface; inward cylindrical face and measured axis/radius",
+          "expected": {
+            "axis_position": [
+              20.0,
+              10.0,
+              0.0
+            ],
+            "diameter": 6.0
+          },
+          "name": "expected_hole.0.0.cylindrical_wall",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": true,
+          "evidence": {
+            "method": "exact B-Rep boolean intersection of bore-clearance cylinder across whole body bounds",
+            "remaining_material_volume": 0
+          },
+          "expected": true,
+          "name": "expected_hole.0.0.through",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": 1,
+          "evidence": {
+            "method": "Unique inward cylindrical axes/radii; exact B-Rep bore clearance distinguishes through bores from blind pockets",
+            "requested_modes": [
+              "through"
+            ]
+          },
+          "expected": 1,
+          "name": "complete_hole_profile_count",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": [
+            {
+              "angular_span": 6.283185307179586,
+              "axial_length": 8.0,
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "inward": true,
+              "origin": [
+                20.0,
+                10.0,
+                -1.0
+              ],
+              "radius": 3.0
+            }
+          ],
+          "evidence": "OCP BRepAdaptor_Surface; inward cylindrical face and measured axis/radius",
+          "expected": {
+            "axis_position": [
+              20.0,
+              10.0,
+              0.0
+            ],
+            "diameter": 6.0
+          },
+          "name": "feature.bore.0.cylindrical_wall",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": true,
+          "evidence": {
+            "method": "exact B-Rep boolean intersection of bore-clearance cylinder across whole body bounds",
+            "remaining_material_volume": 0
+          },
+          "expected": true,
+          "name": "feature.bore.0.through",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": 8.0,
+          "evidence": "Final B-Rep bounding box",
+          "expected": 8.0,
+          "name": "constraint.height",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": {
+            "area": 10302.247779607702,
+            "bbox": {
+              "max": [
+                80.0,
+                50.0,
+                8.0
+              ],
+              "min": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "size": [
+                80.0,
+                50.0,
+                8.0
+              ]
+            },
+            "edges": 27,
+            "faces": 11,
+            "solids": 1,
+            "units": "mm",
+            "valid": true,
+            "volume": 31133.805328941584
+          },
+          "evidence": "Actual STEP export and reimport; volume, bounds and solid count compared",
+          "expected": {
+            "max": [
+              80.0,
+              50.0,
+              8.0
+            ],
+            "min": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "size": [
+              80.0,
+              50.0,
+              8.0
+            ]
+          },
+          "name": "step_roundtrip",
+          "status": "passed",
+          "tolerance": 1e-05
+        }
+      ],
+      "scope": "B-Rep validity, measured dimensions, supported hole and feature checks; not a manufacturing certification",
+      "status": "passed",
+      "tolerance_mm": 0.0001
+    }
+  },
+  "diff": {
+    "expected_geometry": {
+      "after": {
+        "bbox": [
+          80.0,
+          50.0,
+          8.0
+        ],
+        "holes": [
+          {
+            "depth": null,
+            "diameter": 6.0,
+            "direction": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "feature_id": "bore",
+            "positions": [
+              [
+                20.0,
+                10.0,
+                0.0
+              ]
+            ],
+            "through": true
+          }
+        ],
+        "solids": 1,
+        "tolerance": 0.0001,
+        "volume": "80*50*8-pi*3**2*8-10*8*8",
+        "volume_max": null,
+        "volume_min": null
+      },
+      "before": {
+        "bbox": [
+          80.0,
+          50.0,
+          8.0
+        ],
+        "holes": [
+          {
+            "depth": null,
+            "diameter": 6.0,
+            "direction": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "feature_id": "bore",
+            "positions": [
+              [
+                10.0,
+                10.0,
+                0.0
+              ]
+            ],
+            "through": true
+          }
+        ],
+        "solids": 1,
+        "tolerance": 0.0001,
+        "volume": "80*50*8-pi*3**2*8",
+        "volume_max": null,
+        "volume_min": null
+      }
+    },
+    "features": {
+      "bore": {
+        "after": {
+          "depends_on": [],
+          "editable": true,
+          "id": "bore",
+          "inputs": [
+            "plate"
+          ],
+          "label": null,
+          "params": {
+            "depth": null,
+            "diameter": 6.0,
+            "direction": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "positions": [
+              [
+                20.0,
+                10.0,
+                0.0
+              ]
+            ],
+            "through": true
+          },
+          "type": "Hole",
+          "validation_conditions": []
+        },
+        "before": {
+          "depends_on": [],
+          "editable": true,
+          "id": "bore",
+          "inputs": [
+            "plate"
+          ],
+          "label": null,
+          "params": {
+            "depth": null,
+            "diameter": 6.0,
+            "direction": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "positions": [
+              [
+                10.0,
+                10.0,
+                0.0
+              ]
+            ],
+            "through": true
+          },
+          "type": "Hole",
+          "validation_conditions": []
+        }
+      },
+      "slot_cut": {
+        "after": {
+          "depends_on": [],
+          "editable": true,
+          "id": "slot_cut",
+          "inputs": [
+            "bore",
+            "slot_tool"
+          ],
+          "label": null,
+          "params": {},
+          "type": "Cut",
+          "validation_conditions": []
+        },
+        "before": null
+      },
+      "slot_profile": {
+        "after": {
+          "depends_on": [],
+          "editable": true,
+          "id": "slot_profile",
+          "inputs": [],
+          "label": null,
+          "params": {
+            "height": 8.0,
+            "origin": [
+              35.0,
+              20.0,
+              0.0
+            ],
+            "plane": "XY",
+            "width": 10.0
+          },
+          "type": "Rectangle",
+          "validation_conditions": []
+        },
+        "before": null
+      },
+      "slot_tool": {
+        "after": {
+          "depends_on": [],
+          "editable": true,
+          "id": "slot_tool",
+          "inputs": [
+            "slot_profile"
+          ],
+          "label": null,
+          "params": {
+            "amount": 8.0
+          },
+          "type": "Extrude",
+          "validation_conditions": []
+        },
+        "before": null
+      }
+    },
+    "output_feature": {
+      "after": "slot_cut",
+      "before": "bore"
+    },
+    "parameters": {}
+  },
+  "planning_mode": "structured-incremental-edit",
+  "model": "gpt-6.1-sol",
+  "usage": {
+    "completion_tokens": 540,
+    "prompt_tokens": 22185,
+    "total_tokens": 22725
+  },
+  "artifacts": {
+    "dxf": {
+      "file": "edited/drawing.dxf",
+      "size": 71313,
+      "sha256": "cf9c04ba5956c0c3a3c5923b3fe4a05c2d2891edfd7b8138ce682c84f36ef6c2"
+    },
+    "glb": {
+      "file": "edited/model.glb",
+      "size": 16276,
+      "sha256": "26790edc4169c72830e8e63a22541f19e1d6966a96cf4360028de3db9cc9879a"
+    },
+    "ir": {
+      "file": "edited/model.cad-ir.json",
+      "size": 4039,
+      "sha256": "3ae3e3abe5f515f79499c2167f5b33ca3ff3731505c205ebc096db739cf0048d"
+    },
+    "python": {
+      "file": "edited/model.py",
+      "size": 3437,
+      "sha256": "4482fa656be86a04f73bcbaed094ab30c00417690002f69e030c6a169365ad3f"
+    },
+    "step": {
+      "file": "edited/model.step",
+      "size": 32948,
+      "sha256": "cb3899f03e8e49a8ff85987d57cecff3b33966f35601e437dc7a14e1c62b4bf2"
+    },
+    "stl": {
+      "file": "edited/model.stl",
+      "size": 18684,
+      "sha256": "7525d834d1f713459186fd75c8e169775c11c02f9f3e35e07a5c538e3e46a58a"
+    },
+    "svg": {
+      "file": "edited/drawing.svg",
+      "size": 9753,
+      "sha256": "c71707f916f1859bebd220517402d735f6c2980f3c59f87dbc0ade271916ca81"
+    }
+  },
+  "independent_checks": [
+    {
+      "name": "published_formats",
+      "expected": [
+        "glb",
+        "ir",
+        "python",
+        "step",
+        "stl"
+      ],
+      "actual": [
+        "dxf",
+        "glb",
+        "ir",
+        "python",
+        "step",
+        "stl",
+        "svg"
+      ],
+      "status": "passed",
+      "evidence": "All core exports belong to the same published revision"
+    },
+    {
+      "name": "artifact_consistency",
+      "expected": true,
+      "actual": true,
+      "status": "passed",
+      "evidence": "Actual file hashes, revision paths, IR equality and GLB header"
+    },
+    {
+      "name": "valid_single_solid",
+      "expected": {
+        "valid": true,
+        "solids": 1
+      },
+      "actual": {
+        "valid": true,
+        "solids": 1
+      },
+      "status": "passed",
+      "evidence": "Independent reimport of exported exact STEP B-Rep"
+    },
+    {
+      "name": "unchanged_plate_envelope",
+      "expected": [
+        0,
+        0,
+        0,
+        80,
+        50,
+        8
+      ],
+      "actual": [
+        0.0,
+        0.0,
+        0.0,
+        80.0,
+        50.0,
+        8.0
+      ],
+      "status": "passed",
+      "evidence": "Absolute minimum corner and size measured from reimported STEP"
+    },
+    {
+      "name": "analytic_volume",
+      "expected": 31133.805328941537,
+      "actual": 31133.805328941584,
+      "status": "passed",
+      "evidence": "Fixed external specification: plate minus 6 mm cylindrical bore minus 10 by 8 through slot"
+    },
+    {
+      "name": "moved_bore_profile",
+      "expected": {
+        "diameter": 6,
+        "xy": [
+          20,
+          10
+        ],
+        "axial_length": 8
+      },
+      "actual": [
+        {
+          "radius": 3.0,
+          "origin": [
+            20.0,
+            10.0,
+            -1.0
+          ],
+          "direction": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "inward": true,
+          "angular_span": 6.28318530718,
+          "axial_length": 8.0
+        }
+      ],
+      "status": "passed",
+      "evidence": "OCP cylindrical surface radii, axis positions and face spans from STEP, independent of edited IR"
+    },
+    {
+      "name": "bore_is_through",
+      "expected": 0,
+      "actual": 0.0,
+      "status": "passed",
+      "evidence": "Exact B-Rep intersection with a cylinder extending below and above the plate"
+    },
+    {
+      "name": "two_slot_points_are_through_voids",
+      "expected": {
+        "occupied": [
+          false,
+          false
+        ],
+        "column_volume": [
+          0,
+          0
+        ]
+      },
+      "actual": {
+        "points": [
+          [
+            36,
+            21,
+            4
+          ],
+          [
+            44,
+            27,
+            4
+          ]
+        ],
+        "occupied": [
+          false,
+          false
+        ],
+        "column_volume": [
+          0.0,
+          0.0
+        ]
+      },
+      "status": "passed",
+      "evidence": "Two interior slot points and two full-thickness clearance columns in the reimported B-Rep"
+    },
+    {
+      "name": "unrequested_material_retained",
+      "expected": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "actual": {
+        "points": [
+          [
+            10,
+            10,
+            4
+          ],
+          [
+            34,
+            24,
+            4
+          ],
+          [
+            46,
+            24,
+            4
+          ],
+          [
+            40,
+            19,
+            4
+          ],
+          [
+            40,
+            29,
+            4
+          ]
+        ],
+        "occupied": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "status": "passed",
+      "evidence": "Old bore center is filled; material immediately outside all four slot sides remains"
+    },
+    {
+      "name": "plate_feature_unchanged",
+      "expected": {
+        "depends_on": [],
+        "editable": true,
+        "id": "plate",
+        "inputs": [],
+        "label": null,
+        "params": {
+          "depth": 50.0,
+          "height": 8.0,
+          "origin": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "width": 80.0
+        },
+        "type": "Box",
+        "validation_conditions": []
+      },
+      "actual": {
+        "depends_on": [],
+        "editable": true,
+        "id": "plate",
+        "inputs": [],
+        "label": null,
+        "params": {
+          "depth": 50.0,
+          "height": 8.0,
+          "origin": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "width": 80.0
+        },
+        "type": "Box",
+        "validation_conditions": []
+      },
+      "status": "passed",
+      "evidence": "Exact persisted feature equality including ID, dimensions and editability"
+    },
+    {
+      "name": "constraints_preserved",
+      "expected": [
+        {
+          "axis": "z",
+          "description": null,
+          "expected": 8.0,
+          "feature_id": null,
+          "id": "height",
+          "tolerance": 0.0001,
+          "type": "dimension"
+        }
+      ],
+      "actual": [
+        {
+          "axis": "z",
+          "description": null,
+          "expected": 8.0,
+          "feature_id": null,
+          "id": "height",
+          "tolerance": 0.0001,
+          "type": "dimension"
+        }
+      ],
+      "status": "passed",
+      "evidence": "Original constraint IDs, values and tolerances remain byte-equivalent"
+    },
+    {
+      "name": "real_structured_model_path",
+      "expected": {
+        "planning_mode": "structured-incremental-edit",
+        "model": "gpt-6.1-sol"
+      },
+      "actual": {
+        "planning_mode": "structured-incremental-edit",
+        "model": "gpt-6.1-sol"
+      },
+      "status": "passed",
+      "evidence": "Persisted service edit-planner metadata; deterministic/parser paths are rejected"
+    },
+    {
+      "name": "stable_identity_and_parent",
+      "expected": {
+        "document_id": "a069c8c0-49c5-485f-86d2-aa45f916c553",
+        "parent_revision": "4fc0284e-e2fe-43bb-9410-a8fc5a5e9417"
+      },
+      "actual": {
+        "document_id": "a069c8c0-49c5-485f-86d2-aa45f916c553",
+        "parent_revision": "4fc0284e-e2fe-43bb-9410-a8fc5a5e9417"
+      },
+      "status": "passed",
+      "evidence": "Incremental revision lineage and existing bore ID retained"
+    }
+  ],
+  "elapsed_seconds": 37.589483
+}
