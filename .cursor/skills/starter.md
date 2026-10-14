@@ -165,6 +165,24 @@ curl -X POST http://localhost:8090/v1/chat/completions \
 
 ## 4 · Common Environment Notes
 
+### Generate a real CAD sample without infrastructure
+
+For a focused preview of the existing deterministic workbench generator:
+
+```bash
+cd backend
+python examples/generate_cad_preview.py --output /tmp/cad-source-preview
+```
+
+The script calls the real `CADService.create_document_from_prompt` and
+`export_dxf`, checks the exported geometry with ezdxf, and renders that DXF to
+PNG. It needs `pydantic`, `ezdxf` and, for the preview, `matplotlib`; use
+`--no-render` when matplotlib is unavailable. It does not exercise the LLM,
+frontend, MongoDB, Redis or sandbox. The unmodified service's incomplete
+dimension annotations remain visible in the sample.
+
+<!-- Added 2026-10-14: reproducible source-generated CAD preview without full-stack services. -->
+
 ### Docker socket
 
 The backend container mounts `/var/run/docker.sock` (read-only) to manage sandbox containers in production mode. In dev mode with `SANDBOX_ADDRESS=sandbox`, it talks directly to the single sandbox container instead.
