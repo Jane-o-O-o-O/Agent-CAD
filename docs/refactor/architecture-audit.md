@@ -19,10 +19,12 @@ Read: AGENTS.md, .cursor/skills/starter.md, READMEs, technical design, dependenc
 |---|---|
 | Legacy source CAD preview | `python examples/generate_cad_preview.py --output /tmp/cad-baseline --no-render`: seven DXF checks pass (units, outline, four holes, diameter, centers, rounded corners, audit) |
 | Legacy annotation completeness | Only `120 mm` and `80 mm` text; hole annotation/complete dimension graphics absent |
+| Legacy unit regressions checked after dependency setup | Original AgentScope/skills tests: 9/10 passed; DXF annotation failed because ezdxf alignment used a string instead of its enum. V2 corrected this compatibility bug; final combined suite includes all 10 passing |
 | Original frontend `npm ci --ignore-scripts` | Failed EINTEGRITY: Huawei mirror returned invalid archive |
 | Frontend temporary copy with only registry URL replacement | Same versions/integrities; 237 packages installed, type-check and production build passed (16.17 s) |
 | Frontend bundle | Main 3777.42 kB / gzip 1020.55 kB; DXF 745.23 kB / gzip 187.77 kB; size warning |
 | Full Docker stack | Not run: Docker unavailable in this environment |
+| Original backend dependency packaging | Dockerfile copied `uv.lock`, but the baseline checkout lacked that ignored lockfile. Final delivery adds a tracked complete lock and verifies `uv sync --locked --no-dev` |
 | Existing infrastructure-dependent pytest suite | Not run: no running Mongo/Redis/backend/sandbox; no fabricated passing count |
 | Existing 3D/STEP benchmark | Not available: baseline has no precise 3D backend; improvement percentage is N/A |
 
