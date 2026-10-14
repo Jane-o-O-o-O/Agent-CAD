@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     cargo \
     curl \
+    libseccomp2 \
     libreoffice \
     poppler-utils \
     rustc \

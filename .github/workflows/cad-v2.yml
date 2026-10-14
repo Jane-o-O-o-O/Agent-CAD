@@ -1,5 +1,6 @@
 name: CAD V2 verification
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches: [main, develop, refactor/agent-cad-v2]
@@ -18,6 +19,9 @@ jobs:
           agentscope==2.0.0 'mcp>=1.9,<2' pydantic-settings
       - name: Domain, real kernel, API, revisions, repair and legacy regressions
         working-directory: backend
+        env:
+          CAD_V2_ISOLATION: strict
+          CAD_V2_REQUIRE_STRICT_TESTS: '1'
         run: python -m pytest tests/cad_v2 tests/test_agentscope_runtime.py tests/test_skills.py -q
       - name: Fixed 30-case benchmark
         working-directory: backend
@@ -56,3 +60,34 @@ jobs:
           path: |
             /tmp/cad-v2-browser/report.json
             /tmp/cad-v2-browser/workbench.png
+            /tmp/cad-v2-browser/drawings.png
+            /tmp/cad-v2-browser/assembly.png
+            /tmp/cad-v2-browser/server.log
+  docker-cad:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build CAD stack, enforce OS isolation and verify durable CAD workflow
+        env:
+          CAD_V2_SMOKE_LOG_DIR: /tmp/cad-v2-docker
+        run: bash scripts/smoke_cad_v2_docker.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cad-docker-acceptance
+          path: /tmp/cad-v2-docker
+  docker-full-stack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build original seven-service stack and verify startup and API integration
+        env:
+          FULL_STACK_SMOKE_LOG_DIR: /tmp/cad-full-stack
+        run: bash scripts/smoke_full_stack_docker.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-full-stack-startup
+          path: /tmp/cad-full-stack
