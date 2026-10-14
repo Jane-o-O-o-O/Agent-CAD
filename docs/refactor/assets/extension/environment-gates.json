@@ -1,0 +1,30 @@
+{
+  "recorded_at": "2026-10-14T04:18:48.769189+00:00",
+  "functional_test_mode": "process-dev",
+  "strict_filesystem_status": "blocked",
+  "cloud_ci": {
+    "status": "not_run",
+    "reason": "New local commits have not been pushed; prior user instruction requires explicit push authorization."
+  },
+  "gates": [
+    {
+      "script": "scripts/smoke_cad_v2_docker.sh",
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "Docker full-stack gate unavailable: docker CLI is not installed.\n",
+      "status": "blocked"
+    },
+    {
+      "script": "scripts/smoke_full_stack_docker.sh",
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "Original full-stack smoke unavailable: docker CLI is not installed.\n",
+      "status": "blocked"
+    }
+  ],
+  "landlock_probe": {
+    "exit_code": 1,
+    "result": "",
+    "diagnostic": "app.infrastructure.cad_v2.sandbox.IsolationUnavailable: Landlock ABI query: Function not implemented (errno=38)"
+  }
+}

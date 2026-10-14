@@ -19,7 +19,7 @@ For an existing V2 deployment, stop accepting new jobs and shut the service down
 
 ## Run the standalone implementation locally
 
-Use Python 3.12 on Linux. From `backend`, install the standalone lock in a separate virtual environment:
+Use Python 3.12 on Linux with Landlock ABI ≥3 and libseccomp2 for the default strict worker. A host that cannot enforce this policy rejects geometry jobs with `IsolationUnavailableError`; health only proves the HTTP process is alive. Trusted local development can explicitly set `CAD_V2_ISOLATION=process-dev`, whose reduced isolation is recorded in every execution report. From `backend`, install the standalone lock in a separate virtual environment:
 
 ```bash
 uv venv .venv-cad-v2 --python 3.12
@@ -72,10 +72,11 @@ HTTP 202 means submitted. Follow the returned job using the status endpoint or S
 | `CAD_V2_MAX_QUEUE` | Admitted task budget; default 32 |
 | `CAD_V2_MAX_REPAIRS` | Service repair budget; default 3, hard maximum 5 attempts |
 | `CAD_V2_TIMEOUT_SECONDS` | Geometry worker wall-time budget from the service; default 90 seconds |
+| `CAD_V2_ISOLATION` | Default `strict`: requires Linux Landlock ABI ≥3 and libseccomp2 and fails closed when unavailable. Explicit `process-dev` is for trusted local development only, with no filesystem/network confinement. |
 | `CAD_V2_PYTHON` | Optional compatible interpreter for the separate geometry worker |
 | `CAD_V2_API_BASE` | OpenAI-compatible API base including `/v1` when the provider requires it; fallback `API_BASE` |
 | `CAD_V2_API_KEY` | Model secret from environment; fallback `API_KEY`; not required for supplied IR or supported offline prompts |
-| `CAD_V2_MODEL` / `CAD_V2_PLANNER_MODEL` | General/planner model; existing `MODEL_NAME` fallback, then `gpt-6.1-sol` |
+| `CAD_V2_MODEL` / `CAD_V2_PLANNER_MODEL` / `CAD_V2_EDITOR_MODEL` | General/planner model; existing `MODEL_NAME` fallback, then `gpt-6.1-sol` |
 | `CAD_V2_MODEL_TIMEOUT` / `CAD_V2_MODEL_RETRIES` | Per-model-call timeout (default 60 s) and extra retries (default 2; maximum 3) |
 
 Keep secrets out of repository files, screenshots, logs and downloaded IR. The model gateway uses JSON-object mode plus mandatory local Pydantic validation, rather than assuming provider-side schema enforcement. One design has now completed the live `gpt-6.1-sol` service path after three model calls during development: the first exposed missing `pi` support, the second exposed unsupported final-output solid-count validation, and the third published all five revision artifacts. An independent checker bug after publication was corrected; the same STEP then passed 9/9 checks without rebuilding or calling the model again. The original failures, unchanged-IR replay and final recheck remain in `backend/benchmarks/cad_v2/live/01`–`05` JSON records; see [live evidence](architecture-v2.md#live-provider-spot-check). This is one design's spot check, not a generalized model success-rate measurement; paid calls are separate from deterministic CI. Network/provider failures are reported as infrastructure errors and are not “repaired” by changing geometry.
@@ -117,11 +118,11 @@ For example, a previously verified solid plate gains a centred Ø6 through hole 
 
 This example assumes an existing 80×50×8 mm Box feature `plate`, whose unchanged bbox remains constrained. The compiler still validates the full graph; the kernel validates the actual hole and new volume. Without the explicit new volume expectation, the old full-plate volume would correctly fail. The automatic repair policy cannot make that intent change for the user.
 
-Natural-language editing currently supports the explicit “change all/four hole diameters” grammar for independently named diameter parameters. More general feature additions, moves, subset edits and complex wording require parameter/feature patches or future planner support. A typed `custom`, unsupported symmetry/distance or unsupported intermediate-feature constraint stays `unverified` and blocks publication. Dimension, volume and solid-count constraints may name the final `output_feature` explicitly or leave `feature_id` absent.
+Natural-language editing supports complete offline grammars for multiple hole subset edits, moves, additions and deletions. More general wording, feature changes and assembly edits use the configured structured editor model and validated incremental patches. Unsupported or ambiguous intent produces a `RequirementError`; submit the answer with `clarification_job_id` and the unchanged base revision. See [API](api-v2.md) for the continuation contract. Model-generated patches do not bypass geometry validation. A typed `custom`, unsupported symmetry/distance or unsupported intermediate-feature constraint stays `unverified` and blocks publication. Dimension, volume and solid-count constraints may name the final `output_feature` explicitly or leave `feature_id` absent.
 
 ## Validation and format differences
 
-STEP is the precise engineering solid. STL and GLB are tessellated derivatives. IR preserves parameters and expressions; Python is a trusted replay program requiring the project's installed CAD modules. Download all five formats from the same revision, not from a mixture of jobs.
+STEP is the precise engineering solid. STL and GLB are tessellated derivatives. IR preserves parameters and expressions; Python is a trusted replay program requiring the project's installed CAD modules. Download formats from the same revision, not from a mixture of jobs. New revisions also include DXF/SVG three-view engineering drawings; assemblies include BOM JSON/CSV. Historical revisions retain their original artifact set.
 
 Run a Python replay as `python model.py /path/to/output`. It rebuilds and validates the B-Rep before exporting; file existence alone is not validation. The worker also reimports its STEP and compares measured properties. Passing these geometric checks does not establish material, manufacturing-process or structural-strength certification.
 
@@ -133,6 +134,10 @@ Keep V2 data volumes independent of the checkout and frontend build output. For 
 
 To roll the application back, first preserve current changes and V2 data, stop the new service, and switch to the recorded tested Git branch or commit using your normal release process. For example, `git switch <tested-pre-v2-branch>` selects an existing rollback branch without rewriting history. An older 2D-only application will not read V2 revisions; keep their store and artifacts intact for a subsequent V2 deployment. Do not use a destructive reset or delete the persistent volume as a rollback mechanism.
 
-Before production use, verify the target OS resource limits, persistent local disk permissions, chosen bearer/production auth flow, reverse-proxy SSE behavior, cancellation, service restart, backup restore and STEP downloads in that environment. The worker provides process/resource separation but has no OS filesystem/network namespace isolation. Multi-host scaling, SQLite/NFS, generalized geometry healing, arbitrary natural-language edits and broad live-provider/model reliability remain outside the current validated scope. The single live design above does not establish those capabilities; GUI acceptance results are recorded in the final report.
+Before production use, verify the target OS resource limits, persistent local disk permissions, chosen bearer/production auth flow, reverse-proxy SSE behavior, cancellation, service restart, backup restore and STEP downloads in that environment. The default strict worker adds Landlock filesystem enforcement and seccomp default-deny syscall rules to process/resource limits. This does not create a VM or filesystem/network namespaces. Unsupported hosts fail closed; the actual isolation mode is persisted. Multi-host scaling, SQLite/NFS, arbitrary geometry healing, general assembly solving and broad live-model reliability remain outside the validated scope. Three bounded healing strategies and scoped structured edits are implemented; see the [extension report](extension-report.md) for current evidence and the distinct blocked Docker/cloud gates.
 
 See [architecture](architecture-v2.md), [IR specification](cad-ir-spec.md), [geometry validation](geometry-validation.md), [benchmark report](benchmark-report.md), and [final report](final-report.md) for exact implementation and evidence.
+
+## Deployment acceptance gates
+
+Run `bash scripts/smoke_cad_v2_docker.sh` on a Docker host exposing Landlock ABI ≥3 to build the CAD frontend/API, test actual denied operations, verify seven artifacts for each of three revisions, restart the API and verify all 21 downloads remain unchanged. Run `bash scripts/smoke_full_stack_docker.sh` separately for the original seven-service stack startup/API gate. It uses a new Compose project, loopback-only frontend, mock model and authentication bypass; it is an isolated test, not a production configuration or a chat/browser/Claw acceptance test. Both scripts preserve their volumes. CI runs strict tests, browser acceptance, and both container gates; no paid model call is part of CI.

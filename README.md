@@ -21,13 +21,13 @@
 
 ## V2 exact CAD workbench
 
-V2 adds a versioned CAD IR, build123d/OpenCascade solid modeling, bounded subprocess jobs, measured geometry checks and STEP reimport, parameter/feature edits, immutable revisions, and a Three.js viewer at `/chat/cad-v2`. STEP, STL, GLB, IR and replay Python downloads belong to the same revision. The legacy `/api/v1/cad/*` routes remain available.
+V2 adds a versioned CAD IR, build123d/OpenCascade solid modeling, bounded subprocess jobs, measured geometry checks and STEP reimport, parameter/feature edits, immutable revisions, and a Three.js viewer at `/chat/cad-v2`. STEP, STL, GLB, IR, replay Python, DXF and SVG engineering drawings belong to the same revision. Assemblies add named component instances, placement checks, collision checks and BOM exports; the workbench supports 3D/2D switching and component selection. The legacy `/api/v1/cad/*` routes remain available.
 
-The fixed **20 basic + 10 medium IR designs pass 30/30** real-kernel checks. This measures reviewed IR through the kernel, not general natural-language success. Read the [benchmark](docs/refactor/benchmark-report.md), [architecture](docs/refactor/architecture-v2.md), [migration guide](docs/refactor/migration-guide.md) and [delivery report](docs/refactor/final-report.md) for exact evidence and limits.
+The fixed **20 basic + 10 medium IR designs pass 30/30** real-kernel checks. This measures reviewed IR through the kernel, not general natural-language success. Read the [benchmark](docs/refactor/benchmark-report.md), [architecture](docs/refactor/architecture-v2.md), [migration guide](docs/refactor/migration-guide.md) and [original V2 report](docs/refactor/final-report.md) and [extension report](docs/refactor/extension-report.md) for exact evidence and limits.
 
 ### Run V2 without Mongo, Redis or a browser sandbox
 
-Linux/Python 3.12 and Node 24 are the tested environment. In a backend terminal:
+Use Linux/Python 3.12 and Node 24. The default strict worker requires Landlock ABI ≥3 and libseccomp2; unsupported hosts reject jobs. For trusted local development only, explicitly set `CAD_V2_ISOLATION=process-dev` to run without filesystem/network confinement. In a backend terminal:
 
 ```bash
 cd backend
@@ -52,11 +52,11 @@ Use this fully specified offline example:
 
 > 生成一块长 80 mm、宽 50 mm、厚 8 mm 的安装板，在四角开四个直径 6 mm 的通孔，孔中心的水平距离为 60 mm，垂直距离为 30 mm。
 
-Then submit: `将四个孔的直径改成 8 mm，其他保持不变。` Complex prompts use `CAD_V2_API_BASE`, `CAD_V2_API_KEY`, `CAD_V2_MODEL` (default `gpt-6.1-sol`); keys are environment-only. Fully specified IR works without a model. See `backend/.env.cad-v2.example`.
+Then submit: `将左边两个孔的直径改成8mm，并将右边两个孔向左移动5mm，其他保持不变。` The editor uses atomic incremental patches, preserves unrequested features and asks for clarification when needed. Complex prompts use `CAD_V2_API_BASE`, `CAD_V2_API_KEY`, `CAD_V2_MODEL` (default `gpt-6.1-sol`); keys are environment-only. Fully specified IR works without a model. See `backend/.env.cad-v2.example`.
 
-Optional container configuration: `docker compose -f docker-compose.cad-v2.yml up --build`. It persists SQLite and artifacts in a named volume. The Docker daemon is unavailable in the implementation environment, so container execution is not claimed as tested.
+Optional CAD container configuration: `docker compose -f docker-compose.cad-v2.yml up --build`. It persists SQLite and artifacts in a named volume. `bash scripts/smoke_cad_v2_docker.sh` gates strict isolation, create/edit/restore, downloads and restart persistence. `bash scripts/smoke_full_stack_docker.sh` separately builds and probes the original seven-service development stack with isolated mock settings. Docker is unavailable in this implementation environment; these scripts and cloud CI are not claimed as passed.
 
-Supported deployment is **one host, one API supervisor** with local persistent storage. No arbitrary model Python is executed. Subprocess resource limits are not a filesystem/network sandbox. Complex surface finishing, assemblies, general constraint solving and distributed workers remain outside verified scope; unsupported constraints block publication.
+Supported deployment is **one host, one API supervisor** with local persistent storage. No arbitrary model Python is executed. Strict mode uses Landlock filesystem rules and seccomp default-deny syscall rules in addition to process/resource limits. This is not a VM or a guarantee for arbitrary uploaded code. Geometry recovery supports bounded shape fixing, solid orientation and closed-shell sewing while retaining engineering checks. Arbitrary geometry recovery, a general assembly constraint solver and distributed workers remain outside scope; unsupported constraints block publication.
 
 ## About Agent-CAD
 

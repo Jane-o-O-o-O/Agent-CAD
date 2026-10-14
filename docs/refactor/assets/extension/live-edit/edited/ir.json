@@ -1,0 +1,195 @@
+{
+  "assembly": null,
+  "constraints": [
+    {
+      "axis": "z",
+      "description": null,
+      "expected": 8.0,
+      "feature_id": null,
+      "id": "height",
+      "tolerance": 0.0001,
+      "type": "dimension"
+    }
+  ],
+  "coordinate_system": "right-handed-Z-up",
+  "dependencies": {},
+  "document_id": "a069c8c0-49c5-485f-86d2-aa45f916c553",
+  "expected_geometry": {
+    "bbox": [
+      80.0,
+      50.0,
+      8.0
+    ],
+    "holes": [
+      {
+        "depth": null,
+        "diameter": 6.0,
+        "direction": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "feature_id": "bore",
+        "positions": [
+          [
+            20.0,
+            10.0,
+            0.0
+          ]
+        ],
+        "through": true
+      }
+    ],
+    "solids": 1,
+    "tolerance": 0.0001,
+    "volume": "80*50*8-pi*3**2*8-10*8*8",
+    "volume_max": null,
+    "volume_min": null
+  },
+  "features": [
+    {
+      "depends_on": [],
+      "editable": true,
+      "id": "plate",
+      "inputs": [],
+      "label": null,
+      "params": {
+        "depth": 50.0,
+        "height": 8.0,
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "width": 80.0
+      },
+      "type": "Box",
+      "validation_conditions": []
+    },
+    {
+      "depends_on": [],
+      "editable": true,
+      "id": "bore",
+      "inputs": [
+        "plate"
+      ],
+      "label": null,
+      "params": {
+        "depth": null,
+        "diameter": 6.0,
+        "direction": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "positions": [
+          [
+            20.0,
+            10.0,
+            0.0
+          ]
+        ],
+        "through": true
+      },
+      "type": "Hole",
+      "validation_conditions": []
+    },
+    {
+      "depends_on": [],
+      "editable": true,
+      "id": "slot_profile",
+      "inputs": [],
+      "label": null,
+      "params": {
+        "height": 8.0,
+        "origin": [
+          35.0,
+          20.0,
+          0.0
+        ],
+        "plane": "XY",
+        "width": 10.0
+      },
+      "type": "Rectangle",
+      "validation_conditions": []
+    },
+    {
+      "depends_on": [],
+      "editable": true,
+      "id": "slot_tool",
+      "inputs": [
+        "slot_profile"
+      ],
+      "label": null,
+      "params": {
+        "amount": 8.0
+      },
+      "type": "Extrude",
+      "validation_conditions": []
+    },
+    {
+      "depends_on": [],
+      "editable": true,
+      "id": "slot_cut",
+      "inputs": [
+        "bore",
+        "slot_tool"
+      ],
+      "label": null,
+      "params": {},
+      "type": "Cut",
+      "validation_conditions": []
+    }
+  ],
+  "metadata": {
+    "last_edit": {
+      "intents": [
+        {
+          "action": "move",
+          "changes_envelope": false,
+          "instances": [],
+          "mates": [],
+          "parameters": [
+            "positions"
+          ],
+          "source": "Move the existing bore to x=20 mm, y=10 mm, keeping its diameter 6 mm and its through depth.",
+          "targets": [
+            "bore"
+          ]
+        },
+        {
+          "action": "add",
+          "changes_envelope": false,
+          "instances": [],
+          "mates": [],
+          "parameters": [
+            "width",
+            "height",
+            "origin",
+            "plane",
+            "amount"
+          ],
+          "source": "Also add a rectangular through slot, 10 mm along X and 8 mm along Y, with its minimum corner at x=35 mm, y=20 mm, cutting the full plate thickness from z=0 to z=8 mm.",
+          "targets": [
+            "slot_profile",
+            "slot_tool",
+            "slot_cut"
+          ]
+        }
+      ],
+      "model": "gpt-6.1-sol",
+      "planning_mode": "structured-incremental-edit",
+      "usage": {
+        "completion_tokens": 540,
+        "prompt_tokens": 22185,
+        "total_tokens": 22725
+      }
+    },
+    "planning_mode": "provided-ir",
+    "purpose": "Fixed independent live-edit baseline"
+  },
+  "output_feature": "slot_cut",
+  "parameters": {},
+  "schema_version": "2.0",
+  "units": "mm"
+}

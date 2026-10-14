@@ -1,0 +1,252 @@
+{
+  "id": "drive",
+  "name": "Flange, shaft and spacer",
+  "component_count": 3,
+  "bom": [
+    {
+      "part_id": "flange_part",
+      "name": "Flange",
+      "feature_id": "flange",
+      "material": "Steel",
+      "color": [
+        0.2,
+        0.4,
+        0.8,
+        1.0
+      ],
+      "quantity": 1,
+      "instance_ids": [
+        "flange_1"
+      ],
+      "unit_volume_mm3": 5890.486225480861
+    },
+    {
+      "part_id": "shaft_part",
+      "name": "Shaft",
+      "feature_id": "shaft",
+      "material": "Steel",
+      "color": [
+        0.8,
+        0.5,
+        0.1,
+        1.0
+      ],
+      "quantity": 1,
+      "instance_ids": [
+        "shaft_1"
+      ],
+      "unit_volume_mm3": 2171.468842161265
+    },
+    {
+      "part_id": "spacer_part",
+      "name": "Spacer",
+      "feature_id": "spacer",
+      "material": "Brass",
+      "color": [
+        0.2,
+        0.7,
+        0.3,
+        1.0
+      ],
+      "quantity": 1,
+      "instance_ids": [
+        "spacer_1"
+      ],
+      "unit_volume_mm3": 367.5663404700057
+    }
+  ],
+  "components": [
+    {
+      "instance_id": "flange_1",
+      "part_id": "flange_part",
+      "name": "Flange",
+      "export_name": "flange_1",
+      "transform_matrix_mm": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "color": [
+        0.2,
+        0.4,
+        0.8,
+        1.0
+      ],
+      "geometry": {
+        "bbox": {
+          "min": [
+            -20.0,
+            -20.0,
+            0.0
+          ],
+          "max": [
+            20.0,
+            20.0,
+            5.0
+          ],
+          "size": [
+            40.0,
+            40.0,
+            5.0
+          ]
+        },
+        "volume": 5890.486225480861,
+        "area": 3141.5926535897934,
+        "solids": 1,
+        "faces": 4,
+        "edges": 6,
+        "valid": true,
+        "units": "mm"
+      }
+    },
+    {
+      "instance_id": "shaft_1",
+      "part_id": "shaft_part",
+      "name": "Shaft",
+      "export_name": "shaft_1",
+      "transform_matrix_mm": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -7.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "color": [
+        0.8,
+        0.5,
+        0.1,
+        1.0
+      ],
+      "geometry": {
+        "bbox": {
+          "min": [
+            -4.8,
+            -4.8,
+            -7.0
+          ],
+          "max": [
+            4.8,
+            4.8,
+            23.0
+          ],
+          "size": [
+            9.6,
+            9.6,
+            30.0
+          ]
+        },
+        "volume": 2171.468842161265,
+        "area": 1049.5432737112783,
+        "solids": 1,
+        "faces": 3,
+        "edges": 3,
+        "valid": true,
+        "units": "mm"
+      }
+    },
+    {
+      "instance_id": "spacer_1",
+      "part_id": "spacer_part",
+      "name": "Spacer",
+      "export_name": "spacer_1",
+      "transform_matrix_mm": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          5.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "color": [
+        0.2,
+        0.7,
+        0.3,
+        1.0
+      ],
+      "geometry": {
+        "bbox": {
+          "min": [
+            -8.0,
+            -8.0,
+            5.0
+          ],
+          "max": [
+            8.0,
+            8.0,
+            8.0
+          ],
+          "size": [
+            16.0,
+            16.0,
+            3.0
+          ]
+        },
+        "volume": 367.5663404700057,
+        "area": 490.0884539600076,
+        "solids": 1,
+        "faces": 4,
+        "edges": 6,
+        "valid": true,
+        "units": "mm"
+      }
+    }
+  ]
+}
