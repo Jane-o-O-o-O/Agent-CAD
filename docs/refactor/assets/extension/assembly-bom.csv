@@ -1,0 +1,4 @@
+part_id,name,material,quantity,instance_ids,unit_volume_mm3
+flange_part,Flange,Steel,1,flange_1,5890.486225480861
+shaft_part,Shaft,Steel,1,shaft_1,2171.468842161265
+spacer_part,Spacer,Brass,1,spacer_1,367.5663404700057

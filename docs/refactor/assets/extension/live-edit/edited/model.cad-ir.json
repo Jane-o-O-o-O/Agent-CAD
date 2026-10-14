@@ -1,0 +1,195 @@
+{
+  "schema_version": "2.0",
+  "document_id": "a069c8c0-49c5-485f-86d2-aa45f916c553",
+  "units": "mm",
+  "coordinate_system": "right-handed-Z-up",
+  "parameters": {},
+  "features": [
+    {
+      "id": "plate",
+      "inputs": [],
+      "depends_on": [],
+      "editable": true,
+      "label": null,
+      "validation_conditions": [],
+      "type": "Box",
+      "params": {
+        "width": 80.0,
+        "depth": 50.0,
+        "height": 8.0,
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "id": "bore",
+      "inputs": [
+        "plate"
+      ],
+      "depends_on": [],
+      "editable": true,
+      "label": null,
+      "validation_conditions": [],
+      "type": "Hole",
+      "params": {
+        "diameter": 6.0,
+        "positions": [
+          [
+            20.0,
+            10.0,
+            0.0
+          ]
+        ],
+        "depth": null,
+        "direction": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "through": true
+      }
+    },
+    {
+      "id": "slot_profile",
+      "inputs": [],
+      "depends_on": [],
+      "editable": true,
+      "label": null,
+      "validation_conditions": [],
+      "type": "Rectangle",
+      "params": {
+        "width": 10.0,
+        "height": 8.0,
+        "origin": [
+          35.0,
+          20.0,
+          0.0
+        ],
+        "plane": "XY"
+      }
+    },
+    {
+      "id": "slot_tool",
+      "inputs": [
+        "slot_profile"
+      ],
+      "depends_on": [],
+      "editable": true,
+      "label": null,
+      "validation_conditions": [],
+      "type": "Extrude",
+      "params": {
+        "amount": 8.0
+      }
+    },
+    {
+      "id": "slot_cut",
+      "inputs": [
+        "bore",
+        "slot_tool"
+      ],
+      "depends_on": [],
+      "editable": true,
+      "label": null,
+      "validation_conditions": [],
+      "type": "Cut",
+      "params": {}
+    }
+  ],
+  "output_feature": "slot_cut",
+  "dependencies": {},
+  "constraints": [
+    {
+      "id": "height",
+      "type": "dimension",
+      "feature_id": null,
+      "expected": 8.0,
+      "axis": "z",
+      "tolerance": 0.0001,
+      "description": null
+    }
+  ],
+  "expected_geometry": {
+    "bbox": [
+      80.0,
+      50.0,
+      8.0
+    ],
+    "solids": 1,
+    "volume": "80*50*8-pi*3**2*8-10*8*8",
+    "volume_min": null,
+    "volume_max": null,
+    "holes": [
+      {
+        "diameter": 6.0,
+        "positions": [
+          [
+            20.0,
+            10.0,
+            0.0
+          ]
+        ],
+        "depth": null,
+        "direction": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "through": true,
+        "feature_id": "bore"
+      }
+    ],
+    "tolerance": 0.0001
+  },
+  "assembly": null,
+  "metadata": {
+    "planning_mode": "provided-ir",
+    "purpose": "Fixed independent live-edit baseline",
+    "last_edit": {
+      "planning_mode": "structured-incremental-edit",
+      "intents": [
+        {
+          "source": "Move the existing bore to x=20 mm, y=10 mm, keeping its diameter 6 mm and its through depth.",
+          "action": "move",
+          "targets": [
+            "bore"
+          ],
+          "parameters": [
+            "positions"
+          ],
+          "instances": [],
+          "mates": [],
+          "changes_envelope": false
+        },
+        {
+          "source": "Also add a rectangular through slot, 10 mm along X and 8 mm along Y, with its minimum corner at x=35 mm, y=20 mm, cutting the full plate thickness from z=0 to z=8 mm.",
+          "action": "add",
+          "targets": [
+            "slot_profile",
+            "slot_tool",
+            "slot_cut"
+          ],
+          "parameters": [
+            "width",
+            "height",
+            "origin",
+            "plane",
+            "amount"
+          ],
+          "instances": [],
+          "mates": [],
+          "changes_envelope": false
+        }
+      ],
+      "model": "gpt-6.1-sol",
+      "usage": {
+        "prompt_tokens": 22185,
+        "completion_tokens": 540,
+        "total_tokens": 22725
+      }
+    }
+  }
+}

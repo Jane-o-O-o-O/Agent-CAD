@@ -1,0 +1,105 @@
+{
+  "status": "passed",
+  "recorded_at": "2026-10-14T04:14:50.218789+00:00",
+  "scope": "Built Vue SPA, local login, HTTP/SSE, real OCP workers, WebGL, revision exports and restore",
+  "checks": [
+    {
+      "name": "real_local_login_and_workbench_navigation",
+      "status": "passed",
+      "detail": true
+    },
+    {
+      "name": "prompt_HTTP_worker_SSE_WebGL_generation",
+      "status": "passed",
+      "detail": {
+        "revision": "cd78f9f0-31b5-4d76-9660-23b8c3cbb471",
+        "stages": "completed"
+      }
+    },
+    {
+      "name": "standard_views_projection_wireframe_grid_axes_controls",
+      "status": "passed",
+      "detail": true
+    },
+    {
+      "name": "parameter_editor_publishes_new_geometry",
+      "status": "passed",
+      "detail": {
+        "before": "cd78f9f0-31b5-4d76-9660-23b8c3cbb471",
+        "after": "57102b72-93ab-4834-98a0-f547945d37ec"
+      }
+    },
+    {
+      "name": "downloaded_STEP_diameter_8",
+      "status": "passed",
+      "detail": {
+        "volume": 30391.504561361988,
+        "bbox": [
+          80.0,
+          50.0,
+          8.0
+        ]
+      }
+    },
+    {
+      "name": "seven_UI_downloads_match_displayed_revision_hashes",
+      "status": "passed",
+      "detail": true
+    },
+    {
+      "name": "same_revision_2D_three_views_and_zoom",
+      "status": "passed",
+      "detail": true
+    },
+    {
+      "name": "downloaded_STEP_diameter_6",
+      "status": "passed",
+      "detail": {
+        "volume": 31095.221315766117,
+        "bbox": [
+          80.0,
+          50.0,
+          8.0
+        ]
+      }
+    },
+    {
+      "name": "history_preview_and_download_share_old_revision",
+      "status": "passed",
+      "detail": true
+    },
+    {
+      "name": "UI_restore_builds_new_revision",
+      "status": "passed",
+      "detail": true
+    },
+    {
+      "name": "browser_reload_recovers_revision",
+      "status": "passed",
+      "detail": true
+    },
+    {
+      "name": "natural_language_multi_operation_UI_edit_with_independent_STEP_check",
+      "status": "passed",
+      "detail": true
+    },
+    {
+      "name": "assembly_tree_select_hide_move_and_STEP_BOM_downloads",
+      "status": "passed",
+      "detail": true
+    }
+  ],
+  "page_errors": [],
+  "api_failures": [],
+  "model_calls": 0,
+  "requested_isolation": "process-dev",
+  "browser": "134.0.6998.35",
+  "actual_isolation": {
+    "filesystem": "unrestricted",
+    "mode": "process-dev",
+    "network": "unrestricted",
+    "os_enforced": false,
+    "requested_mode": "process-dev",
+    "warning": "Explicit development mode; resource limits only"
+  }
+}
