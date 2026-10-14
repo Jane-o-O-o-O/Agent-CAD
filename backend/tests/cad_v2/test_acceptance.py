@@ -28,7 +28,7 @@ async def completed(service: CADV2Service, job: dict) -> tuple[dict, dict]:
 
 
 def inspect_revision(service: CADV2Service, revision: dict, diameter: float) -> None:
-    assert set(revision["artifacts"]) == {"step", "stl", "glb", "ir", "python"}
+    assert set(revision["artifacts"]) == {"step", "stl", "glb", "ir", "python", "dxf", "svg"}
     for kind, metadata in revision["artifacts"].items():
         path, actual = service.store.artifact_location(revision["document_id"], revision["id"], OWNER, kind)
         assert actual == metadata

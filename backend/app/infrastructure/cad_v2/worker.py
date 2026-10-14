@@ -32,24 +32,29 @@ def main() -> int:
         from app.domain.cad_v2.errors import CADError, ConstraintViolationError
         _stage("building")
         from app.infrastructure.cad_v2.backend import Build123dBackend, artifact
-        from app.infrastructure.cad_v2.validation import validate
+        from app.infrastructure.cad_v2.healing import validate_healing_options
         compiled=compile_ir(request["ir"])
-        backend=Build123dBackend()
+        healing_policy=validate_healing_options(request.get("execution_options", {}).get("healing"))
+        backend=Build123dBackend(healing_policy=healing_policy)
         built=backend.build(compiled)
         _stage("validating")
-        validation=validate(built)
+        validation=backend.validate(built)
         if validation["status"]!="passed":
             failed=[c for c in validation["checks"] if c["status"]!="passed"]
             message="Executed geometry violates design constraints" if validation["status"]=="failed" else "Some design constraints could not be verified"
             raise ConstraintViolationError(message,details={"checks":failed,"validation":validation,"geometry":built.geometry,"trace":built.trace})
         _stage("exporting")
         artifacts=backend.export(built,output)
+        from app.infrastructure.cad_v2.drawings import export_drawings
+        drawing=export_drawings(built.shape,output,title="Agent-CAD engineering drawing")
+        artifacts.extend(artifact(path,kind) for kind,path in drawing["artifacts"].items())
+        built.geometry["drawing"]=drawing["report"]
         built.geometry["preview"]={"units":"m","up_axis":"Y","source_units":"mm","source_up_axis":"Z"}
         (output/"model.ir.json").write_text(json.dumps(compiled.source_ir,ensure_ascii=False,indent=2))
-        (output/"model.py").write_text(compile_to_python(request["ir"]))
+        (output/"model.py").write_text(compile_to_python(request["ir"], healing_policy=healing_policy))
         artifacts.extend([artifact(output/"model.ir.json","ir"),artifact(output/"model.py","python")])
         validation["checks"].append({"name":"step_roundtrip","status":"passed","expected":built.geometry["bbox"],"actual":built.geometry["step_roundtrip"],"tolerance":1e-5,"evidence":"Actual STEP export and reimport; volume, bounds and solid count compared"})
-        report={"status":"completed","geometry":built.geometry,"validation":validation,"trace":built.trace,"artifacts":artifacts,"elapsed_seconds":round(time.perf_counter()-start,6)}
+        report={"status":"completed","geometry":built.geometry,"validation":validation,"trace":built.trace,"artifacts":artifacts,"execution_options":{"healing":healing_policy} if healing_policy else {},"elapsed_seconds":round(time.perf_counter()-start,6)}
     except Exception as exc:
         if hasattr(exc,"to_dict"):
             error=exc.to_dict()

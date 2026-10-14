@@ -164,3 +164,256 @@ async def edit_prompt(prompt: str, ir: CADDocumentIR | dict) -> dict[str, float]
     if any(not document.parameters[name].editable for name in names):
         raise ParameterError("孔径参数不可编辑")
     return {name: diameter for name in names}
+
+
+def _edit_clauses(prompt: str) -> list[str]:
+    text = re.sub(r"(?:[，,;；]?\s*(?:其他保持不变|其余保持不变|keep everything else unchanged))\s*[。.]?$", "", prompt.strip(), flags=re.I)
+    text = text.rstrip("。.")
+    return [clause.strip() for clause in re.split(r"\s*(?:[;；]|[，,]\s*(?=(?:并|再|然后|将|把|删除|添加|change|set|move|remove|delete|add))|\s+and\s+(?=change|set|move|remove|delete|add))\s*", text, flags=re.I) if clause.strip()]
+
+
+def _offline_edit(prompt: str, document: CADDocumentIR):
+    """Fully consumed small grammar over a plain plate; unsupported intent goes to the model.
+
+    This route deliberately requires an axial through-hole chain. It never assumes
+    that a hole in a transformed or boolean assembly is in the plate's XY frame.
+    """
+    from copy import deepcopy
+    from app.domain.cad_v2.editing import EditPlan
+    from app.domain.cad_v2.expressions import evaluate_expression, resolve_parameters
+
+    if document.assembly is not None or document.features[0].type != "Box" or any(feature.type != "Hole" for feature in document.features[1:]):
+        return None
+    if any(feature.params.direction != (0, 0, 1) or not feature.params.through for feature in document.features[1:]):
+        return None
+    for index, feature in enumerate(document.features[1:], 1):
+        if feature.inputs != [document.features[index - 1].id]:
+            return None
+    if (document.output_feature or document.features[-1].id) != document.features[-1].id or document.dependencies:
+        return None
+    features = [feature.model_dump(mode="json") for feature in document.features]
+    original = deepcopy(features)
+    values = resolve_parameters(document.parameters)
+    intents = []
+    base = features[0]
+    n = r"(?P<value>[0-9]+(?:\.[0-9]+)?)\s*(?P<unit>" + UNIT_PATTERN + r")?"
+    choice = r"(?P<choice>所有|全部|四个|4个|左边两个|左侧两个|右边两个|右侧两个|上面两个|上侧两个|下面两个|下侧两个|左边|左侧|右边|右侧|上面|上侧|下面|下侧|all|four|left two|right two|top two|bottom two|left|right|top|bottom)"
+    clauses = _edit_clauses(prompt)
+    operations = []
+    # Parse every clause first, so a recognized prefix cannot discard a suffix.
+    for source in clauses:
+        text = re.sub(r"^(?:并且|然后|并|再)", "", source).strip()
+        patterns = [
+            ("diameter", rf"(?:请)?(?:将|把)?{choice}孔(?:的)?直径(?:改成|改为|设为|设置为)\s*{n}"),
+            ("diameter", rf"(?:change|set)\s+(?:the\s+)?{choice}\s+holes?(?:\s+diameters?)?\s+to\s+{n}"),
+            ("move", rf"(?:请)?(?:将|把)?{choice}孔向(?P<direction>左|右|上|下)(?:移动|平移)\s*{n}"),
+            ("move", rf"move\s+(?:the\s+)?{choice}\s+holes?\s+(?P<direction>left|right|up|down)\s+(?:by\s+)?{n}"),
+            ("remove", rf"(?:请)?(?:删除|移除|去掉|去除){choice}孔"),
+            ("remove", rf"(?:remove|delete)\s+(?:the\s+)?{choice}\s+holes?"),
+            ("add_center", rf"(?:请)?(?:在)?(?:中心|中央)(?:添加|增加|加)(?:一个)?直径\s*{n}\s*(?:的)?通孔"),
+            ("add_center", rf"add\s+(?:a\s+)?(?P<value>[0-9]+(?:\.[0-9]+)?)\s*(?P<unit>" + UNIT_PATTERN + r")?\s*(?:diameter\s+)?through\s+hole\s+at\s+(?:the\s+)?center"),
+        ]
+        match = None
+        for action, pattern in patterns:
+            match = re.fullmatch(pattern, text, re.I)
+            if match:
+                operations.append((source, action, match.groupdict()))
+                break
+        if match is None:
+            return None
+    if not operations:
+        return None
+
+    # Preserve an existing diameter parameter for the common whole-pattern edit.
+    # Only do this when compiled non-diameter geometry is unaffected (including
+    # indirect parameter expressions); otherwise patch just the hole features.
+    if len(operations) == 1 and operations[0][1] == "diameter" and operations[0][2]["choice"].lower() in {"所有", "全部", "四个", "4个", "all", "four"}:
+        from app.domain.cad_v2.compiler import apply_edits
+        from app.domain.cad_v2.editing import validate_edit_plan
+        source, _, match = operations[0]
+        names = {feature.params.diameter for feature in document.features[1:]}
+        count = sum(len(feature.params.positions) for feature in document.features[1:])
+        if names and all(isinstance(name, str) and name in document.parameters for name in names) and (
+                match["choice"].lower() not in {"四个", "4个", "four"} or count == 4):
+            unit = UNIT_NAMES.get((match.get("unit") or "").lower(), document.units)
+            amount = float(match["value"]) * UNIT_TO_MM[unit] / UNIT_TO_MM[document.units]
+            parameter_edit = EditPlan.model_validate({"parameters": {name: amount for name in names}, "intents": [
+                {"source": source, "action": "modify", "targets": [feature.id for feature in document.features[1:]], "parameters": sorted(names)}],
+                "planning_mode": "deterministic-incremental-edit"})
+            before = compile_ir(document)
+            after = compile_ir(apply_edits(document, **parameter_edit.apply_kwargs()))
+            def nondiameter(feature):
+                return {key: value for key, value in feature.params.items() if key != "diameter" or feature.type != "Hole"}
+            if all(nondiameter(left) == nondiameter(right) for left, right in zip(before.features, after.features)) and (
+                    document.expected_geometry.volume is None or isinstance(document.expected_geometry.volume, str)
+                    and any(name in document.expected_geometry.volume for name in names)):
+                validate_edit_plan(parameter_edit, document, prompt)
+                return parameter_edit
+
+    def scalar(value):
+        return evaluate_expression(value, values)
+
+    def unique_id(prefix):
+        existing = {feature["id"] for feature in features} | {feature["id"] for feature in original}
+        candidate, index = prefix[:58], 2
+        while candidate in existing:
+            candidate = prefix[:55] + "_" + str(index)
+            index += 1
+        return candidate
+
+    for source, action, match in operations:
+        amount = None
+        if match.get("value"):
+            unit = UNIT_NAMES.get((match.get("unit") or "").lower(), document.units)
+            amount = float(match["value"]) * UNIT_TO_MM[unit] / UNIT_TO_MM[document.units]
+            if amount <= 0:
+                raise ParameterError("Diameter or movement must be positive")
+        if action == "add_center":
+            feature_id = unique_id("center_hole")
+            origin = base["params"]["origin"]
+            positions = [[f"({origin[0]})+({base['params']['width']})/2", f"({origin[1]})+({base['params']['depth']})/2", origin[2]]]
+            features.append({"id": feature_id, "type": "Hole", "inputs": [features[-1]["id"]],
+                             "params": {"diameter": amount, "positions": positions, "through": True}})
+            intents.append({"source": source, "action": "add", "targets": [feature_id]})
+            continue
+        available = [(feature, index, point) for feature in features[1:] for index, point in enumerate(feature["params"]["positions"])]
+        selection = match["choice"].lower()
+        if not available:
+            raise RequirementError("模型没有可选择的孔 / There are no holes to select", details={"clarification": "请指定现有特征"})
+        selected = available
+        if selection in {"四个", "4个", "four"} and len(available) != 4:
+            raise RequirementError("模型的孔数不是四个，请明确目标孔 / The model does not contain exactly four holes")
+        sides = {"左": (0, min), "left": (0, min), "右": (0, max), "right": (0, max),
+                 "上": (1, max), "top": (1, max), "下": (1, min), "bottom": (1, min)}
+        for prefix, (axis, extreme) in sides.items():
+            if selection.startswith(prefix):
+                edge = extreme(scalar(point[axis]) for _, _, point in available)
+                selected = [entry for entry in available if abs(scalar(entry[2][axis]) - edge) < 1e-8]
+                if len(selected) == len(available) or ("两个" in selection or "two" in selection) and len(selected) != 2:
+                    raise RequirementError("位置描述不能唯一确定所需的孔，请提供特征 ID 或孔坐标 / Specify feature IDs or coordinates for the ambiguous hole selection",
+                                           details={"clarification": "请明确目标孔及当前坐标", "matched_holes": len(selected)})
+                break
+        groups = {}
+        for feature, index, _ in selected:
+            groups.setdefault(feature["id"], set()).add(index)
+        targets = list(groups)
+        for feature in list(features[1:]):
+            chosen = groups.get(feature["id"])
+            if not chosen:
+                continue
+            positions = feature["params"]["positions"]
+            if action == "move":
+                direction = match["direction"].lower()
+                axis = 0 if direction in {"左", "右", "left", "right"} else 1
+                delta = -amount if direction in {"左", "下", "left", "down"} else amount
+                for index in chosen:
+                    positions[index][axis] = f"({positions[index][axis]})+({delta})"
+            elif action == "diameter":
+                if len(chosen) == len(positions):
+                    feature["params"]["diameter"] = amount
+                else:
+                    feature["params"]["positions"] = [point for index, point in enumerate(positions) if index not in chosen]
+                    feature_id = unique_id(feature["id"] + "_edited")
+                    features.append({"id": feature_id, "type": "Hole", "inputs": [features[-1]["id"]],
+                                     "params": {**deepcopy(feature["params"]), "diameter": amount,
+                                                "positions": [point for index, point in enumerate(positions) if index in chosen]}})
+                    targets.append(feature_id)
+            elif action == "remove":
+                if len(chosen) != len(positions):
+                    feature["params"]["positions"] = [point for index, point in enumerate(positions) if index not in chosen]
+                else:
+                    features.remove(feature)
+                    for follower in features:
+                        if feature["id"] in follower.get("inputs", []):
+                            follower["inputs"] = [feature["inputs"][0] if item == feature["id"] else item for item in follower["inputs"]]
+                            if follower["id"] not in targets:
+                                targets.append(follower["id"])
+        intents.append({"source": source, "action": "modify" if action == "diameter" else action, "targets": targets})
+    old = {feature["id"]: feature for feature in original}
+    now = {feature["id"]: feature for feature in features}
+    # New features subsequently removed in the same request have no net effect.
+    for intent in intents:
+        intent["targets"] = [target for target in intent["targets"] if target in old or target in now]
+    intents = [intent for intent in intents if intent["targets"]]
+    patches = [{"id": feature["id"], **{key: feature[key] for key in ("params", "inputs") if feature.get(key) != old[feature["id"]].get(key)}}
+               for feature in features if feature["id"] in old and any(feature.get(key) != old[feature["id"]].get(key) for key in ("params", "inputs"))]
+    holes = [{"feature_id": feature["id"], **feature["params"]} for feature in features[1:]]
+    # Analytic expectation is only valid for disjoint bores fully inside the Box.
+    # The geometry validator rejects overlaps or out-of-envelope movements.
+    params = base["params"]
+    volume = f"({params['width']})*({params['depth']})*({params['height']})"
+    for feature in features[1:]:
+        volume += f"-{len(feature['params']['positions'])}*pi*(({feature['params']['diameter']})/2)**2*({params['height']})"
+    expected = {"holes": holes}
+    if document.expected_geometry.volume is not None:
+        expected["volume"] = volume
+    return EditPlan.model_validate({"feature_patches": patches, "add_features": [feature for feature in features if feature["id"] not in old],
+        "delete_features": [feature_id for feature_id in old if feature_id not in now], "output_feature": features[-1]["id"],
+        "expected_geometry": expected, "intents": intents, "planning_mode": "deterministic-incremental-edit"})
+
+
+async def plan_edit(prompt: str, ir: CADDocumentIR | dict):
+    """Plan and validate an atomic natural-language edit against the current IR.
+
+    Returns an EditPlan accepted by apply_edits(**plan.apply_kwargs()). Clarification
+    raises RequirementError, so the service leaves the current revision unchanged.
+    """
+    from app.domain.cad_v2.editing import EditPlan, validate_edit_plan
+    if not isinstance(prompt, str) or not 1 <= len(prompt.strip()) <= 16000:
+        raise RequirementError("编辑需求必须为 1–16000 字符 / Edit length must be 1–16000 characters")
+    document = ir if isinstance(ir, CADDocumentIR) else CADDocumentIR.model_validate(ir)
+    compile_ir(document)
+    deterministic = _offline_edit(prompt, document)
+    if deterministic is not None:
+        validate_edit_plan(deterministic, document, prompt)
+        return deterministic
+    config = ModelConfig.from_env("editor")
+    if not config.api_key:
+        raise RequirementError("此编辑需要结构化模型规划；请配置 CAD_V2_API_KEY，或明确要修改的特征、尺寸及位置。离线支持安装板孔的多项增删、移动和子集孔径修改。",
+                               details={"clarification": "请明确目标特征、操作和必要尺寸，或配置结构化编辑模型"})
+    response = await StructuredModelGateway(config).generate(
+        role="editor", schema=EditPlan.model_json_schema(),
+        request=json.dumps({"edit_request": prompt, "current_ir": document.model_dump(mode="json")}, ensure_ascii=False),
+        instruction=(
+            "Edit the provided current CAD IR by returning ONLY a bounded EditPlan JSON object, never code or a replacement IR. "
+            "Interpret ALL requested operations together as an atomic incremental edit. If target selection, direction, dimensions, "
+            "or conflicting requirements are ambiguous, return clarification with a specific question and no geometry mutations. "
+            "The edit_request may contain the original request, a prior clarification question and the user's answer. "
+            "Resolve that conversation as one edit against current_ir; treat the answer as clarification of the original intent, "
+            "not as a separate request that drops earlier operations. Quote exact spans from this composed edit_request. "
+            "Each intent source must be an exact substring of edit_request; action is modify/move/add/remove; targets lists every "
+            "affected existing or added feature ID, parameters lists changed parameter names. Preserve stable existing IDs, "
+            "types, labels, units, parameter definitions and every unrelated feature and requirement. Parameters may only change "
+            "existing editable values or arithmetic expressions. Changing shared parameters requires intent for ALL affected features. "
+            "Feature patches contain id and only changed params/inputs/depends_on/label. They cannot replace a whole feature. "
+            "add_features uses typed CAD IR features in dependency order; features are appended after existing ones. Never delete "
+            "and recreate an existing feature to change its type, or bypass existing geometry by choosing an unrelated output. "
+            "For hole subsets keep unselected positions and diameter intact; split a grouped Hole into an existing remainder "
+            "and a new Hole applied downstream when different diameters are needed. Use positions in document units, explicit "
+            "directions and through/depth values. Preserve parametric expressions wherever possible. "
+            "Deleting a feature requires an explicit removal request, rewiring its consumers and updating only associated requirements. "
+            "expected_geometry is a partial patch: update analytically affected values and complete hole list, retaining every "
+            "unrelated entry; never null existing checks, loosen tolerance or drop constraints. If constraints is supplied preserve "
+            "unrelated constraints exactly, including IDs and tolerances. changes_envelope is true only when the user explicitly "
+            "changes external dimensions/position. Keep bbox, solids and unchanged checks intact. Updated Hole expectations must "
+            "match edited params exactly. Keep existing volume checking with updated analytic expression where possible. "
+            "No dimensions may be guessed. Arithmetic uses literals, parameter names, pi and + - * / ** only, never function calls. "
+            "Semantic selectors require physical tolerance and expected_count. End output must be fully connected to retained geometry."
+            "For existing assemblies use instance_patches with id and partial transform {translation,rotation}, add_instances, "
+            "delete_instances, and mate_patches for explicitly revised mate data. Each intent lists affected instance IDs in instances "
+            "and mate IDs in mates; targets remains feature IDs only. Retain each part definition, instance ID, mate type and tolerance. "
+            "Never swap instance part_id as a shortcut. Instance placement edits preserve all unrelated instance transforms. "
+            "Do not weaken or silently retarget fixed/aligned/concentric mates to force a move through validation; ask clarification "
+            "if the requested movement conflicts with an existing mate unless the user explicitly requests that mate change. "
+            "Assembly collision checks and part geometry expectations remain mandatory."
+        ))
+    try:
+        edit = EditPlan.model_validate(response.payload)
+    except ValidationError as exc:
+        raise SchemaValidationError("模型生成的增量编辑不符合 EditPlan Schema", details={"errors": [
+            {"loc": list(error["loc"]), "type": error["type"]} for error in exc.errors()[:20]]}) from exc
+    edit.planning_mode = "structured-incremental-edit"
+    edit.model = response.model
+    edit.usage = response.usage
+    validate_edit_plan(edit, document, prompt)
+    return edit

@@ -47,6 +47,11 @@ class EditJob(InputModel):
     constraints: list[dict[str, Any]] | None = Field(default=None, max_length=1000)
     prompt: str | None = Field(default=None, min_length=1, max_length=16000)
     request_id: str | None = Field(default=None, min_length=1, max_length=128)
+    instance_patches: dict[str, dict[str, Any]] | None = None
+    add_instances: list[dict[str, Any]] | None = Field(default=None, max_length=200)
+    delete_instances: list[str] | None = Field(default=None, max_length=200)
+    mate_patches: dict[str, dict[str, Any]] | None = None
+    clarification_job_id: str | None = Field(default=None, min_length=1, max_length=128)
 
 
 class RestoreJob(InputModel):
@@ -211,7 +216,8 @@ def build_router(service_dep: Callable, user_dep: Callable) -> APIRouter:
             path, item = service.store.artifact_location(document_id, revision_id, _owner(user), format)
         except StoreNotFound as exc:
             _translate(exc)
-        media_types = {"step": "application/step", "stl": "model/stl", "glb": "model/gltf-binary", "ir": "application/json", "python": "text/x-python"}
+        media_types = {"step": "application/step", "stl": "model/stl", "glb": "model/gltf-binary", "ir": "application/json", "python": "text/x-python",
+                       "dxf": "image/vnd.dxf", "svg": "image/svg+xml", "bom_json": "application/json", "bom_csv": "text/csv"}
         return FileResponse(path, media_type=media_types.get(format, "application/octet-stream"), filename=item["filename"],
                             headers={"ETag": f'"{item["sha256"]}"', "Cache-Control": "private, no-cache", "X-CAD-Revision": revision_id})
     return router

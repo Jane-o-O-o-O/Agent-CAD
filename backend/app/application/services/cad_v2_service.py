@@ -31,7 +31,7 @@ def revision_diff(before: dict | None, after: dict) -> dict:
     features = {name: {"before": old_features.get(name), "after": new_features.get(name)}
                 for name in sorted(set(old_features) | set(new_features)) if old_features.get(name) != new_features.get(name)}
     result = {"parameters": parameters, "features": features}
-    for key in ("output_feature", "expected_geometry", "constraints"):
+    for key in ("output_feature", "expected_geometry", "constraints", "assembly"):
         if previous.get(key) != after.get(key):
             result[key] = {"before": previous.get(key), "after": after.get(key)}
     return result
@@ -146,16 +146,34 @@ class CADV2Service:
                    parameters: dict | None = None, feature_patches: list[dict] | None = None,
                    add_features: list[dict] | None = None, delete_features: list[str] | None = None,
                    output_feature: str | None = None, expected_geometry: dict | None = None,
-                   constraints: list[dict] | None = None, prompt: str | None = None, request_id: str | None = None) -> dict:
+                   constraints: list[dict] | None = None, prompt: str | None = None, request_id: str | None = None,
+                   instance_patches: dict | None = None, add_instances: list[dict] | None = None,
+                   delete_instances: list[str] | None = None, mate_patches: dict | None = None,
+                   clarification_job_id: str | None = None) -> dict:
         await self._ready()
         self.store.get_revision(document_id, expected_revision, owner)
-        if prompt and (any((parameters, feature_patches, add_features, delete_features, output_feature, expected_geometry)) or constraints is not None):
+        if clarification_job_id:
+            previous = self.store.get_job(clarification_job_id, owner)
+            if (previous["document_id"] != document_id or previous["base_revision"] != expected_revision
+                    or previous["status"] != "failed" or (previous.get("error") or {}).get("code") != "RequirementError"):
+                raise ValueError("Clarification must refer to this user's failed requirement on the same revision")
+            _, _, old_payload = self.store.job_private(clarification_job_id)
+            if not prompt or not old_payload.get("prompt"):
+                raise ValueError("A clarification answer and original edit prompt are required")
+            prompt = f"原始修改要求：{old_payload['prompt']}\n待澄清问题：{previous['error']['message']}\n用户补充：{prompt}"
+            if len(prompt) > 16000:
+                raise ValueError("Clarification context exceeds 16000 characters; submit a complete edit instead")
+        assembly_changes = any((instance_patches, add_instances, delete_instances, mate_patches))
+        if prompt and (any((parameters, feature_patches, add_features, delete_features, output_feature, expected_geometry)) or constraints is not None or assembly_changes):
             raise ValueError("Use either a natural-language edit or explicit patches")
-        if not any((parameters, feature_patches, add_features, delete_features, output_feature, expected_geometry, prompt and prompt.strip())) and constraints is None:
+        if not any((parameters, feature_patches, add_features, delete_features, output_feature, expected_geometry, prompt and prompt.strip(), assembly_changes)) and constraints is None:
             raise ValueError("Edit contains no changes")
         payload = {"kind": "edit", "parameters": parameters or {}, "feature_patches": feature_patches or [],
                    "add_features": add_features or [], "delete_features": delete_features or [], "output_feature": output_feature,
-                   "expected_geometry": expected_geometry, "constraints": constraints, "prompt": prompt}
+                   "expected_geometry": expected_geometry, "constraints": constraints, "prompt": prompt,
+                   "instance_patches": instance_patches, "add_instances": add_instances,
+                   "delete_instances": delete_instances, "mate_patches": mate_patches,
+                   "clarification_job_id": clarification_job_id}
         if len(dumps(payload)) > 2_000_000:
             raise ValueError("CAD edit exceeds the 2 MB input limit")
         job, created = self._admit_job(owner, document_id, payload, base_revision=expected_revision, request_id=request_id)
@@ -216,21 +234,34 @@ class CADV2Service:
         else:
             from app.domain.cad_v2.compiler import apply_edits
             parameters = payload.get("parameters", {})
+            edit_plan = None
             if payload.get("prompt"):
                 planner = self._edit_planner
                 if planner is None:
-                    from app.application.services.cad_v2_planner import edit_prompt
-                    planner = edit_prompt
+                    from app.application.services.cad_v2_planner import plan_edit
+                    planner = plan_edit
                 self.store.update_job(job["id"], stage="parsing", progress=5)
-                parameters = await planner(payload["prompt"], CADDocumentIR.model_validate(before))
+                planned = await planner(payload["prompt"], CADDocumentIR.model_validate(before))
+                if hasattr(planned, "apply_kwargs"):
+                    edit_plan = planned
+                else:
+                    parameters = planned
             patches = payload.get("feature_patches", [])
             if len({p["id"] for p in patches}) != len(patches):
                 raise ValueError("Repeated feature patch IDs are ambiguous")
-            ir = apply_edits(CADDocumentIR.model_validate(before), parameters=parameters,
+            kwargs = dict(parameters=parameters,
                              feature_patches={p["id"]: {key: value for key, value in p.items() if key != "id" and value is not None} for p in patches},
                              add_features=payload.get("add_features", []), delete_features=payload.get("delete_features", []),
                              output_feature=payload.get("output_feature"), expected_geometry=payload.get("expected_geometry"),
                              constraints=payload.get("constraints"))
+            for key in ("instance_patches", "add_instances", "delete_instances", "mate_patches"):
+                if payload.get(key):
+                    kwargs[key] = payload[key]
+            if edit_plan is not None:
+                kwargs = edit_plan.apply_kwargs()
+            ir = apply_edits(CADDocumentIR.model_validate(before), **kwargs)
+            if edit_plan is not None:
+                ir.metadata["last_edit"] = edit_plan.metadata()
         ir = CADDocumentIR.model_validate(ir_dict(ir))
         if ir.document_id != job["document_id"]:
             raise ValueError("Planner returned an IR for a different document")
@@ -248,13 +279,43 @@ class CADV2Service:
             return {"type": "SchemaValidationError", "message": str(exc)[:3000]}
         return {"type": "InfrastructureError", "message": str(exc)[:1500] or type(exc).__name__}
 
-    async def _execute(self, ir, output_dir: Path, cancel_event: asyncio.Event, on_stage: Callable):
+    def _inherited_execution_options(self, owner: str, job: dict, payload: dict, ir) -> dict:
+        """Replay only server-recorded policies for identical resolved dependency graphs."""
+        source_id = payload.get("revision_id") if payload["kind"] == "restore" else job.get("base_revision")
+        if not source_id:
+            return {}
+        source = self.store.get_revision(job["document_id"], source_id, owner)
+        from app.infrastructure.cad_v2.healing import validate_healing_options
+        policies = validate_healing_options(source["report"].get("execution_options", {}).get("healing"))
+        if not policies:
+            return {}
+        from app.domain.cad_v2.compiler import compile_ir
+        previous, current = compile_ir(source["ir"]), compile_ir(ir)
+        def signature(compiled, target):
+            features = {feature.id: feature for feature in compiled.features}
+            found = {}
+            def visit(key):
+                if key not in features:
+                    return False
+                if key in found:
+                    return True
+                feature = features[key]
+                found[key] = feature.model_dump(mode="json")
+                return all(visit(parent) for parent in [*feature.inputs, *feature.depends_on])
+            return found if visit(target) else None
+        inherited = {key: policy for key, policy in policies.items()
+                     if signature(previous, key) is not None and signature(previous, key) == signature(current, key)}
+        return {"healing": inherited} if inherited else {}
+
+    async def _execute(self, ir, output_dir: Path, cancel_event: asyncio.Event, on_stage: Callable, execution_options=None):
         if self._executor is None:
             from app.infrastructure.cad_v2.executor import CADExecutor
             self._executor = CADExecutor(timeout_seconds=float(os.environ.get("CAD_V2_TIMEOUT_SECONDS", "90")))
         kwargs = {"cancel_event": cancel_event}
         if "on_stage" in inspect.signature(self._executor.execute).parameters:
             kwargs["on_stage"] = on_stage
+        if "execution_options" in inspect.signature(self._executor.execute).parameters:
+            kwargs["execution_options"] = execution_options or {}
         return await self._executor.execute(ir, output_dir, **kwargs)
 
     def _materialize(self, job: dict, ir: dict, report: dict, output_dir: Path) -> tuple[Path, dict]:
@@ -270,7 +331,7 @@ class CADV2Service:
             items = [a for a in items if a["format"] != "ir"] + [{"format": "ir", "filename": ir_path.name}]
             for artifact in items:
                 format = {"py": "python", "json": "ir"}.get(artifact["format"], artifact["format"])
-                if format not in {"step", "stl", "glb", "ir", "python"} or format in artifacts:
+                if format not in {"step", "stl", "glb", "ir", "python", "dxf", "svg", "bom_json", "bom_csv"} or format in artifacts:
                     raise ExportError("Executor produced an unsupported or duplicate artifact format")
                 raw_source = output_dir / artifact["filename"]
                 source = raw_source.resolve()
@@ -313,6 +374,7 @@ class CADV2Service:
                 self.store.update_job(job_id, status="running", stage="planning", progress=5)
                 ir, before = await self._prepare_ir(owner, job, payload)
                 history = []
+                execution_options = self._inherited_execution_options(owner, job, payload, ir)
                 report = None
                 for attempt in range(self._max_repairs + 1):
                     if self._cancel_events[job_id].is_set():
@@ -325,11 +387,13 @@ class CADV2Service:
                         if stage in states:
                             status, progress = states[stage]
                             self.store.update_job(job_id, status=status, stage=stage, progress=progress)
-                    report = await self._execute(ir, output_dir, self._cancel_events[job_id], on_stage)
+                    report = await self._execute(ir, output_dir, self._cancel_events[job_id], on_stage, execution_options)
                     if report.get("status") == "cancelled":
                         raise asyncio.CancelledError
                     passed = report.get("status") == "completed" and report.get("validation", {}).get("status") == "passed"
                     if passed:
+                        # Policies come only from trusted repair/revision state, never IR metadata.
+                        report = {**report, "execution_options": json.loads(json.dumps(execution_options))}
                         self.store.update_job(job_id, status="validating", stage="publishing", progress=95, report=report)
                         published_dir, artifacts = self._materialize(job, ir_dict(ir), report, output_dir)
                         report = {**report, "artifacts": [{"format": fmt, **value} for fmt, value in artifacts.items()]}
@@ -352,7 +416,12 @@ class CADV2Service:
                         self.store.update_job(job_id, status="failed", stage="failed", error=error, report=report, repair_history=history)
                         return
                     history.append({"attempt": attempt + 1, "error": error, "patch": repair["patch"],
-                                    "reason": repair["reason"], "fingerprint": repair["fingerprint"], "created_at": utcnow()})
+                                    "reason": repair["reason"], "fingerprint": repair["fingerprint"], "created_at": utcnow(),
+                                    "execution_options": repair.get("execution_options", {})})
+                    if repair.get("execution_options"):
+                        from app.infrastructure.cad_v2.healing import validate_healing_options
+                        updated = validate_healing_options(repair["execution_options"].get("healing"))
+                        execution_options.setdefault("healing", {}).update(updated)
                     self.store.update_job(job_id, status="repairing", stage="repairing", progress=20, error=error, report=report, repair_history=history)
                     from app.domain.cad_v2.compiler import compile_ir
                     ir = repair["ir"]

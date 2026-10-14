@@ -11,17 +11,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 import time
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
-from build123d import Compound, Shape
-from OCP.BRep import BRep_Tool
-from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.BRepBuilderAPI import BRepBuilderAPI_Copy, BRepBuilderAPI_MakeSolid, BRepBuilderAPI_Sewing
-from OCP.BRepCheck import BRepCheck_NoError, BRepCheck_Shell
-from OCP.BRepGProp import BRepGProp
-from OCP.BRepLib import BRepLib
-from OCP.GProp import GProp_GProps
-from OCP.ShapeFix import ShapeFix_Shape
+if TYPE_CHECKING:
+    from build123d import Shape
 
 from app.domain.cad_v2.errors import InvalidTopologyError, ParameterError
 
@@ -58,6 +51,8 @@ def validate_healing_options(options: dict | None) -> dict[str, dict[str, Any]]:
 
 
 def _volume(shape: Shape) -> float:
+    from OCP.BRepGProp import BRepGProp
+    from OCP.GProp import GProp_GProps
     # Unlike Shape.volume this also measures a closed set of oriented faces
     # before sewing has restored its missing shell/solid containers.
     properties = GProp_GProps()
@@ -66,6 +61,7 @@ def _volume(shape: Shape) -> float:
 
 
 def _metrics(shape: Shape) -> dict[str, Any]:
+    from OCP.BRep import BRep_Tool
     bounds = shape.bounding_box()
     vertices, edges, faces = shape.vertices(), shape.edges(), shape.faces()
     tolerances = [BRep_Tool.Tolerance_s(item.wrapped) for item in [*vertices, *edges, *faces]]
@@ -84,6 +80,7 @@ def _metrics(shape: Shape) -> dict[str, Any]:
 
 
 def _face_geometry(shape: Shape) -> list[dict[str, Any]]:
+    from OCP.BRepAdaptor import BRepAdaptor_Surface
     signatures = []
     for face in shape.faces():
         adaptor = BRepAdaptor_Surface(face.wrapped)
@@ -135,6 +132,8 @@ def _same_faces(before: list[dict], after: list[dict], tolerance: float) -> bool
 
 
 def _orient(shape: Shape) -> Shape:
+    from build123d import Compound
+    from OCP.BRepLib import BRepLib
     solids = list(shape.solids())
     if not solids:
         raise ValueError("Orientation repair requires an existing solid")
@@ -149,6 +148,8 @@ def _orient(shape: Shape) -> Shape:
 
 
 def _fix(shape: Shape, tolerance: float) -> Shape:
+    from build123d import Compound
+    from OCP.ShapeFix import ShapeFix_Shape
     fixer = ShapeFix_Shape(shape.wrapped)
     fixer.SetPrecision(tolerance)
     fixer.SetMinTolerance(1e-7)
@@ -162,6 +163,10 @@ def _fix(shape: Shape, tolerance: float) -> Shape:
 
 
 def _sew(shape: Shape, tolerance: float) -> tuple[Shape, dict]:
+    from build123d import Compound
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid, BRepBuilderAPI_Sewing
+    from OCP.BRepCheck import BRepCheck_NoError, BRepCheck_Shell
+    from OCP.BRepLib import BRepLib
     sewing = BRepBuilderAPI_Sewing(tolerance)
     sewing.SetMinTolerance(1e-7)
     sewing.SetMaxTolerance(tolerance)
@@ -199,6 +204,8 @@ def heal_shape(shape: Shape, *, strategy: str, tolerance_mm: float,
     restore absent solid containers only from closed shells containing all the
     original faces, while preserving their integrated volume and geometry.
     """
+    from build123d import Compound
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_Copy
     policy = validate_healing_options({feature_id or "shape": {
         "strategy": strategy, "tolerance_mm": tolerance_mm}})[feature_id or "shape"]
     tolerance_mm = policy["tolerance_mm"]
