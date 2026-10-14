@@ -259,12 +259,7 @@ Feature = Annotated[Union[
 ], Field(discriminator="type")]
 
 
-class ExpectedHole(StrictModel):
-    diameter: Scalar
-    positions: list[Vector3] = Field(min_length=1, max_length=500)
-    direction: Direction3 = (0, 0, 1)
-    through: bool = True
-    depth: Scalar | None = None
+class ExpectedHole(HoleParams):
     feature_id: Identifier | None = None
 
 
@@ -282,10 +277,18 @@ class Constraint(StrictModel):
     id: Identifier
     type: Literal["dimension", "volume", "solid_count", "hole", "symmetry", "distance", "custom"]
     feature_id: Identifier | None = None
-    expected: Scalar | Vector3 | dict[str, Any] | None = None
+    expected: Scalar | Vector3 | ExpectedHole | dict[str, Any] | None = None
     axis: Literal["x", "y", "z"] | None = None
     tolerance: float = Field(default=1e-4, gt=0, le=10)
     description: str | None = Field(default=None, max_length=1000)
+
+    @model_validator(mode="after")
+    def validate_hole_payload(self) -> Constraint:
+        if self.type == "hole":
+            if not isinstance(self.expected, (dict, ExpectedHole)):
+                raise ValueError("hole constraints require a typed hole expectation")
+            self.expected = ExpectedHole.model_validate(self.expected)
+        return self
 
 
 class CADDocumentIR(StrictModel):

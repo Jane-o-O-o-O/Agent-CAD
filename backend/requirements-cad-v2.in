@@ -1,0 +1,6 @@
+# Minimal, independently testable CAD runtime. Full app remains in pyproject.toml.
+build123d==0.11.1
+pydantic==2.14.1
+fastapi==0.143.0
+httpx[socks]==0.28.1
+uvicorn==0.54.0

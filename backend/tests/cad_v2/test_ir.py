@@ -46,6 +46,16 @@ def test_backend_port_is_structural():
             return CADBuildResult(shape=object(), compiled=compiled)
         def export(self, result, output_dir):
             return []
+        def validate(self, result):
+            return {"status": "unverified"}
+        def properties(self, result):
+            return result.geometry
+        def query_topology(self, result, selector):
+            return []
+        def tessellate(self, result, tolerance=0.08):
+            return {"vertices": [], "triangles": []}
+        def cleanup(self):
+            pass
     assert isinstance(Adapter(), CADBackend)
 
 
@@ -211,3 +221,42 @@ def test_feature_patch_and_addition_are_validated():
     result = compile_ir(edited)
     assert result.features[0].params["height"] == 10
     assert result.output_feature == "move"
+
+
+def test_explicit_output_switch_supports_atomic_feature_addition():
+    source = box_ir()
+    source["output_feature"] = "plate"
+    edited = apply_edits(source, add_features=[{
+        "id": "move", "type": "Transform", "inputs": ["plate"],
+        "params": {"translation": [1, 2, 3]},
+    }], output_feature="move")
+    assert compile_ir(edited).output_feature == "move"
+    assert source["output_feature"] == "plate"
+    with pytest.raises(DependencyError):
+        apply_edits(source, output_feature="missing")
+
+
+@pytest.mark.parametrize("units,scale", [("cm", 10), ("inch", 25.4)])
+def test_hole_constraints_use_same_units_and_expressions_as_geometry(units, scale):
+    source = box_ir()
+    source["units"] = units
+    source["parameters"]["diameter"] = {"kind": "length", "value": 0.4}
+    source["constraints"] = [{"id": "bore", "type": "hole", "expected": {
+        "diameter": "diameter", "positions": [[2, "height/2", 0]], "through": True,
+    }}]
+    expected = compile_ir(source).constraints[0]["expected"]
+    assert expected["diameter"] == pytest.approx(0.4 * scale)
+    assert expected["positions"][0] == pytest.approx([2 * scale, 4 * scale, 0])
+
+
+@pytest.mark.parametrize("payload", [
+    {"diameter": 1, "positions": [[0, 0, 0]], "through": False},
+    {"diameter": 1, "positions": [[0, 0, 0]], "direction": [0, 0, 0]},
+    {"diameter": 1, "positions": []},
+    {"diameter": -1, "positions": [[0, 0, 0]]},
+])
+def test_invalid_hole_expectations_fail_before_kernel(payload):
+    source = box_ir()
+    source["constraints"] = [{"id": "bore", "type": "hole", "expected": payload}]
+    with pytest.raises((ParameterError, SchemaValidationError)):
+        compile_ir(source)
