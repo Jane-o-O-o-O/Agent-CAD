@@ -85,6 +85,7 @@ jobs:
       - name: Build original seven-service stack and verify startup and API integration
         env:
           FULL_STACK_SMOKE_LOG_DIR: /tmp/cad-full-stack
+          FULL_STACK_USE_ALIYUN_MIRROR: 'false'
         run: bash scripts/smoke_full_stack_docker.sh
       - uses: actions/upload-artifact@v4
         if: always()

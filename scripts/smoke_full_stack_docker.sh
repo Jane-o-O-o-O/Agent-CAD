@@ -86,6 +86,9 @@ services:
       - ${FULL_STACK_SMOKE_EMPTY_ENV}:/app/.env.development:ro
       - ${FULL_STACK_SMOKE_EMPTY_ENV}:/app/.env.development.local:ro
   backend:
+    build:
+      args:
+        USE_ALIYUN_MIRROR: "${FULL_STACK_USE_ALIYUN_MIRROR:-true}"
     ports: !override []
     env_file: !override []
     environment: !override
@@ -115,6 +118,9 @@ services:
       - ${FULL_STACK_SMOKE_EMPTY_ENV}:/app/.env:ro
       - ${FULL_STACK_SMOKE_EMPTY_ENV}:/app/app/.env:ro
   sandbox:
+    build:
+      args:
+        USE_ALIYUN_MIRROR: "${FULL_STACK_USE_ALIYUN_MIRROR:-true}"
     ports: !override []
     environment: !override
       UVI_ARGS: "--reload"
