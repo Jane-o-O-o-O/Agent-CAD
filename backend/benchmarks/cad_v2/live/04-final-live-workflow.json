@@ -1,0 +1,1339 @@
+{
+  "scope": "One opt-in live model prompt through CADV2Service, isolated kernel, revision publication and independent STEP acceptance; excludes HTTP/browser",
+  "recorded_at": "2026-10-14T02:26:41.477251+00:00",
+  "prompt": "生成真实三维零件，单位mm：底板长80、宽50、厚8，底板最小角为(0,0,0)。在底板中央(40,25)添加半径10、高12的圆柱凸台，底面位于z=8，顶面z=20；凸台与底板融合为一个实体。沿(40,25)的Z轴开直径6的通孔，贯穿底板和凸台。最终外形尺寸80×50×20。所有上述尺寸设为可编辑参数，并验证孔径、孔位和通孔。",
+  "requested_model": "gpt-6.1-sol",
+  "status": "failed",
+  "usage": {
+    "completion_tokens": 1262,
+    "prompt_tokens": 18681,
+    "total_tokens": 19943
+  },
+  "limitations": "One fixed mechanical design, not a statistically meaningful natural-language benchmark. Configured bounded provider retries may make multiple API attempts.",
+  "job": {
+    "base_revision": null,
+    "created_at": "2026-10-14T02:26:41.477994+00:00",
+    "document_id": "d410d163-81b2-44ad-b917-f570989db6c5",
+    "error": null,
+    "id": "b44d0ef4-51d0-48bc-bece-0404dd566b24",
+    "progress": 100,
+    "repair_history": [],
+    "report": {
+      "artifacts": [
+        {
+          "filename": "model.step",
+          "format": "step",
+          "sha256": "1a02644d943ca27383da16f0a7693745ff875d51d52c5027d336e69debb188d7",
+          "size": 23342
+        },
+        {
+          "filename": "model.stl",
+          "format": "stl",
+          "sha256": "1418ba8c157bcf5577046c0dbf86a5a0e2500b453260153b8085c1eb30a3046d",
+          "size": 34484
+        },
+        {
+          "filename": "model.glb",
+          "format": "glb",
+          "sha256": "8ac0de8ca5e64582fd0c5e13eee918445e821b13986e22b1e44d8b4217f29c30",
+          "size": 24980
+        },
+        {
+          "filename": "model.py",
+          "format": "python",
+          "sha256": "43ee73bc2b849ad1126756cc0f4e3f8540f0b3f9ec95c735abafe00246e650f0",
+          "size": 6776
+        },
+        {
+          "filename": "model.cad-ir.json",
+          "format": "ir",
+          "sha256": "7d9746f3003d22ee29c8b922ddfdbed22a85a59c7e3be9d6f6c8a37812c1026d",
+          "size": 7591
+        }
+      ],
+      "elapsed_seconds": 2.412002,
+      "executor_elapsed_seconds": 3.2206,
+      "geometry": {
+        "area": 11154.424687527706,
+        "bbox": {
+          "max": [
+            80.0,
+            50.0,
+            20.0
+          ],
+          "min": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "size": [
+            80.0,
+            50.0,
+            20.0
+          ]
+        },
+        "edges": 18,
+        "faces": 9,
+        "preview": {
+          "source_units": "mm",
+          "source_up_axis": "Z",
+          "units": "m",
+          "up_axis": "Y"
+        },
+        "solids": 1,
+        "step_roundtrip": {
+          "area": 11154.424687527782,
+          "bbox": {
+            "max": [
+              80.0,
+              50.0,
+              20.0
+            ],
+            "min": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "size": [
+              80.0,
+              50.0,
+              20.0
+            ]
+          },
+          "edges": 18,
+          "faces": 9,
+          "solids": 1,
+          "units": "mm",
+          "valid": true,
+          "volume": 35204.42450666171
+        },
+        "step_roundtrip_checks": {
+          "count": 17,
+          "status": "passed"
+        },
+        "units": "mm",
+        "valid": true,
+        "volume": 35204.42450666159
+      },
+      "status": "completed",
+      "trace": [
+        {
+          "after_faces": 6,
+          "after_volume": 32000.0,
+          "before_faces": 0,
+          "before_volume": 0.0,
+          "duration_seconds": 0.003256,
+          "evidence": {},
+          "feature_id": "base_plate",
+          "solids": 1,
+          "started_at": "2026-10-14T02:27:19.960089+00:00",
+          "type": "Box"
+        },
+        {
+          "after_faces": 3,
+          "after_volume": 3769.9111843077512,
+          "before_faces": 0,
+          "before_volume": 0.0,
+          "duration_seconds": 0.000878,
+          "evidence": {},
+          "feature_id": "central_boss",
+          "solids": 1,
+          "started_at": "2026-10-14T02:27:19.963763+00:00",
+          "type": "Cylinder"
+        },
+        {
+          "after_faces": 8,
+          "after_volume": 35769.911184307755,
+          "before_faces": 6,
+          "before_volume": 32000.0,
+          "duration_seconds": 0.005839,
+          "evidence": {},
+          "feature_id": "fused_body",
+          "solids": 1,
+          "started_at": "2026-10-14T02:27:19.964949+00:00",
+          "type": "Union"
+        },
+        {
+          "after_faces": 9,
+          "after_volume": 35204.42450666159,
+          "before_faces": 8,
+          "before_volume": 35769.911184307755,
+          "duration_seconds": 0.008668,
+          "evidence": {
+            "holes": [
+              {
+                "depth": null,
+                "diameter": 6.0,
+                "direction": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "position": [
+                  40.0,
+                  25.0,
+                  0.0
+                ],
+                "removed_volume": 565.486677646164,
+                "through": true
+              }
+            ]
+          },
+          "feature_id": "axial_through_hole",
+          "solids": 1,
+          "started_at": "2026-10-14T02:27:19.971594+00:00",
+          "type": "Hole"
+        }
+      ],
+      "validation": {
+        "checks": [
+          {
+            "actual": true,
+            "evidence": "OpenCascade BRepCheck_Analyzer",
+            "expected": true,
+            "name": "brep_valid",
+            "status": "passed",
+            "tolerance": null
+          },
+          {
+            "actual": 35204.42450666159,
+            "evidence": "B-Rep mass properties",
+            "expected": "> 0",
+            "name": "positive_volume",
+            "status": "passed",
+            "tolerance": null
+          },
+          {
+            "actual": 1,
+            "evidence": "Kernel solid traversal",
+            "expected": 1,
+            "name": "solid_count",
+            "status": "passed",
+            "tolerance": null
+          },
+          {
+            "actual": {
+              "max": [
+                80.0,
+                50.0,
+                20.0
+              ],
+              "min": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "size": [
+                80.0,
+                50.0,
+                20.0
+              ]
+            },
+            "evidence": "Kernel bounding box",
+            "expected": true,
+            "name": "finite_bounds",
+            "status": "passed",
+            "tolerance": null
+          },
+          {
+            "actual": [
+              80.0,
+              50.0,
+              20.0
+            ],
+            "evidence": "B-Rep bounding box",
+            "expected": [
+              80.0,
+              50.0,
+              20.0
+            ],
+            "name": "bounding_box",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": 35204.42450666159,
+            "evidence": "B-Rep volume",
+            "expected": 35204.42450666159,
+            "name": "volume",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": [
+              {
+                "angular_span": 6.283185307179586,
+                "axial_length": 20.0,
+                "direction": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "inward": true,
+                "origin": [
+                  40.0,
+                  25.0,
+                  -1.0
+                ],
+                "radius": 3.0
+              }
+            ],
+            "evidence": "OCP BRepAdaptor_Surface; inward cylindrical face and measured axis/radius",
+            "expected": {
+              "axis_position": [
+                40.0,
+                25.0,
+                0.0
+              ],
+              "diameter": 6.0
+            },
+            "name": "expected_hole.0.0.cylindrical_wall",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": true,
+            "evidence": {
+              "method": "exact B-Rep boolean intersection of bore-clearance cylinder across whole body bounds",
+              "remaining_material_volume": 0.0
+            },
+            "expected": true,
+            "name": "expected_hole.0.0.through",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": 1,
+            "evidence": {
+              "method": "Unique inward cylindrical axes/radii; exact B-Rep bore clearance distinguishes through bores from blind pockets",
+              "requested_modes": [
+                "through"
+              ]
+            },
+            "expected": 1,
+            "name": "complete_hole_profile_count",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": [
+              {
+                "angular_span": 6.283185307179586,
+                "axial_length": 20.0,
+                "direction": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "inward": true,
+                "origin": [
+                  40.0,
+                  25.0,
+                  -1.0
+                ],
+                "radius": 3.0
+              }
+            ],
+            "evidence": "OCP BRepAdaptor_Surface; inward cylindrical face and measured axis/radius",
+            "expected": {
+              "axis_position": [
+                40.0,
+                25.0,
+                0.0
+              ],
+              "diameter": 6.0
+            },
+            "name": "feature.axial_through_hole.0.cylindrical_wall",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": true,
+            "evidence": {
+              "method": "exact B-Rep boolean intersection of bore-clearance cylinder across whole body bounds",
+              "remaining_material_volume": 0.0
+            },
+            "expected": true,
+            "name": "feature.axial_through_hole.0.through",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": 1,
+            "evidence": "Final B-Rep mass/topology",
+            "expected": 1.0,
+            "name": "constraint.verify_single_solid",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": 80.0,
+            "evidence": "Final B-Rep bounding box",
+            "expected": 80.0,
+            "name": "constraint.verify_length",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": 50.0,
+            "evidence": "Final B-Rep bounding box",
+            "expected": 50.0,
+            "name": "constraint.verify_width",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": 20.0,
+            "evidence": "Final B-Rep bounding box",
+            "expected": 20.0,
+            "name": "constraint.verify_height",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": [
+              {
+                "angular_span": 6.283185307179586,
+                "axial_length": 20.0,
+                "direction": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "inward": true,
+                "origin": [
+                  40.0,
+                  25.0,
+                  -1.0
+                ],
+                "radius": 3.0
+              }
+            ],
+            "evidence": "OCP BRepAdaptor_Surface; inward cylindrical face and measured axis/radius",
+            "expected": {
+              "axis_position": [
+                40.0,
+                25.0,
+                0.0
+              ],
+              "diameter": 6.0
+            },
+            "name": "constraint.verify_axial_through_hole.0.cylindrical_wall",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": true,
+            "evidence": {
+              "method": "exact B-Rep boolean intersection of bore-clearance cylinder across whole body bounds",
+              "remaining_material_volume": 0.0
+            },
+            "expected": true,
+            "name": "constraint.verify_axial_through_hole.0.through",
+            "status": "passed",
+            "tolerance": 0.0001
+          },
+          {
+            "actual": {
+              "area": 11154.424687527782,
+              "bbox": {
+                "max": [
+                  80.0,
+                  50.0,
+                  20.0
+                ],
+                "min": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "size": [
+                  80.0,
+                  50.0,
+                  20.0
+                ]
+              },
+              "edges": 18,
+              "faces": 9,
+              "solids": 1,
+              "units": "mm",
+              "valid": true,
+              "volume": 35204.42450666171
+            },
+            "evidence": "Actual STEP export and reimport; volume, bounds and solid count compared",
+            "expected": {
+              "max": [
+                80.0,
+                50.0,
+                20.0
+              ],
+              "min": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "size": [
+                80.0,
+                50.0,
+                20.0
+              ]
+            },
+            "name": "step_roundtrip",
+            "status": "passed",
+            "tolerance": 1e-05
+          }
+        ],
+        "scope": "B-Rep validity, measured dimensions, supported hole and feature checks; not a manufacturing certification",
+        "status": "passed",
+        "tolerance_mm": 0.0001
+      }
+    },
+    "revision_id": "bf3bdf28-3c75-4efb-8fa3-c096fdcecb7d",
+    "stage": "completed",
+    "status": "completed",
+    "updated_at": "2026-10-14T02:27:20.826503+00:00"
+  },
+  "stages": [
+    "created",
+    "queued",
+    "planning",
+    "parsing",
+    "building",
+    "building",
+    "validating",
+    "exporting",
+    "publishing",
+    "completed"
+  ],
+  "ir": {
+    "constraints": [
+      {
+        "axis": null,
+        "description": null,
+        "expected": 1.0,
+        "feature_id": "axial_through_hole",
+        "id": "verify_single_solid",
+        "tolerance": 0.0001,
+        "type": "solid_count"
+      },
+      {
+        "axis": "x",
+        "description": null,
+        "expected": "plate_length",
+        "feature_id": "axial_through_hole",
+        "id": "verify_length",
+        "tolerance": 0.0001,
+        "type": "dimension"
+      },
+      {
+        "axis": "y",
+        "description": null,
+        "expected": "plate_width",
+        "feature_id": "axial_through_hole",
+        "id": "verify_width",
+        "tolerance": 0.0001,
+        "type": "dimension"
+      },
+      {
+        "axis": "z",
+        "description": null,
+        "expected": "overall_height",
+        "feature_id": "axial_through_hole",
+        "id": "verify_height",
+        "tolerance": 0.0001,
+        "type": "dimension"
+      },
+      {
+        "axis": null,
+        "description": "验证孔径、世界坐标孔轴位置及贯穿底板和凸台的连续通孔。",
+        "expected": {
+          "depth": "overall_height",
+          "diameter": "hole_diameter",
+          "direction": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "feature_id": "axial_through_hole",
+          "positions": [
+            [
+              "boss_center_x",
+              "boss_center_y",
+              "plate_origin_z"
+            ]
+          ],
+          "through": true
+        },
+        "feature_id": "axial_through_hole",
+        "id": "verify_axial_through_hole",
+        "tolerance": 0.0001,
+        "type": "hole"
+      }
+    ],
+    "coordinate_system": "right-handed-Z-up",
+    "dependencies": {},
+    "document_id": "d410d163-81b2-44ad-b917-f570989db6c5",
+    "expected_geometry": {
+      "bbox": [
+        "plate_length",
+        "plate_width",
+        "overall_height"
+      ],
+      "holes": [
+        {
+          "depth": "overall_height",
+          "diameter": "hole_diameter",
+          "direction": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "feature_id": "axial_through_hole",
+          "positions": [
+            [
+              "boss_center_x",
+              "boss_center_y",
+              "plate_origin_z"
+            ]
+          ],
+          "through": true
+        }
+      ],
+      "solids": 1,
+      "tolerance": 0.0001,
+      "volume": "plate_length * plate_width * plate_thickness + pi * boss_radius ** 2 * boss_height - pi * (hole_diameter / 2) ** 2 * overall_height",
+      "volume_max": null,
+      "volume_min": null
+    },
+    "features": [
+      {
+        "depends_on": [],
+        "editable": true,
+        "id": "base_plate",
+        "inputs": [],
+        "label": null,
+        "params": {
+          "depth": "plate_width",
+          "height": "plate_thickness",
+          "origin": [
+            "plate_origin_x",
+            "plate_origin_y",
+            "plate_origin_z"
+          ],
+          "width": "plate_length"
+        },
+        "type": "Box",
+        "validation_conditions": []
+      },
+      {
+        "depends_on": [],
+        "editable": true,
+        "id": "central_boss",
+        "inputs": [],
+        "label": null,
+        "params": {
+          "height": "boss_top_z - boss_bottom_z",
+          "origin": [
+            "boss_center_x",
+            "boss_center_y",
+            "boss_bottom_z"
+          ],
+          "radius": "boss_radius"
+        },
+        "type": "Cylinder",
+        "validation_conditions": []
+      },
+      {
+        "depends_on": [],
+        "editable": true,
+        "id": "fused_body",
+        "inputs": [
+          "base_plate",
+          "central_boss"
+        ],
+        "label": null,
+        "params": {},
+        "type": "Union",
+        "validation_conditions": []
+      },
+      {
+        "depends_on": [],
+        "editable": true,
+        "id": "axial_through_hole",
+        "inputs": [
+          "fused_body"
+        ],
+        "label": null,
+        "params": {
+          "depth": null,
+          "diameter": "hole_diameter",
+          "direction": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "positions": [
+            [
+              "boss_center_x",
+              "boss_center_y",
+              "plate_origin_z"
+            ]
+          ],
+          "through": true
+        },
+        "type": "Hole",
+        "validation_conditions": []
+      }
+    ],
+    "metadata": {
+      "model": "gpt-6.1-sol",
+      "model_attempts": 1,
+      "model_elapsed_seconds": 35.994786671999464,
+      "planning_mode": "structured-model",
+      "prompt": "生成真实三维零件，单位mm：底板长80、宽50、厚8，底板最小角为(0,0,0)。在底板中央(40,25)添加半径10、高12的圆柱凸台，底面位于z=8，顶面z=20；凸台与底板融合为一个实体。沿(40,25)的Z轴开直径6的通孔，贯穿底板和凸台。最终外形尺寸80×50×20。所有上述尺寸设为可编辑参数，并验证孔径、孔位和通孔。",
+      "usage": {
+        "completion_tokens": 1262,
+        "prompt_tokens": 18681,
+        "total_tokens": 19943
+      }
+    },
+    "output_feature": "axial_through_hole",
+    "parameters": {
+      "boss_bottom_z": {
+        "editable": true,
+        "expression": "plate_origin_z + plate_thickness",
+        "kind": "length",
+        "label": null,
+        "max": null,
+        "min": null,
+        "value": null
+      },
+      "boss_center_x": {
+        "editable": true,
+        "expression": "plate_origin_x + plate_length / 2",
+        "kind": "length",
+        "label": null,
+        "max": null,
+        "min": null,
+        "value": null
+      },
+      "boss_center_y": {
+        "editable": true,
+        "expression": "plate_origin_y + plate_width / 2",
+        "kind": "length",
+        "label": null,
+        "max": null,
+        "min": null,
+        "value": null
+      },
+      "boss_height": {
+        "editable": true,
+        "expression": null,
+        "kind": "length",
+        "label": null,
+        "max": null,
+        "min": null,
+        "value": 12.0
+      },
+      "boss_radius": {
+        "editable": true,
+        "expression": null,
+        "kind": "length",
+        "label": null,
+        "max": null,
+        "min": null,
+        "value": 10.0
+      },
+      "boss_top_z": {
+        "editable": true,
+        "expression": "boss_bottom_z + boss_height",
+        "kind": "length",
+        "label": null,
+        "max": null,
+        "min": null,
+        "value": null
+      },
+      "hole_diameter": {
+        "editable": true,
+        "expression": null,
+        "kind": "length",
+        "label": null,
+        "max": null,
+        "min": null,
+        "value": 6.0
+      },
+      "overall_height": {
+        "editable": true,
+        "expression": "boss_top_z - plate_origin_z",
+        "kind": "length",
+        "label": null,
+        "max": null,
+        "min": null,
+        "value": null
+      },
+      "plate_length": {
+        "editable": true,
+        "expression": null,
+        "kind": "length",
+        "label": null,
+        "max": null,
+        "min": null,
+        "value": 80.0
+      },
+      "plate_origin_x": {
+        "editable": true,
+        "expression": null,
+        "kind": "length",
+        "label": null,
+        "max": null,
+        "min": null,
+        "value": 0.0
+      },
+      "plate_origin_y": {
+        "editable": true,
+        "expression": null,
+        "kind": "length",
+        "label": null,
+        "max": null,
+        "min": null,
+        "value": 0.0
+      },
+      "plate_origin_z": {
+        "editable": true,
+        "expression": null,
+        "kind": "length",
+        "label": null,
+        "max": null,
+        "min": null,
+        "value": 0.0
+      },
+      "plate_thickness": {
+        "editable": true,
+        "expression": null,
+        "kind": "length",
+        "label": null,
+        "max": null,
+        "min": null,
+        "value": 8.0
+      },
+      "plate_width": {
+        "editable": true,
+        "expression": null,
+        "kind": "length",
+        "label": null,
+        "max": null,
+        "min": null,
+        "value": 50.0
+      }
+    },
+    "schema_version": "2.0",
+    "units": "mm"
+  },
+  "revision_id": "bf3bdf28-3c75-4efb-8fa3-c096fdcecb7d",
+  "report": {
+    "artifacts": [
+      {
+        "filename": "model.step",
+        "format": "step",
+        "sha256": "1a02644d943ca27383da16f0a7693745ff875d51d52c5027d336e69debb188d7",
+        "size": 23342
+      },
+      {
+        "filename": "model.stl",
+        "format": "stl",
+        "sha256": "1418ba8c157bcf5577046c0dbf86a5a0e2500b453260153b8085c1eb30a3046d",
+        "size": 34484
+      },
+      {
+        "filename": "model.glb",
+        "format": "glb",
+        "sha256": "8ac0de8ca5e64582fd0c5e13eee918445e821b13986e22b1e44d8b4217f29c30",
+        "size": 24980
+      },
+      {
+        "filename": "model.py",
+        "format": "python",
+        "sha256": "43ee73bc2b849ad1126756cc0f4e3f8540f0b3f9ec95c735abafe00246e650f0",
+        "size": 6776
+      },
+      {
+        "filename": "model.cad-ir.json",
+        "format": "ir",
+        "sha256": "7d9746f3003d22ee29c8b922ddfdbed22a85a59c7e3be9d6f6c8a37812c1026d",
+        "size": 7591
+      }
+    ],
+    "elapsed_seconds": 2.412002,
+    "executor_elapsed_seconds": 3.2206,
+    "geometry": {
+      "area": 11154.424687527706,
+      "bbox": {
+        "max": [
+          80.0,
+          50.0,
+          20.0
+        ],
+        "min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          80.0,
+          50.0,
+          20.0
+        ]
+      },
+      "edges": 18,
+      "faces": 9,
+      "preview": {
+        "source_units": "mm",
+        "source_up_axis": "Z",
+        "units": "m",
+        "up_axis": "Y"
+      },
+      "solids": 1,
+      "step_roundtrip": {
+        "area": 11154.424687527782,
+        "bbox": {
+          "max": [
+            80.0,
+            50.0,
+            20.0
+          ],
+          "min": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "size": [
+            80.0,
+            50.0,
+            20.0
+          ]
+        },
+        "edges": 18,
+        "faces": 9,
+        "solids": 1,
+        "units": "mm",
+        "valid": true,
+        "volume": 35204.42450666171
+      },
+      "step_roundtrip_checks": {
+        "count": 17,
+        "status": "passed"
+      },
+      "units": "mm",
+      "valid": true,
+      "volume": 35204.42450666159
+    },
+    "status": "completed",
+    "trace": [
+      {
+        "after_faces": 6,
+        "after_volume": 32000.0,
+        "before_faces": 0,
+        "before_volume": 0.0,
+        "duration_seconds": 0.003256,
+        "evidence": {},
+        "feature_id": "base_plate",
+        "solids": 1,
+        "started_at": "2026-10-14T02:27:19.960089+00:00",
+        "type": "Box"
+      },
+      {
+        "after_faces": 3,
+        "after_volume": 3769.9111843077512,
+        "before_faces": 0,
+        "before_volume": 0.0,
+        "duration_seconds": 0.000878,
+        "evidence": {},
+        "feature_id": "central_boss",
+        "solids": 1,
+        "started_at": "2026-10-14T02:27:19.963763+00:00",
+        "type": "Cylinder"
+      },
+      {
+        "after_faces": 8,
+        "after_volume": 35769.911184307755,
+        "before_faces": 6,
+        "before_volume": 32000.0,
+        "duration_seconds": 0.005839,
+        "evidence": {},
+        "feature_id": "fused_body",
+        "solids": 1,
+        "started_at": "2026-10-14T02:27:19.964949+00:00",
+        "type": "Union"
+      },
+      {
+        "after_faces": 9,
+        "after_volume": 35204.42450666159,
+        "before_faces": 8,
+        "before_volume": 35769.911184307755,
+        "duration_seconds": 0.008668,
+        "evidence": {
+          "holes": [
+            {
+              "depth": null,
+              "diameter": 6.0,
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "position": [
+                40.0,
+                25.0,
+                0.0
+              ],
+              "removed_volume": 565.486677646164,
+              "through": true
+            }
+          ]
+        },
+        "feature_id": "axial_through_hole",
+        "solids": 1,
+        "started_at": "2026-10-14T02:27:19.971594+00:00",
+        "type": "Hole"
+      }
+    ],
+    "validation": {
+      "checks": [
+        {
+          "actual": true,
+          "evidence": "OpenCascade BRepCheck_Analyzer",
+          "expected": true,
+          "name": "brep_valid",
+          "status": "passed",
+          "tolerance": null
+        },
+        {
+          "actual": 35204.42450666159,
+          "evidence": "B-Rep mass properties",
+          "expected": "> 0",
+          "name": "positive_volume",
+          "status": "passed",
+          "tolerance": null
+        },
+        {
+          "actual": 1,
+          "evidence": "Kernel solid traversal",
+          "expected": 1,
+          "name": "solid_count",
+          "status": "passed",
+          "tolerance": null
+        },
+        {
+          "actual": {
+            "max": [
+              80.0,
+              50.0,
+              20.0
+            ],
+            "min": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "size": [
+              80.0,
+              50.0,
+              20.0
+            ]
+          },
+          "evidence": "Kernel bounding box",
+          "expected": true,
+          "name": "finite_bounds",
+          "status": "passed",
+          "tolerance": null
+        },
+        {
+          "actual": [
+            80.0,
+            50.0,
+            20.0
+          ],
+          "evidence": "B-Rep bounding box",
+          "expected": [
+            80.0,
+            50.0,
+            20.0
+          ],
+          "name": "bounding_box",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": 35204.42450666159,
+          "evidence": "B-Rep volume",
+          "expected": 35204.42450666159,
+          "name": "volume",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": [
+            {
+              "angular_span": 6.283185307179586,
+              "axial_length": 20.0,
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "inward": true,
+              "origin": [
+                40.0,
+                25.0,
+                -1.0
+              ],
+              "radius": 3.0
+            }
+          ],
+          "evidence": "OCP BRepAdaptor_Surface; inward cylindrical face and measured axis/radius",
+          "expected": {
+            "axis_position": [
+              40.0,
+              25.0,
+              0.0
+            ],
+            "diameter": 6.0
+          },
+          "name": "expected_hole.0.0.cylindrical_wall",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": true,
+          "evidence": {
+            "method": "exact B-Rep boolean intersection of bore-clearance cylinder across whole body bounds",
+            "remaining_material_volume": 0.0
+          },
+          "expected": true,
+          "name": "expected_hole.0.0.through",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": 1,
+          "evidence": {
+            "method": "Unique inward cylindrical axes/radii; exact B-Rep bore clearance distinguishes through bores from blind pockets",
+            "requested_modes": [
+              "through"
+            ]
+          },
+          "expected": 1,
+          "name": "complete_hole_profile_count",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": [
+            {
+              "angular_span": 6.283185307179586,
+              "axial_length": 20.0,
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "inward": true,
+              "origin": [
+                40.0,
+                25.0,
+                -1.0
+              ],
+              "radius": 3.0
+            }
+          ],
+          "evidence": "OCP BRepAdaptor_Surface; inward cylindrical face and measured axis/radius",
+          "expected": {
+            "axis_position": [
+              40.0,
+              25.0,
+              0.0
+            ],
+            "diameter": 6.0
+          },
+          "name": "feature.axial_through_hole.0.cylindrical_wall",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": true,
+          "evidence": {
+            "method": "exact B-Rep boolean intersection of bore-clearance cylinder across whole body bounds",
+            "remaining_material_volume": 0.0
+          },
+          "expected": true,
+          "name": "feature.axial_through_hole.0.through",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": 1,
+          "evidence": "Final B-Rep mass/topology",
+          "expected": 1.0,
+          "name": "constraint.verify_single_solid",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": 80.0,
+          "evidence": "Final B-Rep bounding box",
+          "expected": 80.0,
+          "name": "constraint.verify_length",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": 50.0,
+          "evidence": "Final B-Rep bounding box",
+          "expected": 50.0,
+          "name": "constraint.verify_width",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": 20.0,
+          "evidence": "Final B-Rep bounding box",
+          "expected": 20.0,
+          "name": "constraint.verify_height",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": [
+            {
+              "angular_span": 6.283185307179586,
+              "axial_length": 20.0,
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "inward": true,
+              "origin": [
+                40.0,
+                25.0,
+                -1.0
+              ],
+              "radius": 3.0
+            }
+          ],
+          "evidence": "OCP BRepAdaptor_Surface; inward cylindrical face and measured axis/radius",
+          "expected": {
+            "axis_position": [
+              40.0,
+              25.0,
+              0.0
+            ],
+            "diameter": 6.0
+          },
+          "name": "constraint.verify_axial_through_hole.0.cylindrical_wall",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": true,
+          "evidence": {
+            "method": "exact B-Rep boolean intersection of bore-clearance cylinder across whole body bounds",
+            "remaining_material_volume": 0.0
+          },
+          "expected": true,
+          "name": "constraint.verify_axial_through_hole.0.through",
+          "status": "passed",
+          "tolerance": 0.0001
+        },
+        {
+          "actual": {
+            "area": 11154.424687527782,
+            "bbox": {
+              "max": [
+                80.0,
+                50.0,
+                20.0
+              ],
+              "min": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "size": [
+                80.0,
+                50.0,
+                20.0
+              ]
+            },
+            "edges": 18,
+            "faces": 9,
+            "solids": 1,
+            "units": "mm",
+            "valid": true,
+            "volume": 35204.42450666171
+          },
+          "evidence": "Actual STEP export and reimport; volume, bounds and solid count compared",
+          "expected": {
+            "max": [
+              80.0,
+              50.0,
+              20.0
+            ],
+            "min": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "size": [
+              80.0,
+              50.0,
+              20.0
+            ]
+          },
+          "name": "step_roundtrip",
+          "status": "passed",
+          "tolerance": 1e-05
+        }
+      ],
+      "scope": "B-Rep validity, measured dimensions, supported hole and feature checks; not a manufacturing certification",
+      "status": "passed",
+      "tolerance_mm": 0.0001
+    }
+  },
+  "artifacts": {
+    "glb": {
+      "filename": "model.glb",
+      "sha256": "8ac0de8ca5e64582fd0c5e13eee918445e821b13986e22b1e44d8b4217f29c30",
+      "size": 24980
+    },
+    "ir": {
+      "filename": "model.cad-ir.json",
+      "sha256": "7d9746f3003d22ee29c8b922ddfdbed22a85a59c7e3be9d6f6c8a37812c1026d",
+      "size": 7591
+    },
+    "python": {
+      "filename": "model.py",
+      "sha256": "43ee73bc2b849ad1126756cc0f4e3f8540f0b3f9ec95c735abafe00246e650f0",
+      "size": 6776
+    },
+    "step": {
+      "filename": "model.step",
+      "sha256": "1a02644d943ca27383da16f0a7693745ff875d51d52c5027d336e69debb188d7",
+      "size": 23342
+    },
+    "stl": {
+      "filename": "model.stl",
+      "sha256": "1418ba8c157bcf5577046c0dbf86a5a0e2500b453260153b8085c1eb30a3046d",
+      "size": 34484
+    }
+  },
+  "planning_mode": "structured-model",
+  "model": "gpt-6.1-sol",
+  "model_attempts": 1,
+  "model_elapsed_seconds": 35.994786671999464,
+  "error": {
+    "code": "AttributeError",
+    "message": "'NoneType' object has no attribute 'solids'"
+  },
+  "elapsed_seconds": 41.590979
+}
