@@ -221,7 +221,9 @@ import json
 import sys
 import urllib.request
 base = "http://" + sys.argv[1]
-with urllib.request.urlopen(base + "/", timeout=10) as response:
+# Vite's SPA fallback serves navigation requests that accept HTML.
+navigation = urllib.request.Request(base + "/", headers={"Accept": "text/html"})
+with urllib.request.urlopen(navigation, timeout=10) as response:
     assert response.status == 200 and b'<div id="app">' in response.read(), "Frontend HTML missing app root"
 with urllib.request.urlopen(base + "/api/v1/auth/me", timeout=10) as response:
     assert json.load(response)["data"]["id"] == "anonymous", "Frontend auth proxy failed"
