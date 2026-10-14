@@ -58,7 +58,7 @@ def independent_checks(service: CADV2Service, revision: dict) -> list[dict]:
 
     artifacts = revision["artifacts"]
     required = {"step", "stl", "glb", "ir", "python"}
-    check("five_revision_formats", sorted(required), sorted(artifacts), set(artifacts) == required,
+    check("core_revision_formats", sorted(required), sorted(artifacts), required.issubset(artifacts),
           "Published revision manifest; engineering and preview artifacts share one revision")
     hashes_ok = True
     for kind, manifest in artifacts.items():

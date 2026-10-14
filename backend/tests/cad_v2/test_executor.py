@@ -22,7 +22,7 @@ async def test_worker_real_export_and_true_stages(tmp_path):
     assert report['status']=='completed',report
     assert report['validation']['status']=='passed'
     assert stages==['building','validating','exporting']
-    assert {a['format'] for a in report['artifacts']}=={'step','stl','glb','ir','python'}
+    assert {a['format'] for a in report['artifacts']}=={'step','stl','glb','ir','python','dxf','svg'}
     assert report['geometry']['step_roundtrip']['volume']==pytest.approx(1600)
     assert report['geometry']['preview']['up_axis']=='Y'
     assert not (directory/'input.json').exists()
