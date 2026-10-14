@@ -10,7 +10,7 @@
         <RouterLink v-if="!standalone" to="/chat/cad" class="text-xs text-slate-500 hover:text-slate-800">二维 DXF</RouterLink>
         <button class="secondary-button" :disabled="busy" @click="startNew"><Plus :size="14" />新建零件</button>
         <select v-model="exportFormat" class="rounded-md border border-slate-200 bg-white px-2 py-2 text-xs" aria-label="导出格式">
-          <option value="step">STEP 精确实体</option><option value="stl">STL 网格</option><option value="glb">GLB 预览</option><option value="ir">CAD IR 定义</option><option value="python">Python 重建脚本</option>
+          <option v-for="item in availableFormats" :key="item.id" :value="item.id">{{ item.label }}</option>
         </select>
         <button class="primary-button" :disabled="!revision || downloading || loadingDocument" @click="download"><Download :size="14" />{{ downloading ? '下载中' : '导出' }}</button>
       </div>
@@ -36,6 +36,10 @@
             <p v-if="historical && intent === 'edit'" class="mt-2 text-xs leading-5 text-amber-700">正在查看历史版本。请先恢复该版本，或选择当前版本再修改。</p>
             <button type="submit" class="primary-button mt-3 w-full justify-center" :disabled="busy || !prompt.trim() || (historical && intent === 'edit')"><LoaderCircle v-if="busy" :size="15" class="animate-spin" /><Send v-else :size="15" />{{ busy ? '任务进行中' : intent === 'edit' && document ? '修改并重新建模' : '生成三维零件' }}</button>
           </form>
+          <div v-if="clarificationJob" class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+            <p class="font-medium">需要补充设计信息</p><p class="mt-1">{{ clarificationJob.error?.message }}</p>
+            <label class="mt-2 flex items-start gap-2"><input v-model="answerClarification" type="checkbox" class="mt-1" />将输入内容作为补充回答，继续这次修改</label>
+          </div>
           <div v-if="!document" class="mt-4">
             <p class="text-[11px] text-slate-400">试试这些完整需求</p>
             <button v-for="example in examples" :key="example.name" class="mt-2 block w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-xs text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/40" :disabled="busy" @click="prompt = example.prompt">{{ example.name }}<ArrowUpRight :size="12" class="float-right text-slate-400" /></button>
@@ -57,10 +61,14 @@
       </aside>
 
       <main class="relative flex min-h-0 min-w-0 flex-col">
+        <div class="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2 text-xs">
+          <div class="flex shrink-0 gap-1 whitespace-nowrap" role="tablist" aria-label="模型显示方式"><button class="mode-button px-4" role="tab" :aria-selected="displayMode === '3d'" :class="{ 'is-active': displayMode === '3d' }" @click="displayMode = '3d'">三维模型</button><button class="mode-button px-4" role="tab" :aria-selected="displayMode === '2d'" :class="{ 'is-active': displayMode === '2d' }" @click="displayMode = '2d'">二维工程图</button></div>
+          <span v-if="assembly" class="text-slate-500">装配体 · {{ assembly.instances.length }} 个组件</span>
+        </div>
         <div v-if="error" class="mx-3 mt-3 flex shrink-0 items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs leading-5 text-red-700" role="alert"><AlertCircle :size="15" class="mt-0.5 shrink-0" /><span class="flex-1">{{ error }}</span><button aria-label="关闭错误提示" @click="error = ''">×</button></div>
         <div v-if="connectionIssue" class="mx-3 mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800" role="status">{{ connectionIssue }}</div>
         <div v-if="historical" class="mx-3 mt-2 flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"><span>正在查看历史版本 {{ revision?.id.slice(0, 8) }}</span><button class="font-medium underline" :disabled="busy" @click="restore(revision!.id)">恢复为新版本</button></div>
-        <div class="min-h-[360px] flex-1"><CAD3DViewer :revision="revision" /></div>
+        <div class="min-h-[360px] min-w-0 flex-1"><CAD3DViewer v-if="displayMode === '3d'" :revision="revision" :selected-instance="selectedInstanceId" :hidden-instances="hiddenInstances" @select-instance="selectedInstanceId = $event" /><CAD2DViewer v-else :revision="revision" /></div>
         <footer class="flex min-h-[46px] flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-white px-4 py-2 text-[11px] text-slate-500">
           <span v-if="revision">{{ geometrySize }} <span v-if="volume">· {{ volume }} mm³</span></span><span v-else>等待生成真实几何模型</span>
           <span v-if="revision" :class="revision.report?.geometry?.valid === true ? 'text-emerald-700' : 'text-amber-700'">{{ revision.report?.geometry?.valid === true ? 'B-Rep 有效' : '几何状态待确认' }} · {{ revision.ir.units }}</span>
@@ -74,6 +82,23 @@
         <div class="min-h-0 flex-1 overflow-auto p-4">
           <div v-if="!revision && !(activeTab === 'validation' && job)" class="py-6 text-center text-xs leading-6 text-slate-400">生成完成后可查看参数、<br>几何验证与版本历史。</div>
           <template v-else-if="activeTab === 'parameters' && revision">
+            <section v-if="assembly" class="mb-5 border-b border-slate-100 pb-4" aria-label="装配组件">
+              <h2 class="section-label">组件树 / BOM</h2>
+              <div v-for="instance in assembly.instances" :key="instance.id" class="mt-2 flex items-center gap-2 rounded border p-2" :class="selectedInstanceId === instance.id ? 'border-emerald-300 bg-emerald-50' : 'border-slate-100'">
+                <input type="checkbox" :checked="!hiddenInstances.includes(instance.id)" :aria-label="`显示组件 ${instance.id}`" @change="toggleInstance(instance.id)" />
+                <button class="min-w-0 flex-1 text-left text-xs" :aria-label="`选择组件 ${instance.id}`" @click="selectedInstanceId = instance.id"><span class="block truncate">{{ instance.name || instance.id }}</span><span class="text-[10px] text-slate-400">{{ instance.part_id }}</span></button>
+              </div>
+              <p class="mt-2 text-[10px] leading-4 text-slate-400">隐藏仅影响查看，导出保留完整装配体。</p>
+              <div v-if="selectedInstance" class="mt-3 rounded-lg bg-slate-50 p-3">
+                <p class="text-xs font-medium">组件位置 · {{ revision.ir.units }}</p>
+                <p v-if="selectedInstance.transform.translation.some(value => typeof value === 'string')" class="mt-1 text-[10px] leading-4 text-slate-500">当前位置由参数关联。直接移动会替换此组件的坐标关联；保留关联请修改下方参数。</p>
+                <form class="mt-2" @submit.prevent="applyInstance">
+                  <div class="grid grid-cols-3 gap-2"><label v-for="(axis, index) in ['X','Y','Z']" :key="axis" class="text-[10px] text-slate-500">{{ axis }}<input v-model="instanceTranslation[index]" type="number" step="any" :aria-label="`组件 ${axis}`" :disabled="busy || historical || !selectedInstance.editable" class="mt-1 w-full rounded border border-slate-200 px-1 py-2 text-xs" /></label></div>
+                  <button class="secondary-button mt-2" :disabled="busy || historical || !selectedInstance.editable">移动组件并验证</button>
+                </form>
+              </div>
+              <div v-for="part in assembly.parts" :key="part.id" class="mt-2 flex justify-between text-[10px] text-slate-500"><span>{{ part.name || part.id }}</span><span>× {{ assembly.instances.filter(item => item.part_id === part.id).length }}</span></div>
+            </section>
             <h2 class="section-label">可编辑参数</h2>
             <form class="mt-4 space-y-3" @submit.prevent="applyParameters">
               <div v-for="[name, parameter] in editableParameters" :key="name">
@@ -88,6 +113,7 @@
           </template>
           <template v-else-if="activeTab === 'validation'">
             <h2 class="section-label">{{ job?.status === 'failed' ? '最近失败任务的诊断' : '实际几何检查' }}</h2>
+            <p v-if="activeReport?.isolation" class="mt-2 rounded border border-slate-200 p-2 text-[11px] text-slate-500">执行隔离：{{ isolationLabel }}</p>
             <div v-if="job?.status === 'failed' && job.error" class="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs leading-5 text-red-700"><p>{{ job.error.message }}</p><p v-if="job.error.feature_id" class="mt-1">特征：{{ job.error.feature_id }}</p><details v-if="job.error.details" class="mt-2"><summary class="cursor-pointer">详细诊断</summary><pre class="mt-2 whitespace-pre-wrap break-all text-[10px]">{{ JSON.stringify(job.error.details, null, 2) }}</pre></details></div>
             <div class="mt-3 rounded-lg bg-slate-50 p-3 text-xs leading-6"><div>实体：{{ activeReport?.geometry?.solids ?? '待确认' }}</div><div>表面积：{{ formatNumber(activeReport?.geometry?.area) }} mm²</div><div>体积：{{ formatNumber(activeReport?.geometry?.volume) }} mm³</div></div>
             <div v-for="(check, index) in activeReport?.validation?.checks || []" :key="`${check.name}-${index}`" class="mt-3 rounded-lg border border-slate-200 p-3"><div class="flex items-start justify-between gap-2"><h3 class="break-all text-xs text-slate-700">{{ check.name || check.id || `检查 ${index + 1}` }}</h3><span class="shrink-0 text-[10px]" :class="statusClass(check.status || '')">{{ statusLabel(check.status || 'unverified') }}</span></div><div class="mt-2 space-y-1 break-all text-[11px] leading-5 text-slate-500"><p v-if="check.expected !== undefined">预期：{{ formatValue(check.expected) }}</p><p v-if="check.actual !== undefined">实际：{{ formatValue(check.actual) }}</p><p v-if="check.message">{{ check.message }}</p><p v-if="check.evidence">{{ formatValue(check.evidence) }}</p></div></div>
@@ -108,6 +134,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { AlertCircle, ArrowUpRight, Box, Download, LoaderCircle, Plus, RefreshCw, Send } from 'lucide-vue-next';
 import CAD3DViewer from '@/components/CAD3DViewer.vue';
+import CAD2DViewer from '@/components/CAD2DViewer.vue';
 import { downloadCADArtifact, type CADArtifactFormat } from '@/api/cadV2';
 import { getCachedClientConfig } from '@/api/config';
 import { cadErrorMessage, terminalCADJob, useCADV2Workspace } from '@/composables/useCADV2Workspace';
@@ -124,6 +151,20 @@ const prompt = ref(defaultPrompt);
 const intent = ref<'create' | 'edit'>('create');
 const exportFormat = ref<CADArtifactFormat>('step');
 const downloading = ref(false);
+const displayMode = ref<'3d' | '2d'>('3d');
+const selectedInstanceId = ref('');
+const hiddenInstances = ref<string[]>([]);
+const instanceTranslation = ref<Array<number | string>>([0, 0, 0]);
+const assembly = computed(() => revision.value?.ir.assembly);
+const selectedInstance = computed(() => assembly.value?.instances.find(item => item.id === selectedInstanceId.value));
+const answerClarification = ref(false);
+const clarificationJob = computed(() => job.value?.status === 'failed' && job.value.base_revision === document.value?.current_revision && (job.value.error?.code || job.value.error?.type) === 'RequirementError' ? job.value : null);
+const formats: Array<{ id: CADArtifactFormat; label: string }> = [
+  { id: 'step', label: 'STEP 精确实体' }, { id: 'dxf', label: 'DXF 二维工程图' }, { id: 'svg', label: 'SVG 矢量图纸' },
+  { id: 'stl', label: 'STL 网格' }, { id: 'glb', label: 'GLB 预览' }, { id: 'ir', label: 'CAD IR 定义' },
+  { id: 'python', label: 'Python 重建脚本' }, { id: 'bom_csv', label: 'BOM 零件清单 CSV' }, { id: 'bom_json', label: '装配信息 JSON' },
+];
+const availableFormats = computed(() => formats.filter(item => !revision.value || revision.value.artifacts[item.id]));
 const standalone = ref(false);
 const activeTab = ref('parameters');
 const tabs = [{ id: 'parameters', name: '参数' }, { id: 'validation', name: '验证' }, { id: 'history', name: '历史' }];
@@ -134,6 +175,10 @@ const parametersChanged = computed(() => editableParameters.value.some(([name, v
 const sortedRevisions = computed(() => [...revisions.value].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
 const progress = computed(() => Math.round(Math.max(0, Math.min(100, Number(job.value?.progress) || 0))));
 const activeReport = computed(() => job.value?.status === 'failed' ? job.value.report : revision.value?.report);
+const isolationLabel = computed(() => {
+  const isolation = activeReport.value?.isolation as { mode?: string; filesystem?: string; network?: string } | undefined;
+  return isolation?.mode === 'process-dev' ? '开发进程模式（无文件系统沙箱）' : isolation?.mode || '未记录';
+});
 const volume = computed(() => formatNumber(revision.value?.report?.geometry?.volume, ''));
 const geometrySize = computed(() => {
   const bbox = revision.value?.report?.geometry?.bbox as { size?: number[] } | undefined;
@@ -141,11 +186,27 @@ const geometrySize = computed(() => {
 });
 watch(() => revision.value?.id, () => {
   parameterDraft.value = Object.fromEntries(editableParameters.value.map(([name, value]) => [name, value.value as number]));
+  hiddenInstances.value = []; answerClarification.value = false;
+  if (!assembly.value?.instances.some(item => item.id === selectedInstanceId.value)) selectedInstanceId.value = '';
+  if (!availableFormats.value.some(item => item.id === exportFormat.value)) exportFormat.value = 'step';
 });
+watch(() => [selectedInstanceId.value, revision.value?.id], () => {
+  const measured = revision.value?.report.geometry?.assembly as { components?: Array<{ instance_id: string; transform_matrix_mm: number[][] }> } | undefined;
+  const component = measured?.components?.find(item => item.instance_id === selectedInstanceId.value);
+  const scale = ({ mm: 1, cm: 10, m: 1000, inch: 25.4 } as Record<string, number>)[revision.value?.ir.units || 'mm'] || 1;
+  instanceTranslation.value = component ? component.transform_matrix_mm.slice(0, 3).map(row => row[3] / scale) : [...(selectedInstance.value?.transform.translation || [0, 0, 0])];
+});
+function toggleInstance(id: string) { hiddenInstances.value = hiddenInstances.value.includes(id) ? hiddenInstances.value.filter(item => item !== id) : [...hiddenInstances.value, id]; }
+async function applyInstance() {
+  if (!selectedInstance.value) return;
+  const translation = instanceTranslation.value.map(Number);
+  if (instanceTranslation.value.some(value => value === '') || translation.some(value => !Number.isFinite(value))) { error.value = '组件位置需要三个明确数值；关联表达式请通过参数面板修改。'; return; }
+  await edit({ instance_patches: { [selectedInstance.value.id]: { transform: { translation } } } });
+}
 watch(() => document.value?.id, (next, previous) => { if (next && next !== previous) { intent.value = 'edit'; prompt.value = ''; } });
 function startNew() { newDocument(); intent.value = 'create'; prompt.value = defaultPrompt; }
 function chooseDocument(event: Event) { const id = (event.target as HTMLSelectElement).value; if (id) void openDocument(id); }
-async function submitPrompt() { if (!prompt.value.trim()) return; if (document.value && intent.value === 'edit') await edit({ prompt: prompt.value.trim() }); else await generate(prompt.value.trim()); }
+async function submitPrompt() { if (!prompt.value.trim()) return; if (document.value && intent.value === 'edit') await edit({ prompt: prompt.value.trim(), ...(answerClarification.value && clarificationJob.value ? { clarification_job_id: clarificationJob.value.id } : {}) }); else await generate(prompt.value.trim()); }
 async function applyParameters() {
   const parameters: Record<string, number> = {};
   for (const [name, original] of editableParameters.value) {

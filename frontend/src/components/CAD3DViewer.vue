@@ -37,7 +37,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { downloadCADArtifact, type CADRevision } from '@/api/cadV2';
 
-const props = defineProps<{ revision: CADRevision | null }>();
+const props = defineProps<{ revision: CADRevision | null; selectedInstance?: string; hiddenInstances?: string[] }>();
+const emit = defineEmits<{ selectInstance: [id: string] }>();
 const host = ref<HTMLDivElement | null>(null);
 const loading = ref(false);
 const error = ref('');
@@ -131,13 +132,35 @@ function unselect() {
   if (selectedMesh) for (const material of Array.isArray(selectedMesh.material) ? selectedMesh.material : [selectedMesh.material]) if (material instanceof THREE.MeshStandardMaterial) material.emissive.setHex(0);
   selectedMesh = null; selected.value = false;
 }
+function componentId(object: THREE.Object3D): string {
+  const ids = new Set(props.revision?.ir.assembly?.instances.map(item => item.id) || []);
+  let candidate: THREE.Object3D | null = object;
+  while (candidate) { if (ids.has(candidate.name)) return candidate.name; candidate = candidate.parent; }
+  return '';
+}
+function applyComponentState() {
+  const hidden = new Set(props.hiddenInstances || []);
+  const ids = new Set(props.revision?.ir.assembly?.instances.map(item => item.id) || []);
+  root?.traverse(child => {
+    if (ids.has(child.name)) child.visible = !hidden.has(child.name);
+    if (child instanceof THREE.Mesh && ids.size) for (const material of Array.isArray(child.material) ? child.material : [child.material]) {
+      if (material instanceof THREE.MeshStandardMaterial) material.emissive.setHex(componentId(child) === props.selectedInstance ? 0x214f37 : 0);
+    }
+  });
+}
 function onPointerDown(event: PointerEvent) { pointerStart = { x: event.clientX, y: event.clientY }; }
 function onPointerUp(event: PointerEvent) {
   if (event.button !== 0 || !root || !renderer || !camera || Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) > 5) return;
   const rect = renderer.domElement.getBoundingClientRect();
   raycaster.setFromCamera(new THREE.Vector2(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1), camera);
-  const hit = raycaster.intersectObject(root, true).find(item => item.object instanceof THREE.Mesh);
+  const hit = raycaster.intersectObject(root, true).find(item => {
+    if (!(item.object instanceof THREE.Mesh)) return false;
+    let object: THREE.Object3D | null = item.object;
+    while (object) { if (!object.visible) return false; object = object.parent; }
+    return true;
+  });
   unselect();
+  if (props.revision?.ir.assembly) { emit('selectInstance', hit ? componentId(hit.object) : ''); applyComponentState(); return; }
   if (hit) { selectedMesh = hit.object as THREE.Mesh; selected.value = true; for (const material of Array.isArray(selectedMesh.material) ? selectedMesh.material : [selectedMesh.material]) if (material instanceof THREE.MeshStandardMaterial) material.emissive.setHex(0x214f37); }
 }
 function updateHelpers() {
@@ -175,7 +198,8 @@ async function loadRevision() {
     candidate.traverse(child => {
       if (!(child instanceof THREE.Mesh)) return;
       const oldMaterials = Array.isArray(child.material) ? child.material : [child.material];
-      child.material = new THREE.MeshStandardMaterial({ color: 0x83a797, roughness: 0.45, metalness: 0.2, side: THREE.DoubleSide, wireframe: wireframe.value });
+      const importedColor = (oldMaterials[0] as THREE.MeshStandardMaterial)?.color;
+      child.material = new THREE.MeshStandardMaterial({ color: revision.ir.assembly && importedColor ? importedColor.clone() : 0x83a797, roughness: 0.45, metalness: 0.2, side: THREE.DoubleSide, wireframe: wireframe.value });
       oldMaterials.forEach(material => {
         for (const value of Object.values(material)) if (value instanceof THREE.Texture) value.dispose();
         material.dispose();
@@ -184,6 +208,7 @@ async function loadRevision() {
     unselect();
     if (root) { scene.remove(root); disposeObject(root); }
     root = candidate; scene.add(root); bounds.copy(candidateBounds);
+    applyComponentState();
     modelRadius = Math.max(bounds.getSize(new THREE.Vector3()).length() / 2, 0.01);
     loadedRevision.value = revision.id;
     updateHelpers(); setView('iso');
@@ -211,6 +236,7 @@ onMounted(() => {
   } catch { error.value = '当前浏览器无法启动 WebGL 三维预览。你仍可查看参数、验证报告和下载工程文件。'; }
 });
 watch(() => [props.revision?.document_id, props.revision?.id], () => { void loadRevision(); });
+watch(() => [props.selectedInstance, props.hiddenInstances], applyComponentState, { deep: true });
 onBeforeUnmount(() => {
   loadEpoch += 1; request?.abort(); cancelAnimationFrame(frame); resizeObserver?.disconnect(); controls?.dispose();
   renderer?.domElement.removeEventListener('pointerdown', onPointerDown); renderer?.domElement.removeEventListener('pointerup', onPointerUp);
