@@ -29,6 +29,7 @@ class BuildResult:
     geometry: dict[str, Any] = field(default_factory=dict)
     compiled: Any = None
     validation: dict[str, Any] = field(default_factory=dict)
+    components: dict[str, Any] = field(default_factory=dict)
 
 
 def _v(value: Any) -> tuple[float, float, float]:
@@ -39,14 +40,16 @@ def measure(shape: Shape) -> dict[str, Any]:
     box = shape.bounding_box()
     return {
         "bbox": {"min": list(box.min), "max": list(box.max), "size": list(box.size)},
-        "volume": float(shape.volume), "area": float(shape.area),
+        # Compound.volume only sums immediate children in build123d. Traverse
+        # solids so nested assembly mass includes every located occurrence.
+        "volume": sum(float(solid.volume) for solid in shape.solids()), "area": float(shape.area),
         "solids": len(shape.solids()), "faces": len(shape.faces()),
         "edges": len(shape.edges()), "valid": bool(shape.is_valid), "units": "mm",
     }
 
 
 def _volume(shape: Shape | None) -> float:
-    return float(shape.volume) if shape is not None and shape.solids() else 0.0
+    return sum(float(solid.volume) for solid in shape.solids()) if shape is not None else 0.0
 
 
 def _compound(shapes: list[Shape], fuse: bool = False) -> Shape:
@@ -109,6 +112,10 @@ def surface_signature(face: Any) -> dict[str, Any]:
 class Build123dBackend:
     """Precise B-Rep construction; model-generated Python is never accepted."""
 
+    def __init__(self, *, healing_policy: dict[str, Any] | None = None):
+        from .healing import validate_healing_options
+        self.healing_policy = validate_healing_options(healing_policy)
+
     def build(self, compiled: Any) -> BuildResult:
         shapes: dict[str, Shape] = {}
         trace: list[dict[str, Any]] = []
@@ -118,8 +125,17 @@ class Build123dBackend:
             started_at = datetime.now(timezone.utc).isoformat()
             try:
                 shape, evidence = self._operation(feature, shapes)
+                if feature.id in self.healing_policy:
+                    from .healing import heal_shape
+                    policy = self.healing_policy[feature.id]
+                    require_solid = feature.type not in {"Rectangle", "Circle", "Polyline"} and (feature.type not in {"Transform", "LinearPattern", "CircularPattern"} or bool(before.solids()))
+                    healed = heal_shape(shape, strategy=policy["strategy"], tolerance_mm=policy["tolerance_mm"], feature_id=feature.id, require_solid=require_solid)
+                    shape = healed.shape
+                    evidence["healing"] = healed.evidence
                 if not shape.is_valid:
-                    raise InvalidTopologyError("Kernel returned invalid topology", feature_id=feature.id)
+                    raise InvalidTopologyError("Kernel returned invalid topology", feature_id=feature.id, recoverable=True, details={"healing_candidate": True})
+                if shape.solids() and _volume(shape) <= 1e-9:
+                    raise InvalidTopologyError("Kernel returned non-positive solid volume", feature_id=feature.id, recoverable=True, details={"healing_candidate": True})
                 shapes[feature.id] = shape
                 trace.append({
                     "feature_id": feature.id, "type": feature.type,
@@ -138,9 +154,12 @@ class Build123dBackend:
             except Exception as exc:
                 error = BooleanOperationError if feature.type in {"Union", "Cut", "Intersection", "Hole", "Pocket"} else GeometryKernelError
                 raise error(str(exc), feature_id=feature.id, details={"operation": feature.type, "trace": trace}) from exc
+        if compiled.assembly is not None:
+            from .assembly import build_assembly
+            return build_assembly(compiled, shapes, trace)
         result = shapes[compiled.output_feature]
         if not result.solids() or _volume(result) <= 1e-9:
-            raise InvalidTopologyError("Output contains no positive-volume solid", feature_id=compiled.output_feature)
+            raise InvalidTopologyError("Output contains no positive-volume solid", feature_id=compiled.output_feature, recoverable=True, details={"healing_candidate": True})
         return BuildResult(result, trace, measure(result), compiled)
 
     def _operation(self, feature: Any, shapes: dict[str, Shape]) -> tuple[Shape, dict[str, Any]]:
@@ -296,8 +315,11 @@ class Build123dBackend:
     def export(self, result: BuildResult, output_dir: Path) -> list[dict[str, Any]]:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
-        result.shape.color = Color(0.35, 0.55, 0.8)
-        result.shape.label = "Agent-CAD part"
+        is_assembly = result.compiled.assembly is not None
+        if not is_assembly:
+            result.shape.color = Color(0.35, 0.55, 0.8)
+            result.shape.label = "Agent-CAD part"
+        extra_artifacts = []
         try:
             if not export_step(result.shape, output_dir/"model.step"):
                 raise ExportError("STEP writer returned failure")
@@ -309,8 +331,12 @@ class Build123dBackend:
                     and all(math.isclose(a,b,abs_tol=1e-5) for key in ("min","max","size") for a,b in zip(roundtrip["bbox"][key],before["bbox"][key])))
             if not same:
                 raise ExportError("STEP roundtrip changed geometry", details={"before": before, "after": roundtrip})
-            from .validation import validate
-            roundtrip_validation=validate(BuildResult(restored,result.trace,roundtrip,result.compiled))
+            if is_assembly:
+                from .assembly import restore_components
+                roundtrip_result = restore_components(result, restored)
+            else:
+                roundtrip_result = BuildResult(restored,result.trace,roundtrip,result.compiled)
+            roundtrip_validation=self.validate(roundtrip_result)
             if roundtrip_validation["status"] != "passed":
                 raise ExportError("STEP roundtrip geometry could not be fully verified",details={"validation":roundtrip_validation})
             result.geometry["step_roundtrip"] = roundtrip
@@ -319,18 +345,30 @@ class Build123dBackend:
                 raise ExportError("STL writer returned failure")
             if not export_gltf(result.shape, output_dir/"model.glb", binary=True, linear_deflection=0.08, angular_deflection=0.15):
                 raise ExportError("GLB writer returned failure")
+            if is_assembly:
+                from .assembly import annotate_glb, export_bom
+                result.geometry["glb_hierarchy"] = annotate_glb(result, output_dir/"model.glb")
+                bom_paths = export_bom(result, output_dir)
+                extra_artifacts = [artifact(bom_paths[0], "bom_json"), artifact(bom_paths[1], "bom_csv")]
         except CADError:
             raise
         except Exception as exc:
             raise ExportError(str(exc)) from exc
-        return [artifact(path, path.suffix.lstrip(".")) for path in (output_dir/"model.step",output_dir/"model.stl",output_dir/"model.glb")]
+        return [artifact(path, path.suffix.lstrip(".")) for path in (output_dir/"model.step",output_dir/"model.stl",output_dir/"model.glb")] + extra_artifacts
 
     def validate(self, result: BuildResult) -> dict[str, Any]:
+        if result.compiled.assembly is not None:
+            from .assembly import validate_assembly
+            return validate_assembly(result)
         from .validation import validate
         return validate(result)
 
     def properties(self, result: BuildResult) -> dict[str, Any]:
-        return measure(result.shape)
+        properties = measure(result.shape)
+        if result.compiled.assembly is not None:
+            from .assembly import assembly_properties
+            properties["assembly"] = assembly_properties(result)
+        return properties
 
     def query_topology(self, result: BuildResult, selector: dict[str, Any]) -> list[dict[str, Any]]:
         return [{"type": item.geom_type.name, "center": list(item.center())}
