@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import sqlite3
 import uuid
 from contextlib import contextmanager
@@ -16,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 
-TERMINAL_STATUSES = frozenset({"completed", "failed", "cancelled"})
+TERMINAL_STATUSES = frozenset({"completed", "failed", "cancelled", "awaiting_input"})
 
 
 def utcnow() -> str:
@@ -93,10 +94,19 @@ class CADStore:
     def acquire_supervisor_lock(self) -> None:
         if self._lock_file is not None:
             return
-        import fcntl
-        lock = (self.data_dir / "supervisor.lock").open("a+")
+        lock = (self.data_dir / "supervisor.lock").open("a+b")
         try:
-            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            if os.name == "nt":
+                import msvcrt
+                lock.seek(0, os.SEEK_END)
+                if lock.tell() == 0:
+                    lock.write(b"\0")
+                    lock.flush()
+                lock.seek(0)
+                msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError as exc:
             lock.close()
             raise RuntimeError("CAD V2 data directory already has an active supervisor; use exactly one API worker") from exc
@@ -104,10 +114,17 @@ class CADStore:
 
     def release_supervisor_lock(self) -> None:
         if self._lock_file is not None:
-            import fcntl
-            fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_UN)
-            self._lock_file.close()
-            self._lock_file = None
+            try:
+                if os.name == "nt":
+                    import msvcrt
+                    self._lock_file.seek(0)
+                    msvcrt.locking(self._lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_UN)
+            finally:
+                self._lock_file.close()
+                self._lock_file = None
 
     @staticmethod
     def _document(row: sqlite3.Row) -> dict:
@@ -172,7 +189,22 @@ class CADStore:
                     if existing["request_hash"] != fingerprint:
                         raise StoreConflict("request_id was already used with a different request")
                     return json.loads(existing["snapshot_json"]), False
-            if payload["kind"] == "create":
+            clarification_id = payload.get("clarification_job_id")
+            if clarification_id:
+                parent = db.execute("SELECT document_id,status,snapshot_json,payload_json FROM jobs WHERE id=? AND owner=?",
+                                    (clarification_id, owner)).fetchone()
+                if parent is None:
+                    raise StoreNotFound("CAD clarification job not found")
+                previous = json.loads(parent["snapshot_json"])
+                if (parent["document_id"] != document_id or previous["base_revision"] != base_revision
+                        or parent["status"] not in {"awaiting_input", "failed"}
+                        or (previous.get("error") or {}).get("code") != "RequirementError"
+                        or json.loads(parent["payload_json"])["kind"] != payload["kind"]):
+                    raise StoreConflict("Clarification no longer matches this request")
+                children = db.execute("SELECT payload_json FROM jobs WHERE document_id=? AND owner=?", (document_id, owner)).fetchall()
+                if any(json.loads(child["payload_json"]).get("clarification_job_id") == clarification_id for child in children):
+                    raise StoreConflict("This question already has an answer; continue from the latest job")
+            if payload["kind"] == "create" and not clarification_id:
                 db.execute("INSERT INTO documents VALUES(?,?,?,?,?,?)", (document_id, owner, name or "CAD part", None, now, now))
             else:
                 row = db.execute("SELECT current_revision FROM documents WHERE id=? AND owner=?", (document_id, owner)).fetchone()
@@ -247,7 +279,7 @@ class CADStore:
 
     def incomplete_jobs(self) -> list[tuple[str, dict, dict]]:
         with self._connection() as db:
-            rows = db.execute("SELECT owner,snapshot_json,payload_json FROM jobs WHERE status NOT IN ('completed','failed','cancelled') ORDER BY created_at").fetchall()
+            rows = db.execute("SELECT owner,snapshot_json,payload_json FROM jobs WHERE status NOT IN ('completed','failed','cancelled','awaiting_input') ORDER BY created_at").fetchall()
         return [(r["owner"], json.loads(r["snapshot_json"]), json.loads(r["payload_json"])) for r in rows]
 
     def committed_artifact_directories(self) -> set[Path]:

@@ -41,7 +41,7 @@ class CADV2Toolkit(BaseToolkit):
     @staticmethod
     def _job_result(job: dict, *, submitted: bool = False) -> ToolResult:
         document_id = job["document_id"]
-        query = {"document": document_id}
+        query = {"document": document_id, "job": job["id"]}
         revision_id = job.get("revision_id")
         if revision_id:
             query["revision"] = revision_id
@@ -60,6 +60,8 @@ class CADV2Toolkit(BaseToolkit):
             "CAD job submitted. Geometry is not ready; inspect job status before reporting completion."
             if submitted else f"CAD job status: {status}."
         )
+        if status == "awaiting_input":
+            message = (job.get("error") or {}).get("message") or "Additional geometry information is required."
         return ToolResult(
             success=status not in {"failed", "cancelled"}, message=message,
             data={"job": job, "job_id": job["id"], "document_id": document_id,
@@ -69,19 +71,25 @@ class CADV2Toolkit(BaseToolkit):
     @tool(parse_docstring=True)
     async def cad_v2_generate(
         self, prompt: Optional[str] = None, ir: Optional[Dict[str, Any]] = None,
+        clarification_job_id: Optional[str] = None,
     ) -> ToolResult:
         """Submit a real 3D CAD job using exactly one complete prompt or typed CAD IR 2.0.
 
-        This creates an asynchronous job, not a completed model. Use cad_v2_job_status
-        to inspect validation and cad_v2_revision for revision-bound STEP/STL/GLB downloads.
+        This creates an asynchronous job, not a completed model. Inspect
+        cad_v2_job_status until completed, awaiting_input, failed or cancelled.
+        Use cad_v2_revision for revision-bound STEP/STL/GLB downloads.
         Never send Python, shell commands, or secrets as IR. Preserve user dimensions.
 
         Args:
             prompt: Complete 3D mechanical modeling request, including units and dimensions.
             ir: Optional CAD IR 2.0 object; omit prompt when supplying explicit IR.
+            clarification_job_id: Awaiting-input create job ID; submit the user's answer as prompt to continue it.
         """
         try:
-            job = await self._service().create(self._owner, prompt=prompt, ir=ir)
+            job = await self._service().create(
+                self._owner, prompt=prompt, ir=ir,
+                clarification_job_id=clarification_job_id,
+            )
             return self._job_result(job, submitted=True)
         except (CADError, StoreConflict, StoreNotFound, ValueError) as exc:
             return self._failure(exc)
@@ -92,7 +100,10 @@ class CADV2Toolkit(BaseToolkit):
 
         A queued/running/validating/repairing job is not complete. Report generation
         success only for completed jobs with a published revision and passed validation.
+        Inspect this job until completed, awaiting_input, failed or cancelled.
         Use the workbench link while a long job runs instead of repeatedly submitting it.
+        When status is awaiting_input, ask the returned question and wait. Continue
+        with the same job ID as clarification_job_id after the user answers.
 
         Args:
             job_id: Stable job ID returned by cad_v2_generate or cad_v2_edit.
@@ -107,23 +118,27 @@ class CADV2Toolkit(BaseToolkit):
     async def cad_v2_edit(
         self, document_id: str, expected_revision: str,
         parameters: Optional[Dict[str, float]] = None, prompt: Optional[str] = None,
+        clarification_job_id: Optional[str] = None,
     ) -> ToolResult:
         """Submit an atomic parameter or natural-language edit of an existing 3D revision.
 
         Supply exactly one parameters mapping or edit prompt. The last valid revision
         stays available if rebuilding fails. Read job status and the new revision
         before claiming success; do not substitute browser mesh scaling for a rebuild.
+        Inspect cad_v2_job_status until completed, awaiting_input, failed or cancelled.
 
         Args:
             document_id: Existing owner-accessible CAD document ID.
             expected_revision: Exact current revision ID, preventing overwriting a newer edit.
             parameters: Editable parameter names and new numeric values in document units.
             prompt: Optional natural-language edit; omit parameters when using this.
+            clarification_job_id: Awaiting-input edit job ID; prompt is the user's supplementary answer.
         """
         try:
             job = await self._service().edit(
                 self._owner, document_id, expected_revision=expected_revision,
                 parameters=parameters, prompt=prompt,
+                clarification_job_id=clarification_job_id,
             )
             return self._job_result(job, submitted=True)
         except (CADError, StoreConflict, StoreNotFound, ValueError) as exc:

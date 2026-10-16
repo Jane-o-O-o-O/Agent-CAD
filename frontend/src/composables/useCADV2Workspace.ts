@@ -5,7 +5,9 @@ import {
   type CADJob, type CADRevision, type CADV2Document, type CADEditRequest,
 } from '@/api/cadV2';
 
-export const terminalCADJob = (job: CADJob | null) => !!job && ['completed', 'failed', 'cancelled'].includes(job.status);
+export const terminalCADJob = (job: CADJob | null) => !!job && ['awaiting_input', 'completed', 'failed', 'cancelled'].includes(job.status);
+export const clarificationCADJob = (job: CADJob | null) => !!job && ['awaiting_input', 'failed'].includes(job.status)
+  && (job.error?.code || job.error?.type) === 'RequirementError';
 export function cadErrorMessage(reason: unknown): string {
   const error = reason as { message?: string; details?: { detail?: { message?: string } | string; msg?: string } };
   const detail = error?.details?.detail;
@@ -25,11 +27,18 @@ export function useCADV2Workspace() {
   const loadingDocument = ref(false);
   const busy = computed(() => submitting.value || loadingDocument.value || (!!job.value && !terminalCADJob(job.value)));
   const historical = computed(() => !!revision.value && !!document.value && revision.value.id !== document.value.current_revision);
+  const clarificationJob = computed(() => {
+    const snapshot = job.value;
+    if (!snapshot || !clarificationCADJob(snapshot) || !snapshot.document_id || historical.value) return null;
+    if (snapshot.base_revision) return document.value?.id === snapshot.document_id && document.value.current_revision === snapshot.base_revision ? snapshot : null;
+    return (!document.value || (document.value.id === snapshot.document_id && !document.value.current_revision)) ? snapshot : null;
+  });
   let workspaceEpoch = 0;
   let monitorEpoch = 0;
   let stopStream: (() => void) | null = null;
   let pollTimer: ReturnType<typeof setTimeout> | null = null;
   let disposed = false;
+  let clarificationRequest: { jobId: string; answer: string; id: string } | null = null;
 
   function stopMonitoring() {
     monitorEpoch += 1;
@@ -56,7 +65,8 @@ export function useCADV2Workspace() {
       const selected = targetRevision ? await getCADRevision(documentId, targetRevision) : null;
       if (epoch !== workspaceEpoch || disposed) return;
       document.value = loaded; revisions.value = history; revision.value = selected;
-      updateLocation(documentId, job.value && !terminalCADJob(job.value) ? job.value.id : undefined, selected?.id);
+      const retainedJob = job.value?.document_id === documentId && (!terminalCADJob(job.value) || clarificationCADJob(job.value));
+      updateLocation(documentId, retainedJob ? job.value?.id : undefined, selected?.id);
     } finally { if (epoch === workspaceEpoch) loadingDocument.value = false; }
   }
   async function finishJob(snapshot: CADJob, epoch: number) {
@@ -65,6 +75,11 @@ export function useCADV2Workspace() {
     if (snapshot.status === 'completed' && snapshot.document_id && snapshot.revision_id) {
       try { await loadDocument(snapshot.document_id, snapshot.revision_id, epoch); await refreshDocuments(); }
       catch (reason) { if (epoch === workspaceEpoch) error.value = `建模已完成，但读取结果失败：${cadErrorMessage(reason)}`; }
+    } else if (clarificationCADJob(snapshot)) {
+      if (snapshot.document_id && document.value?.id !== snapshot.document_id) {
+        try { await loadDocument(snapshot.document_id, undefined, epoch); }
+        catch (reason) { if (epoch === workspaceEpoch) error.value = `读取待补充需求失败：${cadErrorMessage(reason)}`; }
+      }
     } else if (snapshot.status === 'failed') {
       error.value = snapshot.error?.message || snapshot.report?.error?.message || '建模失败，最后一个有效版本已保留。';
     }
@@ -78,7 +93,7 @@ export function useCADV2Workspace() {
     let failures = 0;
     job.value = initial;
     observedStages.value = [];
-    updateLocation(document.value?.id || initial.document_id, initial.id, revision.value?.id);
+    updateLocation(initial.document_id || document.value?.id, initial.id, revision.value?.document_id === initial.document_id ? revision.value.id : undefined);
     const current = () => token === monitorEpoch && epoch === workspaceEpoch && !disposed;
     const accept = (snapshot: CADJob) => {
       if (!current() || snapshot.id !== initial.id) return;
@@ -123,11 +138,41 @@ export function useCADV2Workspace() {
     catch (reason) { if (epoch === workspaceEpoch) error.value = cadErrorMessage(reason); }
     finally { if (epoch === workspaceEpoch) submitting.value = false; }
   }
-  async function generate(prompt: string) { await run(() => createCADJob(prompt)); }
+  function dismissClarification() {
+    if (busy.value || !clarificationCADJob(job.value)) return;
+    clarificationRequest = null;
+    stopMonitoring(); job.value = null; observedStages.value = []; error.value = ''; connectionIssue.value = '';
+    updateLocation(document.value?.id, undefined, revision.value?.id);
+  }
+  async function generate(prompt: string) { dismissClarification(); await run(() => createCADJob(prompt)); }
   async function edit(edit: CADEditRequest) {
     if (!document.value?.current_revision || historical.value) return;
+    if (!edit.clarification_job_id) dismissClarification();
     const id = document.value.id, expected = document.value.current_revision;
     await run(() => editCADV2Document(id, expected, edit));
+  }
+  async function answerClarification(answer: string) {
+    const pending = clarificationJob.value;
+    const text = answer.trim();
+    if (!pending || busy.value || !text) return;
+    if (text.length > 16000) { error.value = '补充回答不能超过 16000 个字符。'; return; }
+    // A lost response must replay the admitted job rather than submit a second answer.
+    if (clarificationRequest?.jobId !== pending.id || clarificationRequest.answer !== text) {
+      clarificationRequest = null;
+      try {
+        const stored = window.sessionStorage.getItem('cad-v2-clarification-request');
+        const saved = stored && stored.length <= 100000 ? JSON.parse(stored) : null;
+        if (saved?.jobId === pending.id && saved.answer === text && typeof saved.id === 'string' && saved.id.length > 0 && saved.id.length <= 128) {
+          clarificationRequest = { jobId: pending.id, answer: text, id: saved.id };
+        }
+      } catch { /* Storage may be disabled; in-memory retries still work. */ }
+      if (!clarificationRequest) clarificationRequest = { jobId: pending.id, answer: text, id: crypto.randomUUID() };
+      try { window.sessionStorage.setItem('cad-v2-clarification-request', JSON.stringify(clarificationRequest)); }
+      catch { /* Continue when storage is unavailable or full. */ }
+    }
+    const requestId = clarificationRequest.id;
+    if (pending.base_revision) await edit({ prompt: text, clarification_job_id: pending.id, request_id: requestId });
+    else await run(() => createCADJob(text, pending.id, requestId));
   }
   async function restore(revisionId: string) {
     if (!document.value?.current_revision) return;
@@ -136,6 +181,7 @@ export function useCADV2Workspace() {
   }
   async function selectRevision(revisionId: string) {
     if (busy.value || !document.value) return;
+    dismissClarification();
     const epoch = ++workspaceEpoch; error.value = '';
     try { await loadDocument(document.value.id, revisionId, epoch); }
     catch (reason) { if (epoch === workspaceEpoch) error.value = cadErrorMessage(reason); }
@@ -143,6 +189,7 @@ export function useCADV2Workspace() {
   async function openDocument(id: string, revisionId?: string) {
     if (busy.value) return;
     stopMonitoring(); const epoch = ++workspaceEpoch;
+    clarificationRequest = null;
     error.value = ''; connectionIssue.value = ''; job.value = null; observedStages.value = [];
     try { await loadDocument(id, revisionId, epoch); }
     catch (reason) { if (epoch === workspaceEpoch) error.value = cadErrorMessage(reason); }
@@ -150,6 +197,7 @@ export function useCADV2Workspace() {
   function newDocument() {
     if (busy.value) return;
     stopMonitoring(); workspaceEpoch += 1;
+    clarificationRequest = null;
     document.value = null; revision.value = null; revisions.value = []; job.value = null;
     observedStages.value = []; error.value = ''; connectionIssue.value = ''; updateLocation();
   }
@@ -174,6 +222,6 @@ export function useCADV2Workspace() {
     }
   }
   onBeforeUnmount(() => { disposed = true; workspaceEpoch += 1; stopMonitoring(); });
-  return { documents, document, revision, revisions, job, observedStages, error, connectionIssue, submitting, loadingDocument, busy, historical,
-    generate, edit, restore, selectRevision, openDocument, newDocument, cancel, reconnect, initialize };
+  return { documents, document, revision, revisions, job, observedStages, error, connectionIssue, submitting, loadingDocument, busy, historical, clarificationJob,
+    generate, edit, answerClarification, dismissClarification, restore, selectRevision, openDocument, newDocument, cancel, reconnect, initialize };
 }

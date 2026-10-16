@@ -1,12 +1,12 @@
 """Measured third-angle drawings from the final OpenCascade B-Rep.
 
-HLRBRep_Algo operates on analytic faces, never the display mesh. DXF retains
-analytic curves/NURBS and native DIMENSION entities. Only curved SVG preview
-paths are discretized when SVG has no matching primitive; this is reported.
+Analytic solids use exact HLR curves; freeform surfaces use a fresh bounded
+OCCT tessellation and polygonal HLR. Dimensions always measure the B-Rep.
 """
 from __future__ import annotations
 
 from collections import Counter
+from copy import deepcopy
 import html
 import json
 import math
@@ -19,17 +19,24 @@ from OCP.Bnd import Bnd_Box
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
 from OCP.BRepBndLib import BRepBndLib
 from OCP.BRepLib import BRepLib
+from OCP.BRepMesh import BRepMesh_IncrementalMesh
+from OCP.BRep import BRep_Tool
+from OCP.BRepTools import BRepTools
 from OCP.GCPnts import GCPnts_QuasiUniformDeflection
 from OCP.Geom import Geom_TrimmedCurve
 from OCP.GeomConvert import GeomConvert
 from OCP.HLRAlgo import HLRAlgo_Projector
-from OCP.HLRBRep import HLRBRep_Algo, HLRBRep_HLRToShape
+from OCP.HLRBRep import HLRBRep_Algo, HLRBRep_HLRToShape, HLRBRep_PolyAlgo, HLRBRep_PolyHLRToShape
+from OCP.TopLoc import TopLoc_Location
 from OCP.gp import gp_Ax2, gp_Dir, gp_Pnt
 from app.domain.cad_v2.errors import ExportError
 
 TOLERANCE = 1e-6
 SVG_DEFLECTION_MM = 0.01
 MAX_CURVE_POINTS = 8192
+FREEFORM_DEFLECTION_MM = 0.01
+FREEFORM_ANGULAR_DEFLECTION = 0.15
+MAX_DRAWING_TRIANGLES = 100000
 VIEWS = (
     ("front", (0, -1, 0), (1, 0, 0), (0, 0, 1)),
     ("top", (0, 0, 1), (1, 0, 0), (0, 1, 0)),
@@ -46,6 +53,9 @@ def _xy(point):
 
 
 def _bbox(shape):
+    from .backend import _has_freeform_geometry, _precise_bounds
+    if _has_freeform_geometry(shape):
+        return _precise_bounds(shape)
     bounds = Bnd_Box()
     # Never use triangulation for dimension measurements.
     BRepBndLib.AddOptimal_s(shape.wrapped, bounds, False, False)
@@ -169,13 +179,40 @@ def _clean(items, visible=()):
     return result
 
 
-def _project(shape, name, normal, x_axis, y_axis):
-    algo = HLRBRep_Algo()
-    algo.Add(shape.wrapped)
-    algo.Projector(HLRAlgo_Projector(gp_Ax2(gp_Pnt(), gp_Dir(*normal), gp_Dir(*x_axis))))
-    algo.Update()
-    algo.Hide()
-    extraction = HLRBRep_HLRToShape(algo)
+def _freeform_mesh(shape):
+    projected_shape = deepcopy(shape)
+    BRepTools.Clean_s(projected_shape.wrapped)
+    mesh = BRepMesh_IncrementalMesh(projected_shape.wrapped,FREEFORM_DEFLECTION_MM,False,FREEFORM_ANGULAR_DEFLECTION,False)
+    if not mesh.IsDone():
+        raise ExportError("Freeform drawing tessellation failed")
+    count = 0
+    for face in projected_shape.faces():
+        triangulation = BRep_Tool.Triangulation_s(face.wrapped,TopLoc_Location())
+        if triangulation is None:
+            raise ExportError("Freeform drawing has an unmeshed face")
+        count += triangulation.NbTriangles()
+        if count > MAX_DRAWING_TRIANGLES:
+            raise ExportError("Freeform drawing exceeds its triangle budget")
+    return projected_shape,count
+
+
+def _project(shape, name, normal, x_axis, y_axis, *, polygonal=False):
+    projector = HLRAlgo_Projector(gp_Ax2(gp_Pnt(), gp_Dir(*normal), gp_Dir(*x_axis)))
+    if polygonal:
+        algo = HLRBRep_PolyAlgo()
+        algo.Load(shape.wrapped)
+        algo.Projector(projector)
+        algo.Update()
+        extraction = HLRBRep_PolyHLRToShape()
+        extraction.Update(algo)
+        extraction.Hide()
+    else:
+        algo = HLRBRep_Algo()
+        algo.Add(shape.wrapped,0)
+        algo.Projector(projector)
+        algo.Update()
+        algo.Hide()
+        extraction = HLRBRep_HLRToShape(algo)
     layers = {}
     for layer, methods in (("visible", ("VCompound", "OutLineVCompound", "Rg1LineVCompound")),
                            ("hidden", ("HCompound", "OutLineHCompound", "Rg1LineHCompound"))):
@@ -189,7 +226,7 @@ def _project(shape, name, normal, x_axis, y_axis):
             items.extend(_primitive(edge) for edge in Compound(projected).edges())
         layers[layer] = _clean(items, layers.get("visible", ()) if layer == "hidden" else ())
     if not layers["visible"]:
-        raise ExportError(f"Exact projection returned no visible edges for {name}")
+        raise ExportError(f"Projection returned no visible edges for {name}")
     return {"name": name, "normal": normal, "x_axis": x_axis, "y_axis": y_axis,
             **layers, "center": [], "dimensions": []}
 
@@ -313,7 +350,7 @@ def _tag(entity, view, role):
     return entity
 
 
-def _write_dxf(views, path, title, revision_id, text_height):
+def _write_dxf(views, path, title, revision_id, text_height, projection_note=None):
     doc = ezdxf.new("R2013", setup=True, units=ezdxf.units.MM)
     doc.header["$MEASUREMENT"] = 1
     doc.appids.add("CAD_DRAWING")
@@ -363,6 +400,8 @@ def _write_dxf(views, path, title, revision_id, text_height):
     ms.add_text(title[:100], dxfattribs={"height":text_height*1.2,"insert":(0,annotation_y),"layer":"ANNOTATIONS"})
     ms.add_text(f'THIRD-ANGLE | mm | 1:1 | Revision: {revision_id or "current"}',
                 dxfattribs={"height":text_height*.8,"insert":(0,annotation_y-text_height*2),"layer":"ANNOTATIONS"})
+    if projection_note:
+        ms.add_text(projection_note,dxfattribs={"height":text_height*.65,"insert":(0,annotation_y-text_height*3.5),"layer":"ANNOTATIONS"})
     from ezdxf import zoom
     zoom.extents(ms)
     if doc.audit().has_errors:
@@ -455,6 +494,8 @@ def _write_svg(views, path, title, revision_id, report, text_height, lane):
     text(title[:100],(0,annotation_y),size=text_height*1.2)
     text(f'THIRD-ANGLE · mm · 1:1 coordinates · Revision: {revision_id or "current"}',(0,annotation_y-text_height*2),size=text_height*.8)
     text('Dimensions: measured overall sizes and supported cylindrical hole axes / diameters.',(0,annotation_y-text_height*3.5),size=text_height*.65)
+    if report.get("projection_note"):
+        text(report["projection_note"],(0,annotation_y-text_height*5),size=text_height*.65)
     lo_x,lo_y=min(p[0] for p in extents)-lane,min(p[1] for p in extents)-lane
     hi_x,hi_y=max(p[0] for p in extents)+lane,max(p[1] for p in extents)+lane
     width,height=hi_x-lo_x,hi_y-lo_y
@@ -481,12 +522,19 @@ def export_drawings(shape: Any, output_dir: Path, *, title: str = "Engineering d
         bbox=_bbox(shape)
         if not all(math.isfinite(n) and 0<n<=1e9 for n in bbox["size"]):
             raise ExportError("Invalid drawing extents")
-        views=[_project(shape,*spec) for spec in VIEWS]
+        polygonal = any(face.geom_type in {GeomType.BSPLINE,GeomType.BEZIER} for face in shape.faces())
+        projection_shape,triangle_count = _freeform_mesh(shape) if polygonal else (shape,0)
+        views=[_project(projection_shape,*spec,polygonal=polygonal) for spec in VIEWS]
         holes=_holes(shape)
         text_height,lane=_layout(views,bbox,holes)
-        report={"method":"exact_brep_hlr","projection":"third_angle","units":"mm","scale":1,
+        report={"method":"occt_polygonal_hlr" if polygonal else "exact_brep_hlr","projection":"third_angle","units":"mm","scale":1,
                 "revision_id":revision_id,"bbox":bbox,"holes":holes,
-                "measurement_source":"final_brep","dxf_geometry":"analytic_curves_and_nurbs",
+                "measurement_source":"final_brep","dxf_geometry":"polygonal_segments" if polygonal else "analytic_curves_and_nurbs",
+                "projection_mode":"bounded_tessellation" if polygonal else "exact",
+                "approximation_tolerance_mm":FREEFORM_DEFLECTION_MM if polygonal else 0,
+                "mesh_angular_deflection":FREEFORM_ANGULAR_DEFLECTION if polygonal else None,
+                "mesh_triangles":triangle_count,
+                "projection_note":f"Projection: polygonal | mesh deflection target: {FREEFORM_DEFLECTION_MM} mm | dimensions: B-Rep" if polygonal else None,
                 "svg_curve_deflection_mm":SVG_DEFLECTION_MM,
                 "scope":"Overall dimensions and visible axis-aligned complete cylindrical hole diameters/positions; no tolerance, fit or manufacturing certification",
                 "views":[],"dimensions":[]}
@@ -497,7 +545,7 @@ def export_drawings(shape: Any, output_dir: Path, *, title: str = "Engineering d
                 "svg_approximated_curves":sum(p["type"] in {"spline","ellipse"} for layer in ("visible","hidden") for p in view[layer])})
             report["dimensions"].extend({"view":view["name"],**d} for d in view["dimensions"])
         paths={"dxf":output_dir/"drawing.dxf","svg":output_dir/"drawing.svg"}
-        _write_dxf(views,paths["dxf"],title,revision_id,text_height)
+        _write_dxf(views,paths["dxf"],title,revision_id,text_height,report["projection_note"])
         _write_svg(views,paths["svg"],title,revision_id,report,text_height,lane)
         return {"artifacts":paths,"report":report}
     except ExportError:

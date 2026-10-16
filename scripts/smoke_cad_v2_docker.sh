@@ -20,6 +20,11 @@ cleanup() {
   if [[ -n "${CAD_V2_SMOKE_LOG_DIR:-}" ]]; then
     mkdir -p "$CAD_V2_SMOKE_LOG_DIR"
     cp "$cad_smoke_temp/compose.log" "$CAD_V2_SMOKE_LOG_DIR/compose.log"
+    if [[ -f "$cad_smoke_temp/state.json" ]]; then
+      cp "$cad_smoke_temp/state.json" "$CAD_V2_SMOKE_LOG_DIR/state.json"
+    fi
+    mkdir -p "$CAD_V2_SMOKE_LOG_DIR/clarification"
+    "${compose[@]}" cp cad-v2:/var/lib/agent-cad/clarification-smoke/. "$CAD_V2_SMOKE_LOG_DIR/clarification" || true
   fi
   "${compose[@]}" down || true
   rm -rf "$cad_smoke_temp"
@@ -29,5 +34,8 @@ trap cleanup EXIT
 "${compose[@]}" up --build --detach --wait --wait-timeout 240
 "${compose[@]}" exec -T cad-v2 python - < scripts/probe_cad_v2_isolation.py
 python3 scripts/smoke_cad_v2_http.py --base-url "http://127.0.0.1:$CAD_V2_PORT" --phase create --state "$cad_smoke_temp/state.json"
+"${compose[@]}" exec -T cad-v2 python - --base-url http://127.0.0.1:8000 --phase create --state /var/lib/agent-cad/clarification-smoke/state.json < scripts/smoke_cad_v2_clarification.py
+# Both immutable revisions and the waiting question cross the same restart.
 "${compose[@]}" restart cad-v2
 python3 scripts/smoke_cad_v2_http.py --base-url "http://127.0.0.1:$CAD_V2_PORT" --phase verify --state "$cad_smoke_temp/state.json"
+"${compose[@]}" exec -T cad-v2 python - --base-url http://127.0.0.1:8000 --phase verify --state /var/lib/agent-cad/clarification-smoke/state.json < scripts/smoke_cad_v2_clarification.py

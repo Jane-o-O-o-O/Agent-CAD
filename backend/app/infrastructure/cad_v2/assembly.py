@@ -91,7 +91,7 @@ def assembly_properties(result: BuildResult) -> dict[str, Any]:
 
 
 def validate_assembly(result: BuildResult) -> dict[str, Any]:
-    from .validation import _check, validate
+    from .validation import _check, _holes, validate
     compiled, assembly = result.compiled, result.compiled.assembly
     by_id = {feature.id: feature for feature in compiled.features}
 
@@ -106,10 +106,14 @@ def validate_assembly(result: BuildResult) -> dict[str, Any]:
         return found
 
     part_features = set().union(*(ancestors(part["feature_id"]) for part in assembly["parts"]))
+    global_expected = deepcopy(compiled.expected_geometry)
+    scoped_holes = [hole for hole in global_expected["holes"] if hole.get("feature_id") in part_features]
+    global_expected["holes"] = [hole for hole in global_expected["holes"] if hole.get("feature_id") not in part_features]
     global_compiled = compiled.model_copy(update={
         "features": [CompiledFeature(id=assembly["id"], type="Assembly", inputs=[], depends_on=[], params={})],
         "output_feature": assembly["id"], "assembly": None,
         "constraints": [c for c in compiled.constraints if c.get("feature_id") not in part_features],
+        "expected_geometry": global_expected,
     })
     # Refresh from the B-Rep. A stale geometry dictionary must not make a damaged
     # exported or edited component pass validation.
@@ -124,10 +128,21 @@ def validate_assembly(result: BuildResult) -> dict[str, Any]:
     for component in result.components.values():
         part = component.definition
         local = component.local_shape
-        part_compiled = compiled.model_copy(update={"output_feature": part["feature_id"], "assembly": None, "expected_geometry": part["expected_geometry"], "constraints": [c for c in compiled.constraints if c.get("feature_id") in ancestors(part["feature_id"])]})
+        part_ancestors = ancestors(part["feature_id"])
+        expected = deepcopy(part["expected_geometry"])
+        bound_holes = [hole for hole in scoped_holes if hole["feature_id"] in part_ancestors]
+        extra_holes = bound_holes if expected["holes"] else []
+        if not expected["holes"]:
+            expected["holes"] = bound_holes
+        part_compiled = compiled.model_copy(update={"output_feature": part["feature_id"], "assembly": None, "expected_geometry": expected, "constraints": [c for c in compiled.constraints if c.get("feature_id") in part_ancestors]})
         # Verify each instance independently; a STEP importer may mutate just one
         # occurrence of a reusable definition.
         report = validate(BuildResult(local, result.trace, measure(local), part_compiled))
+        # Feature-bound hole assertions use the part's native coordinate frame;
+        # an inserted shaft must not turn a component through bore into a failure.
+        for index, hole in enumerate(extra_holes):
+            report["checks"].extend(_holes(local, hole, expected["tolerance"], f"source_hole.{index}"))
+        report["status"] = "failed" if any(check["status"] == "failed" for check in report["checks"]) else report["status"]
         part_reports[component.instance_id] = report["status"]
         checks.extend([{**check, "name": f"instance.{component.instance_id}.{check['name']}"} for check in report["checks"]])
         actual = component.shape.location

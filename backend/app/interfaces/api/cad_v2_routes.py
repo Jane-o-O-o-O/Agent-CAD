@@ -20,11 +20,14 @@ class CreateJob(InputModel):
     ir: dict[str, Any] | None = None
     name: str | None = Field(default=None, min_length=1, max_length=200)
     request_id: str | None = Field(default=None, min_length=1, max_length=128)
+    clarification_job_id: str | None = Field(default=None, min_length=1, max_length=128)
 
     @model_validator(mode="after")
     def one_source(self):
         if bool(self.prompt and self.prompt.strip()) == (self.ir is not None):
             raise ValueError("Provide exactly one nonempty prompt or IR")
+        if self.clarification_job_id and (self.ir is not None or self.name is not None):
+            raise ValueError("Clarification accepts a prompt answer only")
         return self
 
 

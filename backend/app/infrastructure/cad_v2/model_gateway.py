@@ -76,11 +76,11 @@ class StructuredModelGateway:
                 try:
                     response = await client.post(config.base_url + "/chat/completions", json=body,
                                                  headers={"Authorization": "Bearer " + config.api_key})
-                except (httpx.TimeoutException, httpx.NetworkError) as exc:
+                except (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError) as exc:
                     if attempt < config.retries:
                         await asyncio.sleep(min(0.5 * 2 ** attempt, 2))
                         continue
-                    raise InfrastructureError("CAD model request timed out or could not connect",
+                    raise InfrastructureError("CAD model request timed out or its connection was interrupted",
                                               details={"attempts": attempt + 1}) from exc
                 if response.status_code == 429 or response.status_code >= 500:
                     if attempt < config.retries:

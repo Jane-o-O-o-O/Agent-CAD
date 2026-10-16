@@ -90,6 +90,45 @@ class PolylineParams(StrictModel):
     closed: Literal[True] = True
 
 
+class BSplineParams(StrictModel):
+    points: list[tuple[Scalar, Scalar]] = Field(min_length=3, max_length=100)
+    origin: Vector3 = (0, 0, 0)
+    plane: Literal["XY", "XZ", "YZ"] = "XY"
+    closed: Literal[True] = True
+
+
+class Path3DParams(StrictModel):
+    points: list[Vector3] = Field(min_length=2, max_length=100)
+    interpolation: Literal["polyline", "bspline"] = "polyline"
+    tangents: tuple[Direction3, Direction3] | None = None
+
+    @model_validator(mode="after")
+    def spline_tangents(self) -> Path3DParams:
+        if self.tangents is not None and self.interpolation != "bspline":
+            raise ValueError("endpoint tangents are supported only for BSpline paths")
+        return self
+
+
+class SweepParams(StrictModel):
+    is_frenet: bool = False
+
+
+class LoftParams(StrictModel):
+    ruled: bool = False
+
+
+class HelicalThreadParams(StrictModel):
+    major_diameter: Scalar
+    minor_diameter: Scalar
+    pitch: Scalar
+    length: Scalar
+    profile_angle: Scalar = 60
+    axis_origin: Vector3 = (0, 0, 0)
+    axis_direction: Direction3 = (0, 0, 1)
+    internal: bool = False
+    left_hand: bool = False
+
+
 class ExtrudeParams(StrictModel):
     amount: Scalar
 
@@ -191,6 +230,31 @@ class PolylineFeature(FeatureBase):
     params: PolylineParams
 
 
+class BSplineFeature(FeatureBase):
+    type: Literal["BSpline"]
+    params: BSplineParams
+
+
+class Path3DFeature(FeatureBase):
+    type: Literal["Path3D"]
+    params: Path3DParams
+
+
+class SweepFeature(FeatureBase):
+    type: Literal["Sweep"]
+    params: SweepParams = Field(default_factory=SweepParams)
+
+
+class LoftFeature(FeatureBase):
+    type: Literal["Loft"]
+    params: LoftParams = Field(default_factory=LoftParams)
+
+
+class HelicalThreadFeature(FeatureBase):
+    type: Literal["HelicalThread"]
+    params: HelicalThreadParams
+
+
 class ExtrudeFeature(FeatureBase):
     type: Literal["Extrude"]
     params: ExtrudeParams
@@ -253,7 +317,8 @@ class TransformFeature(FeatureBase):
 
 Feature = Annotated[Union[
     BoxFeature, CylinderFeature, SphereFeature, RectangleFeature, CircleFeature,
-    PolylineFeature, ExtrudeFeature, RevolveFeature, HoleFeature, PocketFeature,
+    PolylineFeature, BSplineFeature, Path3DFeature, SweepFeature, LoftFeature,
+    HelicalThreadFeature, ExtrudeFeature, RevolveFeature, HoleFeature, PocketFeature,
     FilletFeature, ChamferFeature, UnionFeature, CutFeature, IntersectionFeature,
     LinearPatternFeature, CircularPatternFeature, TransformFeature,
 ], Field(discriminator="type")]

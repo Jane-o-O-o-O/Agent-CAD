@@ -33,6 +33,7 @@ from app.domain.models.event import (
     WaitEvent,
 )
 from app.domain.models.message import Message
+from app.domain.models.file import FileInfo
 from app.domain.models.tool_result import ToolResult
 from app.domain.services.agentscope_runtime.model_factory import (
     create_agentscope_model,
@@ -96,13 +97,15 @@ class AgentScopeFlow(BaseFlow):
         if search_engine:
             toolkits.append(SearchToolkit(search_engine))
 
-        self._agent = Agent(
-            name=agent_id,
-            system_prompt=SYSTEM_PROMPT,
-            model=create_agentscope_model(settings),
-            toolkit=create_agentscope_toolkit(toolkits),
-            react_config=create_agentscope_react_config(settings),
-        )
+        self._agent_options = {
+            "name": agent_id,
+            "system_prompt": SYSTEM_PROMPT,
+            "model": create_agentscope_model(settings),
+            "toolkit": create_agentscope_toolkit(toolkits),
+            "react_config": create_agentscope_react_config(settings),
+        }
+        self._agent = Agent(**self._agent_options)
+        self._needs_fresh_agent = False
         self._tool_names: dict[str, str] = {}
         for toolkit in toolkits:
             for item in toolkit.get_tools():
@@ -120,6 +123,10 @@ class AgentScopeFlow(BaseFlow):
         conversation_history: Optional[list[dict[str, str]]] = None,
     ) -> AsyncGenerator[BaseEvent, None]:
         self._done = False
+        if self._needs_fresh_agent:
+            # Replan from durable history; pre-question tool calls used incomplete input.
+            self._agent = Agent(**self._agent_options)
+            self._needs_fresh_agent = False
         content = message.message
         if self._skill_registry:
             selected_skills = self._skill_registry.select(message.message)
@@ -147,7 +154,8 @@ class AgentScopeFlow(BaseFlow):
         tool_call_args: dict[str, str] = {}
         tool_result_text: dict[str, str] = {}
 
-        async for event in self._agent.reply_stream(UserMsg("user", content)):
+        reply_stream = self._agent.reply_stream(UserMsg("user", content))
+        async for event in reply_stream:
             if isinstance(event, TextBlockDeltaEvent):
                 delta = event.delta or ""
                 if delta:
@@ -188,6 +196,7 @@ class AgentScopeFlow(BaseFlow):
 
             if isinstance(event, ToolResultEndEvent):
                 tool_name = tool_call_names.get(event.tool_call_id, "")
+                result = _parse_tool_result(tool_result_text.get(event.tool_call_id, ""))
                 yield ToolEvent(
                     status=ToolStatus.CALLED,
                     tool_call_id=event.tool_call_id,
@@ -196,18 +205,44 @@ class AgentScopeFlow(BaseFlow):
                     function_args=_parse_tool_args(
                         tool_call_args.get(event.tool_call_id, ""),
                     ),
-                    function_result=_parse_tool_result(
-                        tool_result_text.get(event.tool_call_id, ""),
-                    ),
+                    function_result=result,
                 )
+                question = _cad_clarification_question(tool_name, result)
+                if question:
+                    self._needs_fresh_agent = True
+                    await reply_stream.aclose()
+                    yield MessageEvent(message=question)
+                    yield WaitEvent()
+                    return
                 continue
 
             if isinstance(event, ExceedMaxItersEvent):
                 yield ErrorEvent(error="AgentScope maximum iteration count reached")
                 self._done = True
+                await reply_stream.aclose()
                 return
 
             if isinstance(event, (RequireUserConfirmEvent, RequireExternalExecutionEvent)):
+                await reply_stream.aclose()
+                if isinstance(event, RequireExternalExecutionEvent):
+                    for call in event.tool_calls:
+                        if call.name != "message_ask_user":
+                            continue
+                        self._needs_fresh_agent = True
+                        args = _parse_tool_args(call.input)
+                        question = _question_message(args)
+                        yield ToolEvent(
+                            status=ToolStatus.CALLED,
+                            tool_call_id=call.id,
+                            tool_name="message",
+                            function_name=call.name,
+                            function_args=args,
+                            function_result=ToolResult(
+                                success=True, message=question.message,
+                                data={"awaiting_input": True},
+                            ),
+                        )
+                        yield question
                 yield WaitEvent()
                 return
 
@@ -230,6 +265,28 @@ def _parse_tool_args(raw: str) -> dict[str, Any]:
     except json.JSONDecodeError:
         logger.debug("Failed to parse AgentScope tool args: %s", raw)
         return {"raw": raw}
+
+
+def _question_message(args: dict[str, Any]) -> MessageEvent:
+    paths = args.get("attachments") or []
+    if isinstance(paths, str):
+        paths = [paths]
+    return MessageEvent(
+        message=str(args.get("text") or "Please provide the missing design information."),
+        attachments=[FileInfo(file_path=path) for path in paths if isinstance(path, str)],
+    )
+
+
+def _cad_clarification_question(tool_name: str, result: Any) -> Optional[str]:
+    if tool_name not in {"cad_v2_generate", "cad_v2_edit", "cad_v2_job_status"}:
+        return None
+    data = result.data if isinstance(result, ToolResult) else None
+    if not isinstance(data, dict) or data.get("status") != "awaiting_input":
+        return None
+    error = (data.get("job") or {}).get("error") or {}
+    if error.get("code") != "RequirementError":
+        return None
+    return error.get("message") or None
 
 
 def _parse_tool_result(raw: str) -> Any:

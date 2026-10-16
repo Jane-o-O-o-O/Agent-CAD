@@ -23,7 +23,8 @@ async def test_registration_schema_is_lazy_and_owner_is_not_a_tool_argument():
         assert "service_factory" not in properties
     by_name = {schema["function"]["name"]: schema["function"] for schema in schemas}
     assert by_name["cad_v2_edit"]["parameters"]["required"] == ["document_id", "expected_revision"]
-    assert {"prompt", "ir"} <= by_name["cad_v2_generate"]["parameters"]["properties"].keys()
+    assert {"prompt", "ir", "clarification_job_id"} <= by_name["cad_v2_generate"]["parameters"]["properties"].keys()
+    assert "clarification_job_id" in by_name["cad_v2_edit"]["parameters"]["properties"]
     assert calls == []
 
 
@@ -46,9 +47,10 @@ async def test_generate_and_edit_use_bound_owner_and_return_pending_job():
     toolkit = CADV2Toolkit("alice", service_factory=Service)
     generated = await toolkit.cad_v2_generate(prompt="80 x 50 x 8 mm plate")
     edited = await toolkit.cad_v2_edit("document-1", "rev-1", parameters={"hole_diameter": 8})
-    assert calls[0] == ("create", "alice", {"prompt": "80 x 50 x 8 mm plate", "ir": None})
+    assert calls[0] == ("create", "alice", {"prompt": "80 x 50 x 8 mm plate", "ir": None, "clarification_job_id": None})
     assert calls[1] == ("edit", "alice", "document-1", {
         "expected_revision": "rev-1", "parameters": {"hole_diameter": 8}, "prompt": None,
+        "clarification_job_id": None,
     })
     for result in (generated, edited):
         assert result.success
@@ -57,6 +59,31 @@ async def test_generate_and_edit_use_bound_owner_and_return_pending_job():
         assert "not ready" in result.message
         assert result.data["links"]["events"] == "/api/v1/cad-v2/jobs/job-1/events"
         assert "revision" not in result.data["links"]
+        assert parse_qs(urlparse(result.data["links"]["workbench"]).query)["job"] == ["job-1"]
+
+
+@pytest.mark.asyncio
+async def test_user_answer_is_forwarded_to_original_create_or_edit_job():
+    calls = []
+    job = {"id": "continued", "document_id": "doc", "status": "queued", "revision_id": None}
+
+    class Service:
+        async def create(self, owner, **payload):
+            calls.append((owner, payload))
+            return job
+
+        async def edit(self, owner, document_id, **payload):
+            calls.append((owner, document_id, payload))
+            return job
+
+    toolkit = CADV2Toolkit("alice", service_factory=Service)
+    await toolkit.cad_v2_generate(prompt="8 mm", clarification_job_id="initial-create")
+    await toolkit.cad_v2_edit("doc", "revision", prompt="through", clarification_job_id="initial-edit")
+    assert calls[0][0] == calls[1][0] == "alice"
+    assert calls[0][1]["clarification_job_id"] == "initial-create"
+    assert calls[0][1]["prompt"] == "8 mm"
+    assert calls[1][2]["clarification_job_id"] == "initial-edit"
+    assert calls[1][2]["expected_revision"] == "revision"
 
 
 @pytest.mark.asyncio

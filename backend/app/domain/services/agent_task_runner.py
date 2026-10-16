@@ -229,14 +229,19 @@ class AgentTaskRunner(TaskRunner):
         for event in reversed(session.events):
             if event.id == current_event_id:
                 continue
-            if not isinstance(event, MessageEvent):
+            if isinstance(event, MessageEvent):
+                if event.role not in ("user", "assistant"):
+                    continue
+                role = event.role
+                content = (event.message or "").strip()
+            elif isinstance(event, ToolEvent) and event.tool_name == "cad_v2" and event.status == ToolStatus.CALLED:
+                role = "assistant"
+                content = _cad_job_history(event)
+            else:
                 continue
-            if event.role not in ("user", "assistant"):
-                continue
-            content = (event.message or "").strip()
             if not content:
                 continue
-            if event.attachments:
+            if isinstance(event, MessageEvent) and event.attachments:
                 attachment_names = [
                     attachment.filename or attachment.file_path or attachment.file_id
                     for attachment in event.attachments
@@ -247,7 +252,7 @@ class AgentTaskRunner(TaskRunner):
             next_total = total_chars + len(content)
             if history and next_total > MAX_CONVERSATION_HISTORY_CHARS:
                 break
-            history.append({"role": event.role, "content": content})
+            history.append({"role": role, "content": content})
             total_chars = next_total
             if len(history) >= MAX_CONVERSATION_HISTORY_MESSAGES:
                 break
@@ -308,7 +313,7 @@ class AgentTaskRunner(TaskRunner):
                     if event.tool_content:
                         logger.debug(f"MCP tool_content.result: {event.tool_content.result}")
                         logger.debug(f"MCP tool_content dict: {event.tool_content.model_dump()}")
-                elif event.tool_name == "cad":
+                elif event.tool_name in {"cad", "cad_v2"}:
                     await self._sync_cad_result_files(event)
                     if event.function_result:
                         event.tool_content = McpToolContent(
@@ -327,6 +332,8 @@ class AgentTaskRunner(TaskRunner):
                         )
                     else:
                         event.tool_content = McpToolContent(result="No data processor result available")
+                elif event.tool_name == "message":
+                    pass
                 else:
                     logger.warning(f"Agent {self._agent_id} received unknown tool event: {event.tool_name}")
         except Exception as e:
@@ -433,3 +440,19 @@ class AgentTaskRunner(TaskRunner):
             await self._mcp_tool.cleanup()
         
         logger.debug(f"Agent {self._agent_id} has been fully closed and resources cleared")
+
+
+def _cad_job_history(event: ToolEvent) -> str:
+    raw = event.function_result
+    if hasattr(raw, "model_dump"):
+        raw = raw.model_dump()
+    data = raw.get("data") if isinstance(raw, dict) else None
+    if not isinstance(data, dict):
+        return ""
+    fields = [f"{key}={data[key]}" for key in ("job_id", "document_id", "revision_id", "status") if data.get(key)]
+    if not fields:
+        return ""
+    job = data.get("job") or {}
+    if job.get("base_revision"):
+        fields.append(f"expected_revision={job['base_revision']}")
+    return f"CAD tool {event.function_name}: " + ", ".join(fields)

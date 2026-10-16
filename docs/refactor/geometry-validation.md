@@ -51,7 +51,7 @@ GLB 遵循 glTF 单位与坐标：米、Y-up；内核数据是 mm、Z-up，repor
 
 ## 真实三视图与尺寸
 
-`drawings.export_drawings` 使用 OpenCascade `HLRBRep_Algo` 对最终精确 B-Rep 做正投影和消隐，不读取 GLB/STL 网格，也不将三维预览截图冒充工程图。采用第三角投影、1:1 毫米坐标：
+`drawings.export_drawings` 对解析形状使用 OpenCascade `HLRBRep_Algo` 对最终精确 B-Rep 做正投影和消隐。含 BSpline/Bezier 面的形体使用 `HLRBRep_PolyAlgo`：在最终 B-Rep 的副本上清除旧离散数据，重新生成线性偏差目标 0.01 mm、角偏差 0.15 rad 的网格，最多 100000 个三角形；离散失败、缺少面网格或超出预算报错。该路径解决自由曲面轴向精确消隐的执行时间卡点，生成近似二维线段。不复用 GLB/STL 网格或预览截图；两条路径都采用第三角投影、1:1 毫米坐标：
 
 | 视图 | 观察侧 / 图纸横纵轴 | 布局 |
 |---|---|---|
@@ -59,7 +59,7 @@ GLB 遵循 glTF 单位与坐标：米、Y-up；内核数据是 mm、Z-up，repor
 | TOP | 从 +Z 侧观察；X/Y | 正视图上方、X 对齐 |
 | RIGHT | 从 +X 侧观察；Y/Z | 正视图右侧、Z 对齐 |
 
-DXF 包含 `VISIBLE`、`HIDDEN`、`CENTER`、`DIMENSIONS`、`ANNOTATIONS` 图层；隐藏线使用虚线，识别到的孔轴使用中心线。相同投影曲线去重，共线线段优先保留可见轮廓，避免将方盒背面的重合边画成虚线。线、圆、圆弧、椭圆及 NURBS 使用原生 DXF 实体；NURBS 保留内核曲线的次数、节点和权重，不统一离散成折线。DXF 设为毫米并进行结构审计。
+DXF 包含 `VISIBLE`、`HIDDEN`、`CENTER`、`DIMENSIONS`、`ANNOTATIONS` 图层；隐藏线使用虚线，识别到的孔轴使用中心线。相同投影曲线去重，共线线段优先保留可见轮廓，避免将方盒背面的重合边画成虚线。精确解析投影的线、圆、圆弧、椭圆及 NURBS 使用原生 DXF 实体；NURBS 保留内核曲线的次数、节点和权重。自由曲面多边形 HLR 的投影轮廓则是近似线段，不能标记为精确 NURBS。DXF 设为毫米并进行结构审计。
 
 尺寸证据来自最终几何，而非复制 IR 参数：
 
@@ -67,7 +67,7 @@ DXF 包含 `VISIBLE`、`HIDDEN`、`CENTER`、`DIMENSIONS`、`ANNOTATIONS` 图层
 - 孔径和孔轴坐标来自内向、完整 2π 圆柱壁；仅在标准视图中存在匹配的可见圆孔轮廓时标注孔径和基准位置。同视图相同孔径可合并为数量标注。
 - DXF 尺寸使用可编辑的原生 `DIMENSION` 实体，测量比例为 1；不是仅写一段尺寸文字。SVG 使用同一投影及测量数据生成预览。
 
-`report.geometry.drawing` 记录 `method=exact_brep_hlr`、单位、投影制式、包围盒、各视图基向量和偏移、线型数量、孔测量及尺寸来源。SVG 的直线/圆/圆弧采用对应矢量原语；椭圆及样条预览按 0.01 mm 偏差目标采样，每条曲线最多 8192 点，超过预算报错。报告分别列出 `svg_curve_deflection_mm` 和各视图 `svg_approximated_curves`；精确 B-Rep 消隐不等于这些 SVG 预览路径也完全解析。
+`report.geometry.drawing` 记录单位、投影制式、包围盒、各视图基向量和偏移、线型数量、孔测量及尺寸来源。精确解析路径为 `method=exact_brep_hlr, projection_mode=exact, dxf_geometry=analytic_curves_and_nurbs`；自由曲面路径为 `method=occt_polygonal_hlr, projection_mode=bounded_tessellation, dxf_geometry=polygonal_segments`，明确 `approximation_tolerance_mm=0.01`、`mesh_angular_deflection=0.15` 及网格数量，DXF/SVG 同时显示可见近似投影说明。两条路径的尺寸来源都是精确最终 B-Rep，而不是离散网格。SVG 的精确投影直线/圆/圆弧采用对应矢量原语；椭圆及样条预览按 0.01 mm 偏差目标采样，每条曲线最多 8192 点，超过预算报错。报告分别列出 `svg_curve_deflection_mm` 和各视图 `svg_approximated_curves`；精确 B-Rep 消隐不等于这些 SVG 预览路径也完全解析，自由曲面多边形投影本身也有明确近似。
 
 当前是自动生成的基本三视图和受支持尺寸，不保证完整制造图。尚无自动剖视图、公差/GD&T、螺纹或表面粗糙度标注；不推断孔深、贯通性或配合等级。斜孔、被遮挡或非完整圆柱孔轮廓可能只投影几何而不自动标注。CENTER 当前仅依据识别的孔轴生成，尚未为外圆柱或自由曲面自动生成中心线。无厚度面片、空形体和无有效实体输入被拒绝。
 

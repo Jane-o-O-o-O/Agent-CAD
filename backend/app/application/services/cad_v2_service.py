@@ -129,18 +129,51 @@ class CADV2Service:
         return self.store.create_job(owner, document_id, payload, **kwargs)
 
     async def create(self, owner: str, *, prompt: str | None = None, ir: dict | None = None,
-                     name: str | None = None, request_id: str | None = None) -> dict:
+                     name: str | None = None, request_id: str | None = None,
+                     clarification_job_id: str | None = None) -> dict:
         if bool(prompt and prompt.strip()) == (ir is not None):
             raise ValueError("Provide exactly one nonempty prompt or CAD IR")
         if ir is not None and len(dumps(ir)) > 2_000_000:
             raise ValueError("CAD IR exceeds the 2 MB input limit")
         await self._ready()
         payload = {"kind": "create", "prompt": prompt, "ir": ir}
-        job, created = self._admit_job(owner, str(uuid.uuid4()), payload, name=name, request_id=request_id)
+        document_id = str(uuid.uuid4())
+        if clarification_job_id:
+            if ir is not None or name is not None:
+                raise ValueError("Clarification accepts a prompt answer only")
+            previous = self.store.get_job(clarification_job_id, owner)
+            document_id = previous["document_id"]
+            original, turns = self._clarification_context(owner, clarification_job_id, prompt, "create", document_id, None)
+            payload.update(prompt=original, clarification=turns, clarification_job_id=clarification_job_id)
+        job, created = self._admit_job(owner, document_id, payload, name=name, request_id=request_id)
         if created:
             job = self.store.update_job(job["id"], status="queued", stage="queued")
             self._schedule(job["id"])
         return job
+
+    def _clarification_context(self, owner: str, job_id: str, answer: str | None,
+                               kind: str, document_id: str, base_revision: str | None) -> tuple[str, list[dict]]:
+        previous = self.store.get_job(job_id, owner)
+        _, _, old_payload = self.store.job_private(job_id)
+        if (previous["document_id"] != document_id or previous["base_revision"] != base_revision
+                or previous["status"] not in {"awaiting_input", "failed"}
+                or (previous.get("error") or {}).get("code") != "RequirementError"
+                or old_payload["kind"] != kind):
+            raise ValueError("Clarification must refer to this user's requirement of the same kind on the same revision")
+        if not answer or not answer.strip() or not old_payload.get("prompt"):
+            raise ValueError("A clarification answer and original prompt are required")
+        turns = [*old_payload.get("clarification", []), {"question": previous["error"]["message"], "answer": answer.strip()}]
+        original = old_payload["prompt"]
+        if len(turns) > 20 or len(self._conversation_prompt(original, turns)) > 16000:
+            raise ValueError("Clarification context exceeds its limit; submit a complete request instead")
+        return original, turns
+
+    @staticmethod
+    def _conversation_prompt(prompt: str, turns: list[dict]) -> str:
+        if not turns:
+            return prompt
+        return "原始要求：" + prompt + "\n" + "\n".join(
+            f"待澄清问题：{turn['question']}\n用户补充：{turn['answer']}" for turn in turns)
 
     async def edit(self, owner: str, document_id: str, *, expected_revision: str,
                    parameters: dict | None = None, feature_patches: list[dict] | None = None,
@@ -152,17 +185,9 @@ class CADV2Service:
                    clarification_job_id: str | None = None) -> dict:
         await self._ready()
         self.store.get_revision(document_id, expected_revision, owner)
+        turns = []
         if clarification_job_id:
-            previous = self.store.get_job(clarification_job_id, owner)
-            if (previous["document_id"] != document_id or previous["base_revision"] != expected_revision
-                    or previous["status"] != "failed" or (previous.get("error") or {}).get("code") != "RequirementError"):
-                raise ValueError("Clarification must refer to this user's failed requirement on the same revision")
-            _, _, old_payload = self.store.job_private(clarification_job_id)
-            if not prompt or not old_payload.get("prompt"):
-                raise ValueError("A clarification answer and original edit prompt are required")
-            prompt = f"原始修改要求：{old_payload['prompt']}\n待澄清问题：{previous['error']['message']}\n用户补充：{prompt}"
-            if len(prompt) > 16000:
-                raise ValueError("Clarification context exceeds 16000 characters; submit a complete edit instead")
+            prompt, turns = self._clarification_context(owner, clarification_job_id, prompt, "edit", document_id, expected_revision)
         assembly_changes = any((instance_patches, add_instances, delete_instances, mate_patches))
         if prompt and (any((parameters, feature_patches, add_features, delete_features, output_feature, expected_geometry)) or constraints is not None or assembly_changes):
             raise ValueError("Use either a natural-language edit or explicit patches")
@@ -174,6 +199,8 @@ class CADV2Service:
                    "instance_patches": instance_patches, "add_instances": add_instances,
                    "delete_instances": delete_instances, "mate_patches": mate_patches,
                    "clarification_job_id": clarification_job_id}
+        if turns:
+            payload["clarification"] = turns
         if len(dumps(payload)) > 2_000_000:
             raise ValueError("CAD edit exceeds the 2 MB input limit")
         job, created = self._admit_job(owner, document_id, payload, base_revision=expected_revision, request_id=request_id)
@@ -214,7 +241,9 @@ class CADV2Service:
     async def _prepare_ir(self, owner: str, job: dict, payload: dict):
         from app.domain.cad_v2.models import CADDocumentIR
         from app.domain.cad_v2.compiler import compile_ir
+        from app.domain.cad_v2.requirements import RequirementSet, require_coverage
         before = None
+        requirements = None
         if job["base_revision"]:
             before = self.store.get_revision(job["document_id"], job["base_revision"], owner)["ir"]
         if payload["kind"] == "create":
@@ -228,9 +257,17 @@ class CADV2Service:
                     from app.application.services.cad_v2_planner import plan
                     planner = plan
                 self.store.update_job(job["id"], stage="parsing", progress=5)
-                ir = await planner(payload["prompt"], job["document_id"])
+                turns = payload.get("clarification", [])
+                if self._planner is None:
+                    ir = await planner(payload["prompt"], job["document_id"], clarification=turns)
+                    requirements = RequirementSet.model_validate(ir.metadata["requirements"])
+                else:
+                    ir = await planner(self._conversation_prompt(payload["prompt"], turns), job["document_id"])
         elif payload["kind"] == "restore":
-            ir = CADDocumentIR.model_validate(self.store.get_revision(job["document_id"], payload["revision_id"], owner)["ir"])
+            source = self.store.get_revision(job["document_id"], payload["revision_id"], owner)
+            ir = CADDocumentIR.model_validate(source["ir"])
+            if source["report"].get("requirements"):
+                requirements = RequirementSet.model_validate(source["report"]["requirements"])
         else:
             from app.domain.cad_v2.compiler import apply_edits
             parameters = payload.get("parameters", {})
@@ -241,7 +278,11 @@ class CADV2Service:
                     from app.application.services.cad_v2_planner import plan_edit
                     planner = plan_edit
                 self.store.update_job(job["id"], stage="parsing", progress=5)
-                planned = await planner(payload["prompt"], CADDocumentIR.model_validate(before))
+                turns = payload.get("clarification", [])
+                if self._edit_planner is None:
+                    planned = await planner(payload["prompt"], CADDocumentIR.model_validate(before), clarification=turns)
+                else:
+                    planned = await planner(self._conversation_prompt(payload["prompt"], turns), CADDocumentIR.model_validate(before))
                 if hasattr(planned, "apply_kwargs"):
                     edit_plan = planned
                 else:
@@ -265,8 +306,13 @@ class CADV2Service:
         ir = CADDocumentIR.model_validate(ir_dict(ir))
         if ir.document_id != job["document_id"]:
             raise ValueError("Planner returned an IR for a different document")
-        compile_ir(ir)
-        return ir, before
+        # Only server-extracted requirements enter the immutable revision report.
+        for key in ("requirements", "requirement_coverage"):
+            ir.metadata.pop(key, None)
+        compiled = compile_ir(ir)
+        if requirements is not None:
+            require_coverage(requirements, compiled, allow_geometry_pending=True)
+        return ir, before, requirements
 
     @staticmethod
     def _error(exc: Exception) -> dict:
@@ -347,17 +393,19 @@ class CADV2Service:
                 size = destination.stat().st_size
                 if not size:
                     raise ExportError("Executor produced an empty artifact")
-                with destination.open("rb") as written:
+                with destination.open("r+b") as written:
                     os.fsync(written.fileno())
-                destination.chmod(0o400)
+                if os.name != "nt":
+                    destination.chmod(0o400)
                 artifacts[format] = {"filename": destination.name, "sha256": digest, "size": size}
             if not {"step", "stl", "glb", "ir", "python"}.issubset(artifacts):
                 raise ExportError("Executor did not produce all required revision artifacts")
-            directory_fd = os.open(target, os.O_RDONLY)
-            try:
-                os.fsync(directory_fd)
-            finally:
-                os.close(directory_fd)
+            if os.name != "nt":
+                directory_fd = os.open(target, os.O_RDONLY)
+                try:
+                    os.fsync(directory_fd)
+                finally:
+                    os.close(directory_fd)
             return target, artifacts
         except BaseException:
             shutil.rmtree(target, ignore_errors=True)
@@ -366,19 +414,28 @@ class CADV2Service:
     async def _run_job(self, job_id: str) -> None:
         root_dir = self.store.data_dir / "jobs" / job_id
         published_dir = None
+        planning = True
+        payload = {}
+        report = None
+        requirements = None
         try:
             async with self._semaphore:
                 owner, job, payload = self.store.job_private(job_id)
                 if job["status"] in TERMINAL_STATUSES:
                     return
                 self.store.update_job(job_id, status="running", stage="planning", progress=5)
-                ir, before = await self._prepare_ir(owner, job, payload)
+                ir, before, requirements = await self._prepare_ir(owner, job, payload)
+                planning = False
                 history = []
                 execution_options = self._inherited_execution_options(owner, job, payload, ir)
                 report = None
                 for attempt in range(self._max_repairs + 1):
                     if self._cancel_events[job_id].is_set():
                         raise asyncio.CancelledError
+                    if requirements is not None:
+                        from app.domain.cad_v2.compiler import compile_ir
+                        from app.domain.cad_v2.requirements import require_coverage
+                        require_coverage(requirements, compile_ir(ir), allow_geometry_pending=True)
                     output_dir = root_dir / f"attempt-{attempt}"
                     output_dir.mkdir(parents=True, mode=0o700)
                     self.store.update_job(job_id, status="running", stage="building", progress=25, repair_history=history)
@@ -392,6 +449,10 @@ class CADV2Service:
                         raise asyncio.CancelledError
                     passed = report.get("status") == "completed" and report.get("validation", {}).get("status") == "passed"
                     if passed:
+                        if requirements is not None:
+                            coverage = require_coverage(requirements, compile_ir(ir), geometry=report.get("geometry", {}))
+                            report = {**report, "requirements": requirements.model_dump(mode="json"),
+                                      "requirement_coverage": coverage}
                         # Policies come only from trusted repair/revision state, never IR metadata.
                         report = {**report, "execution_options": json.loads(json.dumps(execution_options))}
                         self.store.update_job(job_id, status="validating", stage="publishing", progress=95, report=report)
@@ -430,8 +491,17 @@ class CADV2Service:
             self.store.update_job(job_id, status="cancelled", stage="cancelled", error={
                 "type": "ExecutionCancelledError", "message": "Job execution was cancelled; the last valid revision is unchanged"})
         except Exception as exc:
-            logger.warning("CAD job failed job=%s error_type=%s", job_id, type(exc).__name__)
-            self.store.update_job(job_id, status="failed", stage="failed", error=self._error(exc))
+            from app.domain.cad_v2.errors import RequirementError
+            if planning and isinstance(exc, RequirementError) and payload.get("prompt"):
+                self.store.update_job(job_id, status="awaiting_input", stage="clarification", error=self._error(exc))
+            else:
+                logger.warning("CAD job failed job=%s error_type=%s", job_id, type(exc).__name__)
+                if coverage := getattr(exc, "details", {}).get("requirement_coverage"):
+                    report = {**(report or {}), "status": "failed", "requirement_coverage": coverage,
+                              "error": self._error(exc)}
+                    if requirements is not None:
+                        report["requirements"] = requirements.model_dump(mode="json")
+                self.store.update_job(job_id, status="failed", stage="failed", error=self._error(exc), report=report)
         finally:
             shutil.rmtree(root_dir, ignore_errors=True)
             if published_dir is not None:

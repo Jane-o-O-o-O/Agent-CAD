@@ -93,7 +93,7 @@ async def test_service_clarification_resumes_original_multi_edit_and_rejects_wro
         failure = await service.edit(OWNER, first["document_id"], expected_revision=first["id"], prompt=original_prompt)
         await service.wait(failure["id"])
         failure = service.store.get_job(failure["id"], OWNER)
-        assert failure["status"] == "failed"
+        assert failure["status"] == "awaiting_input"
         assert failure["error"]["code"] == "RequirementError"
         assert failure["error"]["details"]["clarification"] == question
         assert service.store.get_document(first["document_id"], OWNER)["current_revision"] == first["id"]

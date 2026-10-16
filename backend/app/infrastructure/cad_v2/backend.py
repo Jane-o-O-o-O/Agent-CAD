@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from copy import deepcopy
 from datetime import datetime, timezone
 import hashlib
 import math
@@ -10,12 +11,23 @@ import time
 from typing import Any
 
 from build123d import (
-    Align, Axis, Box, Circle, Color, Compound, Cylinder, GeomType, Plane,
-    Polyline, Pos, Rectangle, Shape, Sphere, Vector, Vertex,
+    Align, Axis, Box, Circle, Color, Compound, Cylinder, GeomType, Helix, Plane,
+    Polyline, Pos, Rectangle, Shape, Solid, Sphere, Spline, Vector, Vertex, Wire,
     chamfer, export_gltf, export_step, export_stl, extrude, fillet, import_step,
-    make_face, revolve,
+    loft, make_face, revolve, sweep,
 )
-from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.Adaptor3d import Adaptor3d_CurveOnSurface
+from OCP.BRep import BRep_Builder, BRep_Tool
+from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
+from OCP.Bnd import Bnd_Box
+from OCP.BRepBndLib import BRepBndLib
+from OCP.BRepExtrema import BRepExtrema_DistShapeShape
+from OCP.BRepGProp import BRepGProp
+from OCP.BRepOffsetAPI import BRepOffsetAPI_MakePipeShell
+from OCP.GProp import GProp_GProps
+from OCP.GeomAdaptor import GeomAdaptor_Surface
+from OCP.GeomLib import GeomLib_CheckCurveOnSurface
+from OCP.ShapeFix import ShapeFix_Edge
 from app.domain.cad_v2.errors import (
     CADError, BooleanOperationError, ExportError, GeometryKernelError,
     InvalidTopologyError, ParameterError,
@@ -38,18 +50,71 @@ def _v(value: Any) -> tuple[float, float, float]:
 
 def measure(shape: Shape) -> dict[str, Any]:
     box = shape.bounding_box()
+    bounds = _precise_bounds(shape) if _has_freeform_geometry(shape) else {"min":list(box.min),"max":list(box.max),"size":list(box.size)}
     return {
-        "bbox": {"min": list(box.min), "max": list(box.max), "size": list(box.size)},
+        "bbox": bounds,
         # Compound.volume only sums immediate children in build123d. Traverse
         # solids so nested assembly mass includes every located occurrence.
-        "volume": sum(float(solid.volume) for solid in shape.solids()), "area": float(shape.area),
+        "volume": _volume(shape), "area": float(shape.area),
         "solids": len(shape.solids()), "faces": len(shape.faces()),
         "edges": len(shape.edges()), "valid": bool(shape.is_valid), "units": "mm",
     }
 
 
 def _volume(shape: Shape | None) -> float:
-    return sum(float(solid.volume) for solid in shape.solids()) if shape is not None else 0.0
+    if shape is None:
+        return 0.0
+    if not _has_freeform_geometry(shape):
+        return sum(float(solid.volume) for solid in shape.solids())
+    volume = 0.0
+    for solid in shape.solids():
+        properties = GProp_GProps()
+        error = BRepGProp.VolumePropertiesGK_s(solid.wrapped,properties,1e-11,True,True)
+        if not math.isfinite(error) or error < 0 or not math.isfinite(properties.Mass()):
+            raise GeometryKernelError("Adaptive B-Rep volume integration failed")
+        volume += float(properties.Mass())
+    return volume
+
+
+def _has_freeform_geometry(shape: Shape) -> bool:
+    return any(item.geom_type in {GeomType.BSPLINE,GeomType.BEZIER} for item in [*shape.faces(),*shape.edges()])
+
+
+def _precise_bounds(shape: Shape) -> dict[str, list[float]]:
+    # AddOptimal can miss interior spline extrema. Use a conservative box only
+    # to place six planes, then let OCCT measure their closest B-Rep points.
+    bounds = Bnd_Box()
+    BRepBndLib.Add_s(shape.wrapped,bounds,False)
+    coarse = bounds.Get()
+    # An enclosing analytical rim (for example an internal thread's outer
+    # cylinder) proves the same bound without searching every spline surface.
+    analytic_edges = [edge for edge in shape.edges() if edge.geom_type in {GeomType.LINE,GeomType.CIRCLE,GeomType.ELLIPSE}]
+    analytic = None
+    if analytic_edges:
+        analytic_box = Bnd_Box()
+        BRepBndLib.AddOptimal_s(Compound(children=analytic_edges).wrapped,analytic_box,False,False)
+        if not analytic_box.IsVoid():
+            analytic = analytic_box.Get()
+    span = max(coarse[i+3]-coarse[i] for i in range(3))
+    margin = max(1.0,span*0.05)
+    center = [(coarse[i]+coarse[i+3])/2 for i in range(3)]
+    lower, upper = [], []
+    for index in range(3):
+        for side,output in ((0,lower),(1,upper)):
+            if analytic is not None and abs(coarse[index+3*side]-analytic[index+3*side]) <= 1e-6:
+                output.append(float(analytic[index+3*side]))
+                continue
+            origin = list(center)
+            origin[index] = coarse[index+3*side] + (-margin if side==0 else margin)
+            direction = [0,0,0]
+            direction[index] = 1
+            face = Plane(origin=origin,z_dir=direction)*Rectangle(2*span+2*margin,2*span+2*margin)
+            extrema = BRepExtrema_DistShapeShape(shape.wrapped,face.wrapped,1e-9)
+            if not extrema.IsDone() or not extrema.NbSolution():
+                raise GeometryKernelError("Exact B-Rep axis bound measurement failed")
+            point = extrema.PointOnShape1(1)
+            output.append(float((point.X(),point.Y(),point.Z())[index]))
+    return {"min":lower,"max":upper,"size":[b-a for a,b in zip(lower,upper)]}
 
 
 def _compound(shapes: list[Shape], fuse: bool = False) -> Shape:
@@ -128,7 +193,7 @@ class Build123dBackend:
                 if feature.id in self.healing_policy:
                     from .healing import heal_shape
                     policy = self.healing_policy[feature.id]
-                    require_solid = feature.type not in {"Rectangle", "Circle", "Polyline"} and (feature.type not in {"Transform", "LinearPattern", "CircularPattern"} or bool(before.solids()))
+                    require_solid = feature.type not in {"Rectangle", "Circle", "Polyline", "BSpline", "Path3D"} and (feature.type not in {"Transform", "LinearPattern", "CircularPattern"} or bool(before.solids()))
                     healed = heal_shape(shape, strategy=policy["strategy"], tolerance_mm=policy["tolerance_mm"], feature_id=feature.id, require_solid=require_solid)
                     shape = healed.shape
                     evidence["healing"] = healed.evidence
@@ -152,7 +217,7 @@ class Build123dBackend:
                 exc.details.setdefault("trace", trace)
                 raise
             except Exception as exc:
-                error = BooleanOperationError if feature.type in {"Union", "Cut", "Intersection", "Hole", "Pocket"} else GeometryKernelError
+                error = BooleanOperationError if feature.type in {"Union", "Cut", "Intersection", "Hole", "Pocket", "HelicalThread"} else GeometryKernelError
                 raise error(str(exc), feature_id=feature.id, details={"operation": feature.type, "trace": trace}) from exc
         if compiled.assembly is not None:
             from .assembly import build_assembly
@@ -173,16 +238,52 @@ class Build123dBackend:
             result = Pos(*p.get("origin", (0, 0, 0))) * Cylinder(p["radius"], p["height"], align=(Align.CENTER, Align.CENTER, Align.MIN))
         elif kind == "Sphere":
             result = Pos(*p.get("center", (0, 0, 0))) * Sphere(p["radius"])
-        elif kind in {"Rectangle", "Circle", "Polyline"}:
+        elif kind in {"Rectangle", "Circle", "Polyline", "BSpline"}:
             if kind == "Rectangle":
                 sketch = Rectangle(p["width"], p["height"], align=Align.MIN)
             elif kind == "Circle":
                 sketch = Circle(p["radius"])
-            else:
+            elif kind == "Polyline":
                 if not p.get("closed", True):
                     raise ParameterError("Only closed Polyline profiles can create a solid")
                 sketch = make_face(Polyline(*(tuple(point) for point in p["points"]), close=True))
+            else:
+                sketch = make_face(Spline(*(tuple(point) for point in p["points"]), periodic=True))
             result = (getattr(Plane, p.get("plane", "XY")) * sketch).translate(p.get("origin", (0, 0, 0)))
+        elif kind == "Path3D":
+            points = [tuple(point) for point in p["points"]]
+            result = Spline(*points,tangents=p.get("tangents")) if p["interpolation"] == "bspline" else Polyline(*points)
+            info["path_length"] = float(result.length)
+        elif kind == "Sweep":
+            faces = list(inputs[0].faces())
+            path = inputs[1]
+            if len(faces) != 1 or faces[0].inner_wires():
+                raise ParameterError("Sweep supports a single closed profile without inner wires", feature_id=feature.id)
+            start = tuple(path.position_at(0))
+            tangent = _direction(path.tangent_at(0))
+            normal = _direction(faces[0].normal_at())
+            if abs(sum(a*b for a, b in zip(tangent, normal))) < 1-1e-6 or faces[0].distance_to(Vertex(*start)) > 1e-6:
+                raise ParameterError("Sweep profile must contain the path start and be normal to its tangent", feature_id=feature.id)
+            result = sweep(inputs[0], path=path, is_frenet=p["is_frenet"])
+            info.update(profile_area=float(faces[0].area), path_length=float(path.length), path_start=list(start))
+        elif kind == "Loft":
+            faces = []
+            for section in inputs:
+                section_faces = list(section.faces())
+                if len(section_faces) != 1 or section_faces[0].inner_wires():
+                    raise ParameterError("Loft supports single closed profiles without inner wires", feature_id=feature.id)
+                faces.append(section_faces[0])
+            normal = _direction(faces[0].normal_at())
+            if any(abs(sum(a*b for a,b in zip(normal,_direction(face.normal_at())))) < 1-1e-6 for face in faces[1:]):
+                raise ParameterError("Loft profile planes must be parallel", feature_id=feature.id)
+            stations = [sum(a*b for a,b in zip(tuple(face.center()),normal)) for face in faces]
+            differences = [b-a for a,b in zip(stations,stations[1:])]
+            if not (all(delta > 1e-6 for delta in differences) or all(delta < -1e-6 for delta in differences)):
+                raise ParameterError("Loft profiles must be ordered on distinct parallel planes", feature_id=feature.id)
+            result = loft(inputs, ruled=p["ruled"])
+            info.update(section_areas=[float(face.area) for face in faces], stations=stations, ruled=p["ruled"])
+        elif kind == "HelicalThread":
+            result, info = self._helical_thread(inputs[0], p, feature.id)
         elif kind == "Extrude":
             result = extrude(inputs[0], amount=p["amount"])
         elif kind == "Revolve":
@@ -274,6 +375,115 @@ class Build123dBackend:
         else:
             raise ParameterError(f"Unsupported operation {kind}", feature_id=feature.id)
         return result, info
+
+    @staticmethod
+    def _helical_thread(body: Shape, params: dict[str, Any], feature_id: str) -> tuple[Shape, dict[str, Any]]:
+        """Cut an explicit single-start V groove, rather than a cosmetic cylinder."""
+        p = params
+        major, minor = p["major_diameter"]/2, p["minor_diameter"]/2
+        depth, pitch, length = major-minor, p["pitch"], p["length"]
+        axis = _direction(p["axis_direction"])
+        plane = Plane(origin=p["axis_origin"], z_dir=axis)
+        origin_projection = sum(a*b for a,b in zip(p["axis_origin"],axis))
+        wall_radius = minor if p["internal"] else major
+        matching_walls = []
+        for face in body.faces().filter_by(GeomType.CYLINDER):
+            signature = surface_signature(face)
+            adaptor = BRepAdaptor_Surface(face.wrapped)
+            delta = [signature["origin"][i]-p["axis_origin"][i] for i in range(3)]
+            along = sum(a*b for a,b in zip(delta,axis))
+            distance = math.sqrt(sum((delta[i]-along*axis[i])**2 for i in range(3)))
+            lower, upper = _axis_points(face,axis)
+            if (math.isclose(signature["radius"],wall_radius,abs_tol=1e-6)
+                    and abs(abs(sum(a*b for a,b in zip(signature["axis"],axis)))-1)<1e-6
+                    and distance<=1e-6 and abs(adaptor.LastUParameter()-adaptor.FirstUParameter())>=2*math.pi-1e-6
+                    and lower<=origin_projection+1e-6 and upper>=origin_projection+length-1e-6):
+                matching_walls.append(signature)
+        if len(body.solids()) != 1 or not matching_walls:
+            raise ParameterError("Thread requires one solid with the requested complete cylindrical wall and axial extent", feature_id=feature_id)
+        bore = plane * Cylinder(minor,length,align=(Align.CENTER,Align.CENTER,Align.MIN))
+        outer = plane * Cylinder(major,length,align=(Align.CENTER,Align.CENTER,Align.MIN))
+        stock = outer-bore if p["internal"] else outer
+        supported_volume = _volume(body & stock)
+        if not math.isclose(supported_volume,_volume(stock),rel_tol=1e-7,abs_tol=1e-6):
+            raise ParameterError("Thread interval contains missing stock or intersecting features", feature_id=feature_id)
+        if p["internal"] and _volume(body & bore)>1e-6:
+            raise ParameterError("Internal thread requires an existing cylindrical bore at the minor diameter", feature_id=feature_id)
+        # Extend beyond both ends, then clip to the declared interval. The tiny
+        # radial overlap avoids coincident cutter faces without changing the root.
+        overlap = max(1e-4,depth*1e-3)
+        flank = math.tan(math.radians(p["profile_angle"]/2))
+        if p["internal"]:
+            radius = major
+            points = [(major,-pitch),(minor-overlap,-pitch-(depth+overlap)*flank),(minor-overlap,-pitch+(depth+overlap)*flank)]
+        else:
+            radius = minor
+            points = [(minor,-pitch),(major+overlap,-pitch-(depth+overlap)*flank),(major+overlap,-pitch+(depth+overlap)*flank)]
+        profile = Plane.XZ * make_face(Polyline(*points,close=True))
+        path = Helix(pitch,length+2*pitch,radius,center=(0,0,-pitch),lefthand=p["left_hand"])
+        # build123d's pipe defaults allow 0.0001 mm boundary error. Tighten
+        # the same OCCT sweep builder so STEP reparameterization is stable.
+        pipe = BRepOffsetAPI_MakePipeShell(Wire(path.edges()).wrapped)
+        pipe.SetMode(True)
+        pipe.SetTolerance(1e-9,1e-9,1e-7)
+        pipe.SetMaxSegments(2000)
+        pipe.Add(profile.faces()[0].outer_wire().wrapped,False,False)
+        pipe.Build()
+        if not pipe.IsDone() or not pipe.MakeSolid():
+            raise GeometryKernelError("Precise helical thread sweep failed",feature_id=feature_id)
+        cutter = Solid(pipe.Shape())
+        clip = Cylinder(major+2*overlap,length,align=(Align.CENTER,Align.CENTER,Align.MIN))
+        cutter = plane * (cutter & clip)
+        result = body-cutter
+        corrected_pcurves = []
+        if p["internal"]:
+            result = deepcopy(result)
+            builder, fixer = BRep_Builder(), ShapeFix_Edge()
+            for face in result.faces().filter_by(GeomType.BSPLINE):
+                for edge in face.edges():
+                    if BRep_Tool.IsClosed_s(edge.wrapped,face.wrapped):
+                        continue
+                    curve = BRepAdaptor_Curve(edge.wrapped)
+                    pcurve = BRepAdaptor_Curve(edge.wrapped,face.wrapped).CurveOnSurface()
+                    located_surface = GeomAdaptor_Surface(BRep_Tool.Surface_s(face.wrapped))
+                    checker = GeomLib_CheckCurveOnSurface(curve,1e-9)
+                    checker.Perform(Adaptor3d_CurveOnSurface(pcurve.GetCurve(),located_surface))
+                    if checker.ErrorStatus() != 0:
+                        raise GeometryKernelError("Thread boundary consistency measurement failed",feature_id=feature_id,
+                                                  details={"occt_error_status":checker.ErrorStatus()})
+                    deviation = float(checker.MaxDistance())
+                    if not math.isfinite(deviation):
+                        raise GeometryKernelError("Thread boundary consistency measurement failed",feature_id=feature_id)
+                    if deviation <= 1e-6:
+                        continue
+                    # Boolean end intersections can retain a poorly fitted UV
+                    # curve. Reproject its existing 3D edge without replacing
+                    # the surface or changing the requested thread dimensions.
+                    builder.UpdateEdge(edge.wrapped,None,face.wrapped,1e-9)
+                    if not fixer.FixAddPCurve(edge.wrapped,face.wrapped,False,1e-9):
+                        raise GeometryKernelError("Thread parameter boundary projection failed",feature_id=feature_id)
+                    corrected_pcurves.append({"max_deviation_before":deviation,"projection_precision":1e-9})
+        removed = _volume(body)-_volume(result)
+        if removed<=1e-8 or len(result.solids()) != 1:
+            raise BooleanOperationError("Thread cut must remove material and retain one connected solid", feature_id=feature_id)
+        probes = []
+        radial = minor+depth*(0.75 if p["internal"] else 0.25)
+        for turn in range(int(length/pitch)):
+            for offset,expected_material in ((0,False),(0.5,True)):
+                z = (turn+0.25+offset)*pitch
+                if z>=length-1e-6:
+                    continue
+                angle = (-1 if p["left_hand"] else 1)*2*math.pi*(turn+0.25)
+                local = (radial*math.cos(angle),radial*math.sin(angle),z)
+                world = tuple(plane.from_local_coords(local))
+                actual = any(solid.is_inside(world,tolerance=1e-6) for solid in result.solids())
+                probes.append({"point":list(world),"material":expected_material})
+                if actual != expected_material:
+                    raise InvalidTopologyError("Helical valley/crest material probe failed",feature_id=feature_id)
+        return result, {"thread":{"single_start":True,"profile":"V","major_diameter":2*major,"minor_diameter":2*minor,
+                        "pitch":pitch,"length":length,"internal":p["internal"],"left_hand":p["left_hand"],
+                        "removed_volume":removed,"supported_stock_volume":supported_volume,"matching_walls":matching_walls,"probes":probes,
+                        "corrected_pcurves":corrected_pcurves}}
 
     @staticmethod
     def select(shape: Shape, selector: dict[str, Any], feature_id: str) -> list[Any]:

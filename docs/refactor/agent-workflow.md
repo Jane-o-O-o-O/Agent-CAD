@@ -7,14 +7,20 @@
 1. 已认证用户提交自然语言或 CAD IR，两者必须且只能提供一种。
 2. 服务持久保存 Job ID、请求内容、文档归属和幂等请求标识，记录 `created`、`queued` 事件。
 3. 有并发上限的 supervisor 取任务，将状态改为 `running`。
-4. `cad_v2_planner.plan` 对明确安装板需求走确定性解析；其他需求使用配置的结构化模型网关。缺失必要尺寸返回 `RequirementError`，不使用未经确认的默认尺寸。
-5. `CADDocumentIR` 和 `compile_ir` 检查 schema、参数表达式、引用、特征依赖和顺序；无效输入不进入内核。
-6. `CADExecutor` 启动单任务子进程，可信编译器驱动 build123d/OCP。执行环境不继承模型密钥或代理配置，不运行 LLM 任意 Python。
-7. 子进程通过真实进度消息报告 `building`、`validating`、`exporting`。服务把这些消息保存为可重放的事件，而非按定时器伪造执行进度。
-8. 几何验证和 STEP 重新导入检查通过后，worker 从同一最终 B-Rep 生成 DXF/SVG 三视图；服务检查产物路径、内容哈希、非空文件及基础必需格式集合。
-9. STEP、STL、GLB、DXF、SVG、IR、Python 文件写入同一个不可变 revision 目录。SQLite 事务同时保存 revision、比较并更新文档当前版本，并把 Job 置为 `completed`。
+4. `cad_v2_planner.plan` 对安装板需求走完整消费语句的确定性解析；其他需求先调用独立 `requirements` 角色，从原需求和用户补答提取带精确原文来源的需求清单，再调用 `planner` 角色生成 IR。需求提取不读取生成结果；本地确定性检查保留明确尺寸、孔数和功能特征，不能由模型遗漏或改写。缺少影响几何的必要信息时返回 `RequirementError`，Job 进入 `awaiting_input` 并展示具体问题。信息充分则直接生成。
+5. `CADDocumentIR` 和 `compile_ir` 检查 schema、参数表达式、引用、特征依赖和顺序；需求覆盖检查再对照最终输出实际依赖的特征图及解析参数。结构化模型计划遗漏可验证需求时，只允许一次带原始需求清单和失败证据的重新规划；无法验证的功能不靠重复调用变成成功。
+6. 服务在每次内核执行前再次检查需求覆盖。必须等待实体实测的检查可以延后到几何阶段；计划阶段已失败或无法验证的检查会阻止执行。
+7. `CADExecutor` 启动单任务子进程，可信编译器驱动 build123d/OCP。执行环境不继承模型密钥或代理配置，不运行 LLM 任意 Python。
+8. 子进程通过真实进度消息报告 `building`、`validating`、`exporting`。服务把这些消息保存为可重放的事件，而非按定时器伪造执行进度。
+9. 几何验证和 STEP 重新导入检查通过后，worker 从同一最终 B-Rep 生成 DXF/SVG 三视图；服务检查产物路径、内容哈希、非空文件及基础必需格式集合。
+10. 服务使用最终 B-Rep 实测报告再次执行需求覆盖检查，包括不能仅凭 IR 证明的主体包围尺寸。需求或几何检查存在 `failed/unverified` 时，保存诊断而不发布。
+11. STEP、STL、GLB、DXF、SVG、IR、Python 文件写入同一个不可变 revision 目录。SQLite 事务同时保存 revision、比较并更新文档当前版本，并把 Job 置为 `completed`。
 
 模型输出不是三维事实。只有真实内核 report 的 `status=completed` 且 `validation.status=passed` 才能发布 revision。`failed` 或 `unverified` 不会成为成功版本。
+
+独立需求和最终覆盖证据保存在服务拥有的 revision `report.requirements`、`report.requirement_coverage`。创建请求中的 IR `metadata.requirements/requirement_coverage` 被剥离，不能伪造通过证据；直接提交 IR 仍须通过编译和真实几何验证，但没有原始自然语言需求就不会附加虚假的需求覆盖声明。恢复版本仅从可信历史 revision report 读取已有需求并重新核对。编辑继续使用现有 `EditPlan` 的范围及未修改几何保护，不额外宣称已有独立的编辑需求提取流程。
+
+功能检查有明确的保守边界：存在一个名为“加强筋”的 Box，或名为“槽”的 Cut，并不能证明满足 Rib/Slot 的功能与形状要求。无确定性表示或验证器的需求保留为不支持或 `unverified`，不能在模型换个标签后发布。即使扫掠、放样、螺旋螺纹等已有原生操作，其参数、路径、轮廓和目标绑定仍须落入当前可核对范围；几何有效不等于所有功能或制造要求都已证明。
 
 ## Job 状态与恢复
 
@@ -25,6 +31,7 @@
 | running | 正在解析、规划或构建 |
 | validating | 内核实际校验、导出或事务发布 |
 | repairing | 正在记录局部修复，准备再次构建 |
+| awaiting_input | 缺少设计信息，持久保存具体问题，释放执行名额等待补答 |
 | completed | 有可下载且已绑定 revision 的验证通过结果 |
 | failed | 保存结构化错误，旧有效版本保留 |
 | cancelled | 已取消，不能发布新版本 |
@@ -35,6 +42,7 @@
 
 - 原来 `created/queued` 的任务重新排队。
 - 正在执行、校验或修复的任务记为 `InfrastructureError`，不会声称跨进程恢复了原内核状态。
+- `awaiting_input` 保留问题及历次用户补答，重启后可继续同一文档，不重新占用执行名额。
 - 删除未提交的临时执行目录和没有 revision 元数据的孤立产物目录；保留已提交版本。
 - 正常关闭服务会取消排队及执行中的任务，等待执行器杀死子进程并清理临时文件。
 
@@ -56,11 +64,15 @@
 
 `cad_v2_planner.plan_edit(prompt, current_ir)` 先校验当前 IR，再尝试完整消费请求的离线语法；超出离线范围时调用 `editor` 角色的结构化模型网关。输出只允许 `EditPlan` schema 中的参数/特征/实例/配合补丁和 `intents`，不接受替换整份 IR 或代码。每条 intent 记录请求的精确原文片段、`modify/move/add/remove` 操作和稳定目标 ID，计划元数据写入 `ir.metadata.last_edit`。
 
-当前离线编辑仅适用于无装配、无后续变换/布尔分支的 Box 加轴向通孔链：支持中英文明确孔子集的孔径修改、左右/上下移动、删除，以及在板中心加指定孔径的通孔，可一次处理多项请求并转换单位。例如“将左边两个孔的直径改成8mm，并将右边两个孔向左移动5mm，其他保持不变”。整句有任何不支持的后缀都会转向结构化规划，不会只执行已识别的前半句；无模型配置时返回明确的 `RequirementError`。
+当前离线编辑仅适用于无装配、无后续变换/布尔分支的 Box 加轴向通孔链：支持中英文明确孔子集的孔径修改、左右/上下移动、删除，以及在板中心加指定孔径的通孔，可一次处理多项请求并转换单位。例如“将左边两个孔的直径改成8mm，并将右边两个孔向左移动5mm，其他保持不变”。整句有任何不支持的后缀都会转向结构化规划，不会只执行已识别的前半句；无模型配置时返回 `InfrastructureError`，不会把配置问题伪装成设计追问。
 
 `validate_edit_plan` 在内核执行前检查修改范围：保护稳定特征 ID、原有依赖连通性、未选孔的孔位/孔径与未涉及约束；共享参数会牵动范围外几何时要求明确意图。删除必须有明确删除请求；仅移动的 intent 不能改尺寸；变更包围尺寸或实体数量须有对应声明。计划可以同步修改受影响的完整孔清单和解析体积，但不能删除无关验证、放宽容差或通过切换 output_feature 隐藏原几何。检查通过后仍必须真实重建和验证，不把模型自述作为几何证据。
 
-目标、方向、尺寸、共享参数影响或现有配合冲突无法确定时，规划器返回 `clarification` 或校验器抛 `RequirementError`。Job 以 `failed` 保存问题，当前有效 revision 不变；**没有单独的 waiting-for-answer Job 状态**。客户端可用原 `expected_revision`、`clarification_job_id` 和补充 `prompt` 再提交 `/edits`：服务验证该澄清来自同一用户、文档和基准 revision 的 RequirementError 失败任务，把原请求、问题和回答合并规划成一个新 Job。组合文本限 16000 字符；这不是恢复旧内核进程，也不会把补充回答当成丢失前文的独立修改。
+目标、方向、尺寸、共享参数影响或现有配合冲突无法确定时，规划器返回 `clarification` 或校验器抛 `RequirementError`。Job 以 `awaiting_input` 保存问题，当前有效 revision 不变。首次生成用补充 `prompt` 和 `clarification_job_id` 再提交 `/jobs`；修改用原 `expected_revision` 和相同字段提交 `/edits`。服务验证用户、文档、请求类型和基准 revision，沿用同一草稿或已有模型，把原需求与历次问答合并成新 Job。若仍缺信息则继续追问，已回答的项目不会被离线解析器重复询问。旧 `failed` RequirementError 任务保持兼容；几何失败与配置错误不能按澄清续答。
+
+问答上下文持久保存，限 20 轮、16000 字符。每个问题只接受一个续答任务；同一 `request_id` 与相同内容的重试返回已有任务。页面 URL 保留等待中的 Job，刷新可恢复问题。普通聊天通过 AgentScope 原生外部交互事件暂停 `message_ask_user`；CAD 工具读到 `awaiting_input` 也会保存问题并进入会话 `WAITING`，补答时保留原需求及任务、文档和版本 ID。
+
+安装板原需求同时包含“四个孔、五个孔”时，明确补答“四个孔”会解决孔数冲突，而长度、孔径、布置和已回答参数继续保留。仅询问孔数量时也可回答 `4`；同时询问孔数与厚度等多个参数时，纯数字不擅自绑定。跨轮冲突、补答本身仍矛盾时会继续澄清，明确纠正仅作用于对应参数。缺少厚度和纵向孔距可以分两轮补充；最终不属于离线四孔模式的数量交给结构化规划，不能静默按四孔生成。
 
 不能同时提交自然语言和显式 patch。编辑在完整 IR 副本上应用，然后重新构建、重新验证。失败和取消都不会替换已有有效 revision。两个任务从同一版本并发修改时，发布事务只允许一个成功；另一任务返回 `RevisionConflictError`，并保留可诊断的 Job。
 
@@ -85,7 +97,7 @@ healing 在形体深拷贝上执行；保留绝对体积、面积、包围盒、
 
 | 方法 | 相对 `/api/v1/cad-v2` 路径 | 行为 |
 |---|---|---|
-| POST | `/jobs` | `{prompt? 或 ir?, name?, request_id?}` →202 Job |
+| POST | `/jobs` | `{prompt? 或 ir?, name?, request_id?, clarification_job_id?}` →202 Job；续答仅用prompt，不带ir/name |
 | GET | `/jobs/{id}` | 当前 Job 快照 |
 | GET | `/jobs/{id}/events` | SSE `event: job`，`data`为完整快照，`id`递增 |
 | POST | `/jobs/{id}/cancel` | 取消任务；终态重复调用保持原终态 |
@@ -98,6 +110,8 @@ healing 在形体深拷贝上执行；保留绝对体积、面积、包围盒、
 | GET | `/documents/{id}/revisions/{rid}/artifacts/{format}` | 该版本 manifest 中的 STEP/STL/GLB/DXF/SVG/IR/Python |
 
 新 worker 生成的 `drawing.dxf` 和 `drawing.svg` 与三维文件绑定同一 revision。DXF 使用可编辑尺寸实体，SVG 用作三视图预览；基本总尺寸及受支持的孔位/孔径来自最终 B-Rep 实测，不自动补全公差、剖面或制造要求。旧 revision 如果没有二维产物，不会被静默替换或重写；请求不存在的格式返回404。
+
+解析形状的图纸走精确 HLR 并保留受支持的原生曲线/NURBS。含 BSpline/Bezier 面的自由曲面采用同一最终 B-Rep 新生成网格的 OCCT 原生多边形消隐，偏差目标 0.01 mm、角偏差 0.15 rad、三角形预算 100000；其 DXF 是近似线段，报告明确 `occt_polygonal_hlr/bounded_tessellation` 及容差，DXF/SVG 也显示可见的近似投影说明。尺寸仍取精确实体测量，不能把这类二维线段称为精确曲线。离散或三角形预算失败仍阻止发布。
 
 SSE 支持 `Last-Event-ID` 或 `after` 游标，终态后结束；断线不自动取消后台建模。必须携带 Bearer 认证，客户端使用支持请求头的 fetch 流式读取。文件响应提供 SHA-256 ETag 和 `X-CAD-Revision`，不会把旧预览链接重定向到最新版本。
 
@@ -140,5 +154,7 @@ python -m uvicorn app.interfaces.cad_v2_app:app --host 127.0.0.1 --port 8012 --w
 `tests/cad_v2/test_api.py` 验证鉴权、请求限制、SSE重放、revision绑定下载及409冲突。真正浏览器三维操作、完整Mongo/Redis/旧聊天回归应单独记录，HTTP200不等同于这些场景验收。
 
 `tests/cad_v2/test_natural_edits.py` 区分离线语法的真实几何重建与模拟结构化模型输出的计划保护测试；后者验证 schema、目标范围和约束保护，不证明真实模型理解成功率。`test_healing.py` 使用真实 OCP 人工缺陷验证三种候选及拒绝边界；`test_drawings.py` 独立解析 DXF 验证投影、单位和尺寸。测试运行结果应以对应日志为准，不从实现说明推导通过率。
+
+`scripts/smoke_cad_v2_clarification.py` 使用真实 HTTP 与内核：孔数冲突补答后停在尺寸追问，`create` 保存状态，服务重启后 `verify` 核对应用启动标记及原问题，继续补厚度和孔距，下载 STEP/IR 并核对 SHA-256。独立 STEP 重导入用 OCP 圆柱面及实体布尔探针检查 80×50×8 mm、四个直径 6 mm 通孔、孔坐标和解析体积，保存实际报告。`all` 仅连续执行两阶段，明确不验证重启。`scripts/smoke_cad_v2_docker.sh` 将该流程与原 IR 版本持久化验收放在同一次容器重启前后；结果须以运行产物为准。
 
 当前没有跨主机队列、后台任务续算、自动版本保留/清理策略或文档列表分页。长期多人部署需要进一步添加磁盘配额、分页、备份/恢复流程与可观测性；不能按当前实现宣称大规模分布式生产能力。strict隔离面向可信编译器，具有明确的OS执行策略；process-dev不具备该保证。两者都不是允许执行任意不可信Python的承诺。

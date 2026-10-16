@@ -164,6 +164,17 @@ def validate(result: BuildResult) -> dict[str, Any]:
             return False
         return True
     final_surfaces=[surface_signature(face) for face in shape.faces()]
+    for feature in features:
+        if feature.type != "HelicalThread":
+            continue
+        transformed=any(f.type in {"Transform","LinearPattern","CircularPattern"} and consumes(f.id,feature.id) for f in features)
+        entry=next((item for item in result.trace if item["feature_id"]==feature.id),None)
+        evidence=entry.get("evidence",{}).get("thread",{}) if entry else {}
+        probes=evidence.get("probes",[])
+        actual=[] if transformed else [any(solid.is_inside(probe["point"],tolerance=1e-6) for solid in shape.solids()) for probe in probes]
+        verified=None if transformed or not probes else all(material==probe["material"] for material,probe in zip(actual,probes))
+        checks.append(_check(f"feature.{feature.id}.final_thread",[probe["material"] for probe in probes],actual,verified,1e-6,
+                             "Final B-Rep solid classification at recorded helical valley and crest positions; downstream thread transforms need final-frame probes"))
     for entry in result.trace:
         if entry["feature_id"] not in reachable or entry["type"] not in {"Fillet","Chamfer"}:
             continue

@@ -26,21 +26,26 @@
         </div>
         <div class="min-h-0 flex-1 overflow-y-auto p-4">
           <div class="flex items-center justify-between"><h2 class="section-label">设计需求</h2><span class="text-[10px] text-slate-400">尺寸单位 {{ revision?.ir.units || 'mm' }}</span></div>
-          <div v-if="document" class="mt-3 flex rounded-lg bg-slate-100 p-1">
-            <button class="mode-button" :class="intent === 'edit' ? 'is-active' : ''" :disabled="busy" @click="intent = 'edit'">修改当前零件</button>
-            <button class="mode-button" :class="intent === 'create' ? 'is-active' : ''" :disabled="busy" @click="intent = 'create'">生成新零件</button>
+          <div v-if="document?.current_revision" class="mt-3 flex rounded-lg bg-slate-100 p-1">
+            <button class="mode-button" :class="intent === 'edit' ? 'is-active' : ''" :disabled="busy" @click="changeIntent('edit')">修改当前零件</button>
+            <button class="mode-button" :class="intent === 'create' ? 'is-active' : ''" :disabled="busy" @click="changeIntent('create')">生成新零件</button>
           </div>
-          <form class="mt-3" @submit.prevent="submitPrompt">
+          <form v-if="!clarificationJob" class="mt-3" @submit.prevent="submitPrompt">
             <label for="cad-v2-prompt" class="sr-only">零件需求或修改要求</label>
             <textarea id="cad-v2-prompt" v-model="prompt" class="h-44 w-full resize-y rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-3 text-sm leading-6 outline-none focus:border-emerald-700 focus:bg-white" :placeholder="intent === 'edit' && document ? '例如：将四个孔的直径改成 8 mm，其他保持不变。' : defaultPrompt" :disabled="busy" />
             <p v-if="historical && intent === 'edit'" class="mt-2 text-xs leading-5 text-amber-700">正在查看历史版本。请先恢复该版本，或选择当前版本再修改。</p>
             <button type="submit" class="primary-button mt-3 w-full justify-center" :disabled="busy || !prompt.trim() || (historical && intent === 'edit')"><LoaderCircle v-if="busy" :size="15" class="animate-spin" /><Send v-else :size="15" />{{ busy ? '任务进行中' : intent === 'edit' && document ? '修改并重新建模' : '生成三维零件' }}</button>
           </form>
-          <div v-if="clarificationJob" class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
-            <p class="font-medium">需要补充设计信息</p><p class="mt-1">{{ clarificationJob.error?.message }}</p>
-            <label class="mt-2 flex items-start gap-2"><input v-model="answerClarification" type="checkbox" class="mt-1" />将输入内容作为补充回答，继续这次修改</label>
-          </div>
-          <div v-if="!document" class="mt-4">
+          <form v-else class="mt-3" @submit.prevent="submitClarification">
+            <div class="border-l-2 border-amber-400 bg-amber-50 px-3 py-3 text-xs leading-5 text-amber-900" role="status">
+              <p class="font-medium">需要补充设计信息</p><p class="mt-1 whitespace-pre-wrap break-words">{{ clarificationJob.error?.message }}</p>
+            </div>
+            <label for="cad-v2-answer" class="mt-3 block text-xs font-medium text-slate-600">补充回答</label>
+            <textarea id="cad-v2-answer" v-model="clarificationAnswer" maxlength="16000" class="mt-2 h-28 w-full resize-y rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2 text-sm leading-6 outline-none focus:border-emerald-700 focus:bg-white" :disabled="busy" />
+            <button type="submit" class="primary-button mt-3 w-full justify-center" :disabled="busy || !clarificationAnswer.trim()"><LoaderCircle v-if="busy" :size="15" class="animate-spin" /><Send v-else :size="15" />{{ busy ? '任务进行中' : '补充并继续生成' }}</button>
+            <button type="button" class="secondary-button mt-2 w-full justify-center" :disabled="busy" @click="dismissClarification"><RotateCcw :size="14" />重新描述需求</button>
+          </form>
+          <div v-if="!document && !clarificationJob" class="mt-4">
             <p class="text-[11px] text-slate-400">试试这些完整需求</p>
             <button v-for="example in examples" :key="example.name" class="mt-2 block w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-xs text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/40" :disabled="busy" @click="prompt = example.prompt">{{ example.name }}<ArrowUpRight :size="12" class="float-right text-slate-400" /></button>
           </div>
@@ -132,15 +137,15 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { AlertCircle, ArrowUpRight, Box, Download, LoaderCircle, Plus, RefreshCw, Send } from 'lucide-vue-next';
+import { AlertCircle, ArrowUpRight, Box, Download, LoaderCircle, Plus, RefreshCw, RotateCcw, Send } from 'lucide-vue-next';
 import CAD3DViewer from '@/components/CAD3DViewer.vue';
 import CAD2DViewer from '@/components/CAD2DViewer.vue';
 import { downloadCADArtifact, type CADArtifactFormat } from '@/api/cadV2';
 import { getCachedClientConfig } from '@/api/config';
 import { cadErrorMessage, terminalCADJob, useCADV2Workspace } from '@/composables/useCADV2Workspace';
 
-const { documents, document, revision, revisions, job, observedStages, error, connectionIssue, loadingDocument, busy, historical,
-  generate, edit, restore, selectRevision, openDocument, newDocument, cancel, reconnect, initialize } = useCADV2Workspace();
+const { documents, document, revision, revisions, job, observedStages, error, connectionIssue, loadingDocument, busy, historical, clarificationJob,
+  generate, edit, answerClarification, dismissClarification, restore, selectRevision, openDocument, newDocument, cancel, reconnect, initialize } = useCADV2Workspace();
 const defaultPrompt = '生成一块长 80 mm、宽 50 mm、厚 8 mm 的安装板，在四角开四个直径 6 mm 的通孔，孔中心的水平距离为 60 mm，垂直距离为 30 mm。';
 const examples = [
   { name: '四孔安装板 · 80 × 50 × 8', prompt: defaultPrompt },
@@ -157,8 +162,7 @@ const hiddenInstances = ref<string[]>([]);
 const instanceTranslation = ref<Array<number | string>>([0, 0, 0]);
 const assembly = computed(() => revision.value?.ir.assembly);
 const selectedInstance = computed(() => assembly.value?.instances.find(item => item.id === selectedInstanceId.value));
-const answerClarification = ref(false);
-const clarificationJob = computed(() => job.value?.status === 'failed' && job.value.base_revision === document.value?.current_revision && (job.value.error?.code || job.value.error?.type) === 'RequirementError' ? job.value : null);
+const clarificationAnswer = ref('');
 const formats: Array<{ id: CADArtifactFormat; label: string }> = [
   { id: 'step', label: 'STEP 精确实体' }, { id: 'dxf', label: 'DXF 二维工程图' }, { id: 'svg', label: 'SVG 矢量图纸' },
   { id: 'stl', label: 'STL 网格' }, { id: 'glb', label: 'GLB 预览' }, { id: 'ir', label: 'CAD IR 定义' },
@@ -186,7 +190,7 @@ const geometrySize = computed(() => {
 });
 watch(() => revision.value?.id, () => {
   parameterDraft.value = Object.fromEntries(editableParameters.value.map(([name, value]) => [name, value.value as number]));
-  hiddenInstances.value = []; answerClarification.value = false;
+  hiddenInstances.value = [];
   if (!assembly.value?.instances.some(item => item.id === selectedInstanceId.value)) selectedInstanceId.value = '';
   if (!availableFormats.value.some(item => item.id === exportFormat.value)) exportFormat.value = 'step';
 });
@@ -203,10 +207,17 @@ async function applyInstance() {
   if (instanceTranslation.value.some(value => value === '') || translation.some(value => !Number.isFinite(value))) { error.value = '组件位置需要三个明确数值；关联表达式请通过参数面板修改。'; return; }
   await edit({ instance_patches: { [selectedInstance.value.id]: { transform: { translation } } } });
 }
-watch(() => document.value?.id, (next, previous) => { if (next && next !== previous) { intent.value = 'edit'; prompt.value = ''; } });
+watch(() => [document.value?.id, document.value?.current_revision], ([next, head], [previous, previousHead]) => {
+  if (next && (next !== previous || (!!head && !previousHead))) {
+    intent.value = head ? 'edit' : 'create'; if (head) prompt.value = '';
+  }
+});
+watch(() => clarificationJob.value?.id, () => { clarificationAnswer.value = ''; });
+function changeIntent(next: 'create' | 'edit') { if (next !== intent.value) dismissClarification(); intent.value = next; }
 function startNew() { newDocument(); intent.value = 'create'; prompt.value = defaultPrompt; }
 function chooseDocument(event: Event) { const id = (event.target as HTMLSelectElement).value; if (id) void openDocument(id); }
-async function submitPrompt() { if (!prompt.value.trim()) return; if (document.value && intent.value === 'edit') await edit({ prompt: prompt.value.trim(), ...(answerClarification.value && clarificationJob.value ? { clarification_job_id: clarificationJob.value.id } : {}) }); else await generate(prompt.value.trim()); }
+async function submitPrompt() { if (!prompt.value.trim()) return; if (document.value?.current_revision && intent.value === 'edit') await edit({ prompt: prompt.value.trim() }); else await generate(prompt.value.trim()); }
+async function submitClarification() { await answerClarification(clarificationAnswer.value); }
 async function applyParameters() {
   const parameters: Record<string, number> = {};
   for (const [name, original] of editableParameters.value) {
@@ -232,11 +243,11 @@ function formatNumber(value: unknown, fallback = '待确认') { return typeof va
 function formatValue(value: unknown) { return typeof value === 'string' ? value : JSON.stringify(value); }
 function formatTime(value: string) { return new Date(value).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
 function statusLabel(value: string) {
-  return ({ created: '已创建', queued: '排队中', running: '执行中', validating: '验证中', repairing: '修复中', completed: '已完成', failed: '失败', cancelled: '已取消', passed: '通过', unverified: '未确认', valid: '有效' } as Record<string, string>)[value] || value;
+  return ({ created: '已创建', queued: '排队中', running: '执行中', validating: '验证中', repairing: '修复中', awaiting_input: '等待补充', completed: '已完成', failed: '失败', cancelled: '已取消', passed: '通过', unverified: '未确认', valid: '有效' } as Record<string, string>)[value] || value;
 }
-function statusClass(value: string) { return ['completed', 'passed', 'valid'].includes(value) ? 'text-emerald-700' : value === 'failed' ? 'text-red-700' : ['unverified', 'cancelled'].includes(value) ? 'text-amber-700' : 'text-slate-500'; }
+function statusClass(value: string) { return ['completed', 'passed', 'valid'].includes(value) ? 'text-emerald-700' : value === 'failed' ? 'text-red-700' : ['awaiting_input', 'unverified', 'cancelled'].includes(value) ? 'text-amber-700' : 'text-slate-500'; }
 function stageLabel(value: string) {
-  return ({ created: '任务已创建', queued: '等待执行', parsing: '解析工程需求', requirement_parsing: '解析工程需求', planning: '规划建模特征', compiling: '编译参数化定义', executing: '构建真实几何', building: '构建真实几何', validating: '验证几何与尺寸', repairing: '尝试局部修复', exporting: '生成工程文件', publishing: '保存已验证版本', completed: '生成完成', failed: '任务失败', cancelled: '任务已取消' } as Record<string, string>)[value] || value;
+  return ({ created: '任务已创建', queued: '等待执行', parsing: '解析工程需求', requirement_parsing: '解析工程需求', planning: '规划建模特征', compiling: '编译参数化定义', executing: '构建真实几何', building: '构建真实几何', validating: '验证几何与尺寸', repairing: '尝试局部修复', exporting: '生成工程文件', publishing: '保存已验证版本', clarification: '等待补充设计信息', awaiting_input: '等待补充设计信息', completed: '生成完成', failed: '任务失败', cancelled: '任务已取消' } as Record<string, string>)[value] || value;
 }
 onMounted(() => { void initialize(); void getCachedClientConfig().then(config => { standalone.value = config?.cad_v2_standalone ?? false; }); });
 </script>

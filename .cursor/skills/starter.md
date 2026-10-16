@@ -202,6 +202,14 @@ services. `python -m benchmarks.cad_v2.run --output /tmp/cad-v2-benchmark` runs 
 fixed 30-design corpus. Frontend uses `npm test`, `npm run type-check`, `npm run build`.
 Keep production model credentials out of worker environments, reports and commits.
 
+When copying tests into a thin CAD container, keep `app`, `tests`, and `benchmarks`
+under one import root. For tests copied to `/tmp/tests`, expose `/tmp/app` as a
+symlink to `/app/app`, copy `backend/benchmarks` to `/tmp/benchmarks`, and set
+`PYTHONPATH=/app:/tmp`. The exported-Python replay test derives its import root
+from the test path, so setting only the pytest process's `PYTHONPATH` is insufficient.
+
+<!-- Added 2026-10-16: preserve replay and benchmark imports in isolated Docker regression runs. -->
+
 <!-- Added 2026-10-14: independently runnable exact CAD V2, real-kernel testing and revision persistence. -->
 
 ### Generate a real CAD sample without infrastructure

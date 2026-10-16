@@ -8,10 +8,8 @@ import pytest
 from app.application.services.cad_v2_planner import plan, plan_edit
 from app.domain.cad_v2.compiler import apply_edits, compile_ir
 from app.domain.cad_v2.editing import EditPlan, validate_edit_plan
-from app.domain.cad_v2.errors import RequirementError, SchemaValidationError
+from app.domain.cad_v2.errors import InfrastructureError, RequirementError, SchemaValidationError
 from app.domain.cad_v2.models import CADDocumentIR
-from app.infrastructure.cad_v2.backend import Build123dBackend
-from app.infrastructure.cad_v2.validation import validate
 
 PROMPT = "生成一块长80mm宽50mm厚8mm的安装板，在四角开四个直径6mm的通孔，孔中心的水平距离为60mm，垂直距离为30mm。"
 
@@ -31,6 +29,8 @@ def model_response(monkeypatch, payload):
 
 
 def test_multiple_subset_edits_preserve_other_geometry_and_build_real_kernel(tmp_path):
+    from app.infrastructure.cad_v2.backend import Build123dBackend
+    from app.infrastructure.cad_v2.validation import validate
     original = plate()
     untouched = original.model_dump(mode="json")
     edit = asyncio.run(plan_edit("将左边两个孔的直径改成8mm，并将右边两个孔向左移动5mm，其他保持不变。", original))
@@ -53,6 +53,8 @@ def test_multiple_subset_edits_preserve_other_geometry_and_build_real_kernel(tmp
 
 
 def test_add_move_and_remove_holes_across_revisions_have_measured_expectations():
+    from app.infrastructure.cad_v2.backend import Build123dBackend
+    from app.infrastructure.cad_v2.validation import validate
     current = plate()
     backend = Build123dBackend()
     for prompt, expected_count in [
@@ -75,7 +77,7 @@ def test_multi_edit_unit_conversion_and_complete_grammar(monkeypatch):
     edit = asyncio.run(plan_edit("set left two holes diameter to 0.8 cm and move right two holes left by 0.5 cm", current))
     compiled = compile_ir(apply_edits(current, **edit.apply_kwargs()))
     assert compiled.features[-1].params["diameter"] == 8
-    with pytest.raises(RequirementError):
+    with pytest.raises(InfrastructureError):
         asyncio.run(plan_edit("将左边两个孔的直径改成8mm，并增加一个加强筋", current))
 
 
@@ -87,6 +89,8 @@ def test_ambiguous_offline_selection_does_not_guess():
 
 
 def test_structured_model_complex_add_and_move_preserves_ids_and_requirements(monkeypatch):
+    from app.infrastructure.cad_v2.backend import Build123dBackend
+    from app.infrastructure.cad_v2.validation import validate
     current = CADDocumentIR.model_validate({
         "document_id": "model-edit", "features": [
             {"id": "plate", "type": "Box", "params": {"width": 80, "depth": 50, "height": 8}},
@@ -110,7 +114,7 @@ def test_structured_model_complex_add_and_move_preserves_ids_and_requirements(mo
     edit = asyncio.run(plan_edit(prompt, current))
     assert edit.model == "test-model" and edit.usage["total_tokens"] == 42
     assert calls[0]["role"] == "editor" and '"current_ir"' in calls[0]["request"]
-    assert calls[0]["schema"]["additionalProperties"] is False
+    assert all(branch["additionalProperties"] is False for branch in calls[0]["schema"]["oneOf"])
     edited = apply_edits(current, **edit.apply_kwargs())
     assert edited.features[0] == current.features[0]
     assert edited.constraints == current.constraints
@@ -186,6 +190,7 @@ def test_model_cannot_delete_and_recreate_existing_id():
 
 
 def test_structured_assembly_move_and_add_instance_preserve_part_and_mates(monkeypatch):
+    from app.infrastructure.cad_v2.backend import Build123dBackend
     current = CADDocumentIR.model_validate({
         "document_id": "assembly-edit", "features": [{"id": "pin", "type": "Cylinder", "params": {"radius": 2, "height": 4}}],
         "assembly": {"parts": [{"id": "pin_part", "name": "Pin", "feature_id": "pin"}],

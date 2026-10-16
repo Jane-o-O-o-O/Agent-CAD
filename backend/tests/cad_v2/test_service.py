@@ -47,7 +47,10 @@ class FakeExecutor:
                 data = f"orchestration fixture only:{format}:{ir.parameters['width'].value}".encode()
                 path.write_bytes(data)
                 artifacts.append({"format": format, "filename": path.name, "sha256": hashlib.sha256(data).hexdigest(), "size": len(data)})
-            return {"status": "completed", "geometry": {}, "validation": {"status": "passed", "checks": []}, "trace": [], "artifacts": artifacts}
+            from app.domain.cad_v2.compiler import compile_ir
+            # A report fixture for supervisor tests; actual measurements use OCP tests.
+            geometry = {"bbox": {"size": compile_ir(ir).expected_geometry.get("bbox", [80, 50, 8])}}
+            return {"status": "completed", "geometry": geometry, "validation": {"status": "passed", "checks": []}, "trace": [], "artifacts": artifacts}
         except asyncio.CancelledError:
             self.cancelled = True
             raise

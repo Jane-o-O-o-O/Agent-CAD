@@ -13,8 +13,9 @@ from .expressions import evaluate_expression, resolve_parameters
 from .models import CADDocumentIR, StrictModel
 
 UNIT_TO_MM = {"mm": 1.0, "cm": 10.0, "m": 1000.0, "inch": 25.4}
-SKETCHES = {"Rectangle", "Circle", "Polyline"}
-PRIMITIVES = {"Box", "Cylinder", "Sphere", *SKETCHES}
+SKETCHES = {"Rectangle", "Circle", "Polyline", "BSpline"}
+PATHS = {"Path3D"}
+PRIMITIVES = {"Box", "Cylinder", "Sphere", *SKETCHES, *PATHS}
 BOOLEANS = {"Union", "Cut", "Intersection"}
 
 
@@ -87,10 +88,13 @@ def _validate_dependencies(ir: CADDocumentIR) -> None:
         if graph[feature.id] - seen:
             raise DependencyError("features must appear after all dependencies", feature_id=feature.id)
         count = len(feature.inputs)
-        expected_count = 0 if feature.type in PRIMITIVES else 2 if feature.type == "Pocket" else 1
+        expected_count = 0 if feature.type in PRIMITIVES else 2 if feature.type in {"Pocket", "Sweep"} else 1
         if feature.type in BOOLEANS:
             if count < 2 or len(set(feature.inputs)) != count:
                 raise DependencyError("boolean requires distinct input features", feature_id=feature.id)
+        elif feature.type == "Loft":
+            if not 2 <= count <= 12 or len(set(feature.inputs)) != count:
+                raise DependencyError("Loft requires 2 to 12 distinct ordered profiles", feature_id=feature.id)
         elif count != expected_count:
             raise DependencyError("invalid feature input count", feature_id=feature.id,
                                   details={"expected": expected_count, "actual": count})
@@ -99,9 +103,13 @@ def _validate_dependencies(ir: CADDocumentIR) -> None:
             raise DependencyError("operation requires a sketch input", feature_id=feature.id)
         if feature.type == "Pocket" and input_kinds != ["solid", "sketch"]:
             raise DependencyError("Pocket requires body then sketch", feature_id=feature.id)
-        if feature.type in BOOLEANS | {"Hole", "Fillet", "Chamfer"} and any(kind != "solid" for kind in input_kinds):
+        if feature.type == "Sweep" and input_kinds != ["sketch", "path"]:
+            raise DependencyError("Sweep requires profile then path", feature_id=feature.id)
+        if feature.type == "Loft" and any(kind != "sketch" for kind in input_kinds):
+            raise DependencyError("Loft requires closed sketch profiles", feature_id=feature.id)
+        if feature.type in BOOLEANS | {"Hole", "Fillet", "Chamfer", "HelicalThread"} and any(kind != "solid" for kind in input_kinds):
             raise DependencyError("operation requires solid inputs", feature_id=feature.id)
-        shape_kinds[feature.id] = "sketch" if feature.type in SKETCHES else (
+        shape_kinds[feature.id] = "sketch" if feature.type in SKETCHES else "path" if feature.type in PATHS else (
             input_kinds[0] if feature.type in {"Transform", "LinearPattern", "CircularPattern"} else "solid")
         seen.add(feature.id)
     output = ir.output_feature or ir.features[-1].id
@@ -195,7 +203,7 @@ def compile_ir(ir: CADDocumentIR | dict[str, Any]) -> CompiledIR:
         try:
             params = feature.params.model_dump()
             for key, value in list(params.items()):
-                if value is None or key in {"plane", "closed", "through", "fuse"}:
+                if value is None or key in {"plane", "closed", "through", "fuse", "interpolation", "is_frenet", "ruled", "internal", "left_hand"}:
                     continue
                 if key == "selector":
                     params[key] = normalize_selector(value)
@@ -205,11 +213,13 @@ def compile_ir(ir: CADDocumentIR | dict[str, Any]) -> CompiledIR:
                     params[key] = vector(value)
                 elif key in {"positions", "points"}:
                     params[key] = [vector(item) for item in value]
+                elif key == "tangents":
+                    params[key] = [direction(item) for item in value]
                 elif key == "rotation":
                     params[key] = vector(value, 0)
                 else:
-                    params[key] = scalar(value, 0 if key in {"angle", "count"} else 1)
-            for key in {"width", "depth", "height", "radius", "diameter", "length"} & params.keys():
+                    params[key] = scalar(value, 0 if key in {"angle", "profile_angle", "count"} else 1)
+            for key in {"width", "depth", "height", "radius", "diameter", "length", "major_diameter", "minor_diameter", "pitch"} & params.keys():
                 if params[key] is not None and params[key] <= 0:
                     raise ParameterError(f"{key} must be positive")
             if feature.type == "Extrude" and abs(params["amount"]) < 1e-9:
@@ -227,10 +237,31 @@ def compile_ir(ir: CADDocumentIR | dict[str, Any]) -> CompiledIR:
                 positions = [tuple(position) for position in params["positions"]]
                 if len(set(positions)) != len(positions):
                     raise ParameterError("hole positions must be distinct")
-            if feature.type == "Polyline":
+            if feature.type in {"Polyline", "BSpline"}:
                 points = params["points"]
                 if len(set(tuple(point) for point in points)) < 3:
-                    raise ParameterError("polyline requires three distinct points")
+                    raise ParameterError("closed profile requires three distinct points")
+                if feature.type == "BSpline" and len(set(tuple(point) for point in points)) != len(points):
+                    raise ParameterError("periodic BSpline points must be distinct; do not repeat the closing point")
+            if feature.type == "Path3D":
+                points = params["points"]
+                if any(math.dist(first, second) <= 1e-8 for first, second in zip(points, points[1:])):
+                    raise ParameterError("path contains a zero-length segment")
+                if math.dist(points[0], points[-1]) <= 1e-8:
+                    raise ParameterError("only open sweep paths are supported")
+                if params["interpolation"] == "bspline" and len(set(tuple(point) for point in points)) != len(points):
+                    raise ParameterError("BSpline path interpolation points must be distinct")
+            if feature.type == "HelicalThread":
+                if params["minor_diameter"] >= params["major_diameter"]:
+                    raise ParameterError("thread minor diameter must be below major diameter")
+                if not 10 <= params["profile_angle"] <= 120:
+                    raise ParameterError("thread profile angle must be from 10 to 120 degrees")
+                turns = params["length"] / params["pitch"]
+                if not 1 <= turns <= 64:
+                    raise ParameterError("single-start thread requires 1 to 64 turns")
+                width = (params["major_diameter"] - params["minor_diameter"]) * math.tan(math.radians(params["profile_angle"] / 2))
+                if width >= params["pitch"] * 0.95:
+                    raise ParameterError("thread V-profile width must be below 95 percent of pitch")
             count = max((instance_counts[item] for item in feature.inputs), default=1)
             if feature.type in {"LinearPattern", "CircularPattern"}:
                 count *= params["count"]

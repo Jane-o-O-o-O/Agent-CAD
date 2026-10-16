@@ -103,6 +103,38 @@ def test_collision_and_mate_violation_are_measured_failures():
     assert axis["status"] == "failed"
 
 
+@pytest.mark.parametrize("wrong_diameter", [False, True])
+def test_feature_bound_hole_expectations_are_measured_on_the_part_with_inserted_shaft(wrong_diameter):
+    backend = Build123dBackend()
+    ir = flange_shaft_spacer_ir()
+    ir["expected_geometry"]["holes"] = [
+        {"feature_id": "flange", "diameter": 8 if wrong_diameter else 10, "positions": [[0, 0, 0]], "through": True},
+        {"feature_id": "spacer", "diameter": 10, "positions": [[0, 0, 0]], "through": True},
+    ]
+    report = backend.validate(backend.build(compile_ir(ir)))
+    assert report["status"] == ("failed" if wrong_diameter else "passed")
+    assert any(check["name"].startswith("instance.flange_1.expected_hole") for check in report["checks"])
+
+
+def test_unscoped_assembly_hole_still_checks_the_whole_assembly():
+    backend = Build123dBackend()
+    ir = flange_shaft_spacer_ir()
+    ir["expected_geometry"]["holes"] = [{"diameter": 10, "positions": [[0, 0, 0]], "through": True}]
+    report = backend.validate(backend.build(compile_ir(ir)))
+    assert report["status"] == "failed"
+    assert any(check["name"] == "expected_hole.0.0.through" and check["status"] == "failed" for check in report["checks"])
+
+
+def test_duplicate_global_and_part_assertions_still_check_both_diameters():
+    backend = Build123dBackend()
+    ir = flange_shaft_spacer_ir()
+    ir["assembly"]["parts"][0]["expected_geometry"]["holes"] = [{"feature_id": "flange", "diameter": 10, "positions": [[0, 0, 0]]}]
+    ir["expected_geometry"]["holes"] = [{"feature_id": "flange", "diameter": 8, "positions": [[0, 0, 0]]}]
+    report = backend.validate(backend.build(compile_ir(ir)))
+    assert report["status"] == "failed"
+    assert any(check["name"].startswith("instance.flange_1.source_hole") and check["status"] == "failed" for check in report["checks"])
+
+
 def test_reusable_part_instances_and_atomic_parametric_instance_edits(tmp_path):
     backend = Build123dBackend()
     original = flange_shaft_spacer_ir()

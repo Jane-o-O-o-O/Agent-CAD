@@ -120,12 +120,14 @@ def create_agentscope_toolkit(toolkits: list[BaseToolkit]) -> Toolkit:
                 )
                 continue
 
-            tools.append(
-                AutoAllowFunctionTool(
-                    func=_make_tool_callable(item),
-                    name=item.name,
-                    description=item.description,
-                    is_concurrency_safe=False,
-                ),
+            adapted = AutoAllowFunctionTool(
+                func=_make_tool_callable(item),
+                name=item.name,
+                description=item.description,
+                is_concurrency_safe=False,
             )
+            # A user reply is an external result, so the SDK must stop this turn.
+            if toolkit.name == "message" and item.name == "message_ask_user":
+                adapted.is_external_tool = True
+            tools.append(adapted)
     return Toolkit(tools=tools)

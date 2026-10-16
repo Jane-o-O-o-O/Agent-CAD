@@ -32,6 +32,10 @@ class RequirementError(CADError):
     pass
 
 
+class RequirementCoverageError(CADError):
+    """Generated geometry omits, contradicts or cannot verify supplied intent."""
+
+
 class SchemaValidationError(CADError):
     pass
 

@@ -1,9 +1,9 @@
 import { apiClient, createSSEConnection, type ApiResponse, type SSECallbacks } from './client';
 
-export type CADJobStatus = 'created' | 'queued' | 'running' | 'validating' | 'repairing' | 'completed' | 'failed' | 'cancelled';
+export type CADJobStatus = 'created' | 'queued' | 'running' | 'validating' | 'repairing' | 'awaiting_input' | 'completed' | 'failed' | 'cancelled';
 export type CADArtifactFormat = 'step' | 'stl' | 'glb' | 'ir' | 'python' | 'dxf' | 'svg' | 'bom_json' | 'bom_csv';
 export interface CADInstance { id: string; part_id: string; name?: string | null; editable: boolean; transform: { translation: Array<number | string>; rotation: Array<number | string> } }
-export interface CADEditRequest { prompt?: string; parameters?: Record<string, number>; clarification_job_id?: string; instance_patches?: Record<string, { transform?: { translation?: number[]; rotation?: number[] } }> }
+export interface CADEditRequest { prompt?: string; parameters?: Record<string, number>; clarification_job_id?: string; request_id?: string; instance_patches?: Record<string, { transform?: { translation?: number[]; rotation?: number[] } }> }
 export interface CADV2Error { code?: string; type?: string; message: string; feature_id?: string; details?: unknown }
 export interface CADParameter {
   kind: 'length' | 'angle' | 'integer' | 'scalar';
@@ -75,8 +75,10 @@ const root = '/cad-v2';
 const segment = (value: string) => encodeURIComponent(value);
 const unwrap = <T>(response: { data: ApiResponse<T> }) => response.data.data;
 
-export async function createCADJob(prompt: string): Promise<CADJob> {
-  return unwrap(await apiClient.post<ApiResponse<CADJob>>(`${root}/jobs`, { prompt, request_id: crypto.randomUUID() }));
+export async function createCADJob(prompt: string, clarificationJobId?: string, requestId?: string): Promise<CADJob> {
+  return unwrap(await apiClient.post<ApiResponse<CADJob>>(`${root}/jobs`, {
+    prompt, ...(clarificationJobId ? { clarification_job_id: clarificationJobId } : {}), request_id: requestId || crypto.randomUUID(),
+  }));
 }
 export async function getCADJob(id: string): Promise<CADJob> {
   return unwrap(await apiClient.get<ApiResponse<CADJob>>(`${root}/jobs/${segment(id)}`));
@@ -101,7 +103,7 @@ export async function getCADRevision(documentId: string, revisionId: string): Pr
 }
 export async function editCADV2Document(documentId: string, expectedRevision: string, edit: CADEditRequest): Promise<CADJob> {
   return unwrap(await apiClient.post<ApiResponse<CADJob>>(`${root}/documents/${segment(documentId)}/edits`, {
-    ...edit, expected_revision: expectedRevision, request_id: crypto.randomUUID(),
+    ...edit, expected_revision: expectedRevision, request_id: edit.request_id || crypto.randomUUID(),
   }));
 }
 export async function restoreCADRevision(documentId: string, revisionId: string, expectedRevision: string): Promise<CADJob> {
