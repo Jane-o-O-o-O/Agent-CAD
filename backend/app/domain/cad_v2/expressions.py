@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import ast
 import math
+from functools import lru_cache
 from typing import Mapping
 
 from .errors import DependencyError, ParameterError
@@ -41,8 +42,16 @@ def parse_expression(expression: str) -> ast.Expression:
     return tree
 
 
+@lru_cache(maxsize=256)
+def _dependency_names(expression: str) -> frozenset[str]:
+    return frozenset(node.id for node in ast.walk(parse_expression(expression))
+                     if isinstance(node, ast.Name) and node.id not in CONSTANTS)
+
+
 def expression_dependencies(expression: str) -> set[str]:
-    return {node.id for node in ast.walk(parse_expression(expression)) if isinstance(node, ast.Name)} - CONSTANTS.keys()
+    # Edit preservation repeatedly inspects shared dimensions. Cache only immutable
+    # names, never evaluated values, and return a fresh set to each caller.
+    return set(_dependency_names(expression))
 
 
 def evaluate_expression(value: float | str, parameters: Mapping[str, float]) -> float:

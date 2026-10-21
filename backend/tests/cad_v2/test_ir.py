@@ -118,6 +118,14 @@ def test_parameter_names_must_be_usable_in_arithmetic_expressions(name):
         compile_ir(source)
 
 
+def test_repeated_dependency_queries_do_not_share_mutable_sets_or_parameter_values():
+    dependencies = expression_dependencies("width * pi")
+    dependencies.add("unrelated")
+    assert expression_dependencies("width * pi") == {"width"}
+    assert evaluate_expression("width * 2", {"width": 3}) == 6
+    assert evaluate_expression("width * 2", {"width": 7}) == 14
+
+
 @pytest.mark.parametrize("parameters", [
     {"width": {"expression": "depth"}, "depth": {"expression": "width"}, "height": {"value": 8}},
     {"width": {"expression": "missing"}, "depth": {"value": 50}, "height": {"value": 8}},
