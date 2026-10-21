@@ -102,6 +102,14 @@ def test_parameter_dependencies_and_bounds():
         compile_ir(source)
 
 
+def test_expression_accepts_surrounding_whitespace_without_changing_dependencies():
+    assert evaluate_expression(" \t width * 2 \n", {"width": 3}) == 6
+    assert expression_dependencies(" \t width * 2 \n") == {"width"}
+    for expression in ("", " \t\n", " " * 513 + "1"):
+        with pytest.raises(ParameterError):
+            evaluate_expression(expression, {})
+
+
 @pytest.mark.parametrize("parameters", [
     {"width": {"expression": "depth"}, "depth": {"expression": "width"}, "height": {"value": 8}},
     {"width": {"expression": "missing"}, "depth": {"value": 50}, "height": {"value": 8}},

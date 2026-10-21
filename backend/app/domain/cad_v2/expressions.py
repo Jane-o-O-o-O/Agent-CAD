@@ -23,6 +23,7 @@ def _finite(value: float) -> float:
 def parse_expression(expression: str) -> ast.Expression:
     if len(expression) > 512:
         raise ParameterError("expression exceeds 512 characters")
+    expression = expression.strip()
     try:
         tree = ast.parse(expression, mode="eval")
     except (SyntaxError, RecursionError) as exc:
