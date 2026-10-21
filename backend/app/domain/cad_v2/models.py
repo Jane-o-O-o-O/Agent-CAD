@@ -1,6 +1,7 @@
 """CAD IR 2.0: typed design intent; geometry is never stored as executable code."""
 from __future__ import annotations
 
+import keyword
 from typing import Annotated, Any, Literal, Union
 from uuid import uuid4
 
@@ -442,6 +443,6 @@ class CADDocumentIR(StrictModel):
         for name in value:
             if name == "pi":
                 raise ValueError("pi is a reserved arithmetic constant")
-            if not name.isidentifier() or not name.isascii() or name.startswith("_"):
+            if not name.isidentifier() or not name.isascii() or name.startswith("_") or keyword.iskeyword(name):
                 raise ValueError("parameter names must be public ASCII identifiers")
         return value

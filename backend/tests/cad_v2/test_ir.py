@@ -110,6 +110,14 @@ def test_expression_accepts_surrounding_whitespace_without_changing_dependencies
             evaluate_expression(expression, {})
 
 
+@pytest.mark.parametrize("name", ["class", "for", "True", "None", "lambda"])
+def test_parameter_names_must_be_usable_in_arithmetic_expressions(name):
+    source = box_ir()
+    source["parameters"][name] = {"value": 2}
+    with pytest.raises(SchemaValidationError):
+        compile_ir(source)
+
+
 @pytest.mark.parametrize("parameters", [
     {"width": {"expression": "depth"}, "depth": {"expression": "width"}, "height": {"value": 8}},
     {"width": {"expression": "missing"}, "depth": {"value": 50}, "height": {"value": 8}},
